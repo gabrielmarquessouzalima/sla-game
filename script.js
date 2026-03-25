@@ -4,7 +4,6 @@ const ctx = canvas.getContext("2d");
 canvas.width = 800;
 canvas.height = 400;
 
-// Configurações do Personagem
 const player = {
     x: 50,
     y: 300,
@@ -22,32 +21,37 @@ const player = {
 const chaoY = 350;
 const teclas = {};
 
-// Detectar teclas
-window.addEventListener("keydown", e => teclas[e.code] = true);
-window.addEventListener("keyup", e => teclas[e.code] = false);
+// Captura as teclas
+window.addEventListener("keydown", (e) => {
+    teclas[e.code] = true;
+});
+
+window.addEventListener("keyup", (e) => {
+    teclas[e.code] = false;
+});
 
 function atualizar() {
-    // MOVIMENTO COM A e D
-    if (teclas["KeyA"] && player.x > 0) { // Tecla A (Esquerda)
+    // Movimentação A e D
+    if (teclas["KeyA"] && player.x > 0) {
         player.x -= player.velocidade;
         player.direcao = "esquerda";
     }
-    if (teclas["KeyD"] && player.x < canvas.width - player.largura) { // Tecla D (Direita)
+    if (teclas["KeyD"] && player.x < canvas.width - player.largura) {
         player.x += player.velocidade;
         player.direcao = "direita";
     }
 
-    // Pulo (Espaço ou W)
-    if ((teclas["Space"] || teclas["KeyW"]) && player.noChao) {
+    // Pulo com W ou Espaço
+    if ((teclas["KeyW"] || teclas["Space"]) && player.noChao) {
         player.velY = player.pulo;
         player.noChao = false;
     }
 
-    // Gravidade
+    // Física
     player.velY += player.gravidade;
     player.y += player.velY;
 
-    // Colisão com o chão
+    // Colisão Chão
     if (player.y + player.altura >= chaoY) {
         player.y = chaoY - player.altura;
         player.velY = 0;
@@ -61,15 +65,15 @@ function atualizar() {
 function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Desenhar Chão
+    // Chão
     ctx.fillStyle = "#333";
     ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
 
-    // Desenhar Personagem
+    // Player
     ctx.fillStyle = player.cor;
     ctx.fillRect(player.x, player.y, player.largura, player.altura);
 
-    // Desenhar Olhos (Flip)
+    // Olhos (O Flip)
     ctx.fillStyle = "white";
     if (player.direcao === "direita") {
         ctx.fillRect(player.x + 25, player.y + 10, 8, 8);
@@ -78,4 +82,5 @@ function desenhar() {
     }
 }
 
+// Inicia o jogo
 atualizar();
