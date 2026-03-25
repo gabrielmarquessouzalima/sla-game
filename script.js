@@ -16,7 +16,7 @@ const player = {
     gravidade: 0.8,
     pulo: -15,
     noChao: false,
-    direcao: "direita" // Nova propriedade para o olhar
+    direcao: "direita" // Define para onde ele está olhando
 };
 
 const chaoY = 350;
@@ -27,22 +27,23 @@ window.addEventListener("keydown", e => teclas[e.code] = true);
 window.addEventListener("keyup", e => teclas[e.code] = false);
 
 function atualizar() {
-    // Movimento Horizontal e Direção
+    // Movimento Horizontal e Atualização do Flip
     if (teclas["ArrowLeft"] && player.x > 0) {
         player.x -= player.velocidade;
-        player.direcao = "esquerda";
+        player.direcao = "esquerda"; // Vira para a esquerda
     }
     if (teclas["ArrowRight"] && player.x < canvas.width - player.largura) {
         player.x += player.velocidade;
-        player.direcao = "direita";
+        player.direcao = "direita"; // Vira para a direita
     }
 
-    // Lógica de Pulo e Gravidade
+    // Lógica de Pulo
     if (teclas["Space"] && player.noChao) {
         player.velY = player.pulo;
         player.noChao = false;
     }
 
+    // Gravidade
     player.velY += player.gravidade;
     player.y += player.velY;
 
@@ -58,6 +59,7 @@ function atualizar() {
 }
 
 function desenhar() {
+    // Limpa a tela
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Desenhar Chão
@@ -67,15 +69,17 @@ function desenhar() {
     // Desenhar Personagem (Corpo)
     ctx.fillStyle = player.cor;
     ctx.fillRect(player.x, player.y, player.largura, player.altura);
-    
-    // Desenhar Olhos (Baseado na direção)
+
+    // DESENHAR OLHOS (O famoso "Flip")
     ctx.fillStyle = "white";
     if (player.direcao === "direita") {
-        ctx.fillRect(player.x + 25, player.y + 10, 8, 8); // Olho direito
+        // Se estiver indo para a direita, olho fica na frente (lado direito do bloco)
+        ctx.fillRect(player.x + 25, player.y + 10, 8, 8);
     } else {
-        ctx.fillRect(player.x + 7, player.y + 10, 8, 8);  // Olho esquerdo
+        // Se estiver indo para a esquerda, olho fica do outro lado (lado esquerdo do bloco)
+        ctx.fillRect(player.x + 7, player.y + 10, 8, 8);
     }
 }
 
-// Inicia o jogo
+// Inicia o Loop do Jogo
 atualizar();
