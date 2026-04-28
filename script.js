@@ -8,7 +8,7 @@ canvas.height = 400;
 // --- CARREGAMENTO DO FUNDO ---
 const fundoCidade = new Image();
 // Link direto da imagem para garantir que carregue no Canvas
-fundoCidade.src = "https://w0.peakpx.com/wallpaper/143/895/HD-wallpaper-city-night-light-blue.jpg";
+fundoCidade.src = ":https://e1.pxfuel.com/desktop-wallpaper/928/1014/desktop-wallpaper-pixel-art-backgrounds-backgrounds-sprite-with-buildings.jpg";
 
 let estadoAtual = "TELA_INICIAL";
 
