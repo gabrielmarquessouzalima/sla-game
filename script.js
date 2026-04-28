@@ -5,11 +5,11 @@ const btnStart = document.getElementById("btnStart");
 canvas.width = 800;
 canvas.height = 400;
 
-// Carregamento da Imagem de Fundo
-const imagemFundo = new Image();
-imagemFundo.src = "https://images.pxfuel.com/wallpaper/143/895/437/city-night-light-blue-wallpaper-preview.jpg"; 
+// --- CARREGAMENTO DO FUNDO ---
+const fundoCidade = new Image();
+// Link direto da imagem para garantir que carregue no Canvas
+fundoCidade.src = "https://w0.peakpx.com/wallpaper/143/895/HD-wallpaper-city-night-light-blue.jpg";
 
-// Máquina de Estados
 let estadoAtual = "TELA_INICIAL";
 
 const player = {
@@ -26,7 +26,8 @@ const player = {
     direcao: "direita" 
 };
 
-let cameraX = 0; // Controla o deslocamento do cenário
+// Variáveis de controle de movimento e câmera
+let cameraX = 0;
 const chaoY = 350;
 const teclas = {};
 
@@ -39,7 +40,8 @@ const dialogo = {
     indiceAtual: 0,
     caixa: {
         x: 50, y: 250, largura: 700, altura: 120,
-        corFundo: "#000033", corBorda: "#00001a"
+        corFundo: "rgba(0, 0, 51, 0.9)", // Leve transparência
+        corBorda: "#00001a"
     }
 };
 
@@ -62,19 +64,20 @@ btnStart.addEventListener("click", () => {
 
 function atualizar() {
     if (estadoAtual === "JOGANDO") {
-        // Movimentação e ajuste da Câmera (Efeito de andar pelo cenário)
+        // Movimentação
         if (teclas["KeyA"] && player.x > 0) {
             player.x -= player.velocidade;
             player.direcao = "esquerda";
         }
-        if (teclas["KeyD"] && player.x < 2000) { // 2000 é o "tamanho" total do mundo
+        if (teclas["KeyD"]) {
             player.x += player.velocidade;
             player.direcao = "direita";
         }
 
-        // Faz a câmera seguir o player suavemente
-        cameraX = player.x - canvas.width / 4;
+        // Câmera segue o jogador
+        cameraX = player.x - 150; 
 
+        // Pulo
         if ((teclas["KeyW"] || teclas["Space"]) && player.noChao) {
             player.velY = player.pulo;
             player.noChao = false;
@@ -97,53 +100,61 @@ function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (estadoAtual === "TELA_INICIAL") {
+        // Fundo escuro na tela inicial
+        ctx.fillStyle = "#050510";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "white";
         ctx.font = "40px 'Courier New', monospace";
         ctx.textAlign = "center";
-        ctx.fillText("NOME DO SEU RPG", canvas.width / 2, 150);
+        ctx.fillText("NOME DO SEU RPG", canvas.width / 2, 180);
     } 
     
-    else if (estadoAtual === "DIALOGO") {
-        ctx.fillStyle = dialogo.caixa.corBorda;
-        ctx.fillRect(dialogo.caixa.x - 4, dialogo.caixa.y - 4, dialogo.caixa.largura + 8, dialogo.caixa.altura + 8);
-        ctx.fillStyle = dialogo.caixa.corFundo;
-        ctx.fillRect(dialogo.caixa.x, dialogo.caixa.y, dialogo.caixa.largura, dialogo.caixa.altura);
-        ctx.fillStyle = "white";
-        ctx.font = "20px 'Courier New', monospace";
-        ctx.textAlign = "left";
-        ctx.fillText(dialogo.texto[dialogo.indiceAtual], dialogo.caixa.x + 20, dialogo.caixa.y + 40);
-    } 
-    
-    else if (estadoAtual === "JOGANDO") {
-        // --- DESENHO DO FUNDO (PARALLAX) ---
-        // Multiplicamos cameraX por 0.2 para o fundo mover mais devagar que o player
-        let parallaxX = -(cameraX * 0.2) % canvas.width;
+    else if (estadoAtual === "DIALOGO" || estadoAtual === "JOGANDO") {
         
-        // Desenha a imagem duas vezes para criar um loop infinito no fundo
-        ctx.drawImage(imagemFundo, parallaxX, 0, canvas.width, canvas.height);
-        ctx.drawImage(imagemFundo, parallaxX + canvas.width, 0, canvas.width, canvas.height);
+        // --- EFEITO PARALLAX ---
+        // O fundo se move a 20% da velocidade da câmera (cameraX * 0.2)
+        // O operador % faz com que a imagem se repita infinitamente
+        let deslizeFundo = -(cameraX * 0.2) % canvas.width;
 
-        // --- DESENHO DO MUNDO RELATIVO À CÂMERA ---
-        ctx.save();
-        ctx.translate(-cameraX, 0); // Tudo desenhado após isso se move com a câmera
+        ctx.drawImage(fundoCidade, deslizeFundo, 0, canvas.width, canvas.height);
+        ctx.drawImage(fundoCidade, deslizeFundo + canvas.width, 0, canvas.width, canvas.height);
+        ctx.drawImage(fundoCidade, deslizeFundo - canvas.width, 0, canvas.width, canvas.height);
 
-        // Chão (desenhado comprido para o player andar)
-        ctx.fillStyle = "#111";
-        ctx.fillRect(0, chaoY, 3000, canvas.height - chaoY);
-
-        // Player
-        ctx.fillStyle = player.cor;
-        ctx.fillRect(player.x, player.y, player.largura, player.altura);
-
-        // Olhos
-        ctx.fillStyle = "white";
-        if (player.direcao === "direita") {
-            ctx.fillRect(player.x + 25, player.y + 10, 8, 8);
-        } else {
-            ctx.fillRect(player.x + 7, player.y + 10, 8, 8);
+        if (estadoAtual === "DIALOGO") {
+            // Desenha a caixa de diálogo sobre o fundo
+            ctx.fillStyle = dialogo.caixa.corBorda;
+            ctx.fillRect(dialogo.caixa.x - 4, dialogo.caixa.y - 4, dialogo.caixa.largura + 8, dialogo.caixa.altura + 8);
+            ctx.fillStyle = dialogo.caixa.corFundo;
+            ctx.fillRect(dialogo.caixa.x, dialogo.caixa.y, dialogo.caixa.largura, dialogo.caixa.altura);
+            ctx.fillStyle = "white";
+            ctx.font = "20px 'Courier New', monospace";
+            ctx.textAlign = "left";
+            ctx.fillText(dialogo.texto[dialogo.indiceAtual], dialogo.caixa.x + 20, dialogo.caixa.y + 40);
         }
 
-        ctx.restore(); // Finaliza o movimento da câmera
+        if (estadoAtual === "JOGANDO") {
+            ctx.save();
+            ctx.translate(-cameraX, 0); // Move o mundo
+
+            // Chão infinito (ou bem longo)
+            ctx.fillStyle = "rgba(20, 20, 40, 0.8)";
+            ctx.fillRect(cameraX, chaoY, canvas.width, canvas.height - chaoY);
+            
+            // Uma linha de luz no topo do chão para destacar
+            ctx.fillStyle = "#4444ff";
+            ctx.fillRect(cameraX, chaoY, canvas.width, 2);
+
+            // Player
+            ctx.fillStyle = player.cor;
+            ctx.fillRect(player.x, player.y, player.largura, player.altura);
+
+            // Olhos
+            ctx.fillStyle = "white";
+            let olhoX = (player.direcao === "direita") ? player.x + 25 : player.x + 7;
+            ctx.fillRect(olhoX, player.y + 10, 8, 8);
+
+            ctx.restore();
+        }
     }
 }
 
