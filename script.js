@@ -2,7 +2,7 @@ const canvas = document.getElementById("jogoCanvas");
 const ctx = canvas.getContext("2d");
 const btnStart = document.getElementById("btnStart");
 
-// --- CONFIGURAÇÕES DO JOGO (Centralizando os "números mágicos") ---
+// --- CONFIGURAÇÕES DO JOGO ---
 const CONFIG = {
     LARGURA_CANVAS: 800,
     ALTURA_CANVAS: 400,
@@ -10,7 +10,7 @@ const CONFIG = {
     CHAO_Y: 385,
     VELOCIDADE_JOGADOR: 5,
     FORCA_PULO: -14,
-    LARGURA_FUNDO: 1200,
+    LARGURA_FUNDO: 900, // Ajustado para a proporção da nova imagem
     FATOR_PARALLAX: 0.4
 };
 
@@ -19,11 +19,11 @@ canvas.height = CONFIG.ALTURA_CANVAS;
 
 // --- CARREGAMENTO DE ASSETS ---
 const fundoCidade = new Image();
-fundoCidade.src = "https://img.freepik.com/premium-vector/neon-illustration-city-night_21939621.jpg";
+// Atualizado para a nova imagem que você enviou:
+fundoCidade.src = "https://img.magnific.com/premium-vector/neon-illustration-city-night_456052-3.jpg";
 
-// Só inicia o loop quando a imagem carregar
 fundoCidade.onload = () => {
-    console.log("Assets carregados. Iniciando engine...");
+    console.log("Nova cidade carregada!");
     atualizar();
 };
 
@@ -31,7 +31,7 @@ fundoCidade.onload = () => {
 let estadoAtual = "TELA_INICIAL";
 let cameraX = 0;
 const teclas = {};
-const inimigos = []; // Array para guardar obstáculos
+const inimigos = [];
 
 const player = {
     x: 100,
@@ -56,18 +56,16 @@ const dialogo = {
 // --- FUNÇÕES DE APOIO ---
 
 function criarInimigo() {
-    // Cria um obstáculo à frente da câmera
     const spawnX = cameraX + canvas.width + Math.random() * 500;
     inimigos.push({
         x: spawnX,
         y: CONFIG.CHAO_Y - 30,
         largura: 30,
         altura: 30,
-        cor: "#ff0055" // Rosa neon para contraste
+        cor: "#ff0055" 
     });
 }
 
-// Verifica colisão retangular simples
 function verificarColisao(a, b) {
     return a.x < b.x + b.largura &&
            a.x + a.largura > b.x &&
@@ -82,7 +80,6 @@ window.addEventListener("keydown", (e) => {
         dialogo.indiceAtual++;
         if (dialogo.indiceAtual >= dialogo.texto.length) {
             estadoAtual = "JOGANDO";
-            // Começa a gerar inimigos a cada 2 segundos
             setInterval(criarInimigo, 2000);
         }
     }
@@ -98,7 +95,6 @@ btnStart.addEventListener("click", () => {
 
 function atualizar() {
     if (estadoAtual === "JOGANDO") {
-        // Movimentação
         if (teclas["KeyA"] && player.x > 0) {
             player.x -= CONFIG.VELOCIDADE_JOGADOR;
             player.direcao = "esquerda";
@@ -108,13 +104,11 @@ function atualizar() {
             player.direcao = "direita";
         }
 
-        // Pulo
         if ((teclas["KeyW"] || teclas["Space"]) && player.noChao) {
             player.velY = CONFIG.FORCA_PULO;
             player.noChao = false;
         }
 
-        // Física e Gravidade
         player.velY += CONFIG.GRAVIDADE;
         player.y += player.velY;
 
@@ -124,16 +118,15 @@ function atualizar() {
             player.noChao = true;
         }
 
-        // Câmera (segue o player)
         cameraX = Math.max(0, player.x - 150);
 
-        // Atualizar inimigos e conferir colisão
         inimigos.forEach((ini, index) => {
             if (verificarColisao(player, ini)) {
-                console.log("Game Over!");
-                // Aqui você poderia resetar o jogo ou mudar o estado
+                // Efeito simples de Game Over (reseta posição)
+                player.x = 100;
+                cameraX = 0;
+                console.log("Colisão detectada!");
             }
-            // Remove inimigos que ficaram muito para trás para poupar memória
             if (ini.x < cameraX - 100) inimigos.splice(index, 1);
         });
     }
@@ -155,11 +148,13 @@ function desenhar() {
     } 
     
     else if (estadoAtual === "DIALOGO" || estadoAtual === "JOGANDO") {
-        // --- DESENHO DO FUNDO (PARALLAX) ---
+        // --- DESENHO DO NOVO FUNDO (PARALLAX) ---
         let deslizeFundo = -(cameraX * CONFIG.FATOR_PARALLAX) % CONFIG.LARGURA_FUNDO;
         
+        // Desenhamos a imagem três vezes para garantir que não apareçam espaços vazios no loop
         ctx.drawImage(fundoCidade, deslizeFundo, 0, CONFIG.LARGURA_FUNDO, canvas.height);
         ctx.drawImage(fundoCidade, deslizeFundo + CONFIG.LARGURA_FUNDO, 0, CONFIG.LARGURA_FUNDO, canvas.height);
+        ctx.drawImage(fundoCidade, deslizeFundo - CONFIG.LARGURA_FUNDO, 0, CONFIG.LARGURA_FUNDO, canvas.height);
 
         ctx.save();
         ctx.translate(-cameraX, 0);
@@ -179,7 +174,6 @@ function desenhar() {
             ctx.fillStyle = player.cor;
             ctx.fillRect(player.x, player.y, player.largura, player.altura);
             
-            // Olhos
             ctx.shadowBlur = 0;
             ctx.fillStyle = "white";
             let olhoX = (player.direcao === "direita") ? player.x + player.largura - 12 : player.x + 4;
@@ -188,7 +182,6 @@ function desenhar() {
 
         ctx.restore();
 
-        // --- UI DE DIÁLOGO ---
         if (estadoAtual === "DIALOGO") {
             desenharCaixaDialogo();
         }
