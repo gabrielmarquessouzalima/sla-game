@@ -154,4 +154,4 @@ function desenhar() {
 }
 
 // Inicia o loop
-atualizar();
+atualizar();   
