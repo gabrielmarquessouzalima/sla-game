@@ -7,19 +7,20 @@ const CONFIG = {
     LARGURA_CANVAS: 800,
     ALTURA_CANVAS: 400,
     GRAVIDADE: 0.7,
-    // Ajustado para o pé do boneco tocar a estrada da foto
-    CHAO_Y: 345, 
+    // Ajustado para o pé do boneco tocar a base da imagem panorâmica
+    CHAO_Y: 360, 
     VELOCIDADE_JOGADOR: 5,
     FORCA_PULO: -12,
-    LARGURA_FUNDO: 1200, 
-    FATOR_PARALLAX: 0.6
+    LARGURA_FUNDO: 1600, // Imagem de panorama costuma ser bem larga
+    FATOR_PARALLAX: 0.5
 };
 
 canvas.width = CONFIG.LARGURA_CANVAS;
 canvas.height = CONFIG.ALTURA_CANVAS;
 
 const fundoCidade = new Image();
-fundoCidade.src = "https://img.magnific.com/premium-vector/neon-illustration-city-night_456052-3.jpg";
+// Utilizando o link direto da imagem de panorama estilo Night City
+fundoCidade.src = "https://i.pinimg.com/originals/2d/3a/05/2d3a0503080e5672906e5720e6f5193c.jpg";
 
 fundoCidade.onload = () => atualizar();
 
@@ -40,9 +41,9 @@ const player = {
 
 const dialogo = {
     texto: [
-        "A metrópole nunca dorme...",
-        "Caminhando pelas ruas da Neo-Cidade.",
-        "Use A e D para explorar, e W para pular."
+        "O horizonte de neon é infinito...",
+        "Explorando o panorama da metrópole.",
+        "Siga em frente para ver a cidade toda."
     ],
     indiceAtual: 0,
 };
@@ -82,7 +83,6 @@ function atualizar() {
         player.velY += CONFIG.GRAVIDADE;
         player.y += player.velY;
 
-        // Colisão invisível com a estrada da imagem
         if (player.y + player.altura >= CONFIG.CHAO_Y) {
             player.y = CONFIG.CHAO_Y - player.altura;
             player.velY = 0;
@@ -104,26 +104,22 @@ function desenhar() {
         ctx.fillStyle = "#00f2ff";
         ctx.font = "40px 'Courier New', monospace";
         ctx.textAlign = "center";
-        ctx.fillText("NEON CITY EXPLORER", canvas.width / 2, 180);
+        ctx.fillText("NEON PANORAMA", canvas.width / 2, 180);
     } 
     
     else {
-        // --- DESENHO DO FUNDO (A RUA DA IMAGEM) ---
-        let zoomScale = 1.1; 
-        let alturaZoom = canvas.height * zoomScale;
-        let offsetTop = -(alturaZoom - canvas.height) / 2;
-
+        // --- DESENHO DO FUNDO (PANORAMA COMPLETO) ---
         let deslizeFundo = -(cameraX * CONFIG.FATOR_PARALLAX) % CONFIG.LARGURA_FUNDO;
 
-        // Renderiza apenas a imagem (sem caminhos extras)
-        ctx.drawImage(fundoCidade, deslizeFundo, offsetTop, CONFIG.LARGURA_FUNDO, alturaZoom);
-        ctx.drawImage(fundoCidade, deslizeFundo + CONFIG.LARGURA_FUNDO, offsetTop, CONFIG.LARGURA_FUNDO, alturaZoom);
-        ctx.drawImage(fundoCidade, deslizeFundo - CONFIG.LARGURA_FUNDO, offsetTop, CONFIG.LARGURA_FUNDO, alturaZoom);
+        // Desenhamos a imagem completa sem cortes laterais (stretch para o canvas)
+        ctx.drawImage(fundoCidade, deslizeFundo, 0, CONFIG.LARGURA_FUNDO, canvas.height);
+        ctx.drawImage(fundoCidade, deslizeFundo + CONFIG.LARGURA_FUNDO, 0, CONFIG.LARGURA_FUNDO, canvas.height);
+        ctx.drawImage(fundoCidade, deslizeFundo - CONFIG.LARGURA_FUNDO, 0, CONFIG.LARGURA_FUNDO, canvas.height);
 
         ctx.save();
         ctx.translate(-cameraX, 0);
 
-        // --- DESENHO DO JOGADOR ---
+        // --- JOGADOR ---
         if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO") {
             ctx.shadowBlur = 15;
             ctx.shadowColor = player.cor;
@@ -148,7 +144,7 @@ function desenharCaixaDialogo() {
     const cx = 50, cy = 40, cw = 700, ch = 80;
     ctx.fillStyle = "#00f2ff";
     ctx.fillRect(cx - 1, cy - 1, cw + 2, ch + 2);
-    ctx.fillStyle = "rgba(10, 5, 25, 0.85)";
+    ctx.fillStyle = "rgba(10, 5, 25, 0.9)";
     ctx.fillRect(cx, cy, cw, ch);
     ctx.fillStyle = "white";
     ctx.font = "16px 'Courier New', monospace";
