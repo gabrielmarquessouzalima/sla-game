@@ -2,16 +2,16 @@ const canvas = document.getElementById("jogoCanvas");
 const ctx = canvas.getContext("2d");
 const btnStart = document.getElementById("btnStart");
 
-// --- CONFIGURAÇÕES DE ZOOM E AMBIENTE ---
+// --- CONFIGURAÇÕES DE AMBIENTE ---
 const CONFIG = {
     LARGURA_CANVAS: 800,
     ALTURA_CANVAS: 400,
     GRAVIDADE: 0.7,
-    // CHAO_Y ajustado para a linha da calçada com a imagem ampliada
-    CHAO_Y: 335, 
+    // Ajustado para o pé do boneco tocar a estrada da foto
+    CHAO_Y: 345, 
     VELOCIDADE_JOGADOR: 5,
     FORCA_PULO: -12,
-    LARGURA_FUNDO: 1200, // Largura virtual para o parallax
+    LARGURA_FUNDO: 1200, 
     FATOR_PARALLAX: 0.6
 };
 
@@ -41,8 +41,8 @@ const player = {
 const dialogo = {
     texto: [
         "A metrópole nunca dorme...",
-        "Caminhando pelo limite da Neo-Cidade.",
-        "Sinta a energia do neon nos seus pés."
+        "Caminhando pelas ruas da Neo-Cidade.",
+        "Use A e D para explorar, e W para pular."
     ],
     indiceAtual: 0,
 };
@@ -82,6 +82,7 @@ function atualizar() {
         player.velY += CONFIG.GRAVIDADE;
         player.y += player.velY;
 
+        // Colisão invisível com a estrada da imagem
         if (player.y + player.altura >= CONFIG.CHAO_Y) {
             player.y = CONFIG.CHAO_Y - player.altura;
             player.velY = 0;
@@ -107,15 +108,14 @@ function desenhar() {
     } 
     
     else {
-        // --- DESENHO DO FUNDO COM EFEITO DE ZOOM ---
-        // Aumentamos a altura desenhada para dar o efeito de proximidade
-        let zoomScale = 1.2; 
+        // --- DESENHO DO FUNDO (A RUA DA IMAGEM) ---
+        let zoomScale = 1.1; 
         let alturaZoom = canvas.height * zoomScale;
-        let offsetTop = -(alturaZoom - canvas.height) / 2; // Centraliza o zoom verticalmente
+        let offsetTop = -(alturaZoom - canvas.height) / 2;
 
         let deslizeFundo = -(cameraX * CONFIG.FATOR_PARALLAX) % CONFIG.LARGURA_FUNDO;
 
-        // Desenhando o fundo com zoom aplicado
+        // Renderiza apenas a imagem (sem caminhos extras)
         ctx.drawImage(fundoCidade, deslizeFundo, offsetTop, CONFIG.LARGURA_FUNDO, alturaZoom);
         ctx.drawImage(fundoCidade, deslizeFundo + CONFIG.LARGURA_FUNDO, offsetTop, CONFIG.LARGURA_FUNDO, alturaZoom);
         ctx.drawImage(fundoCidade, deslizeFundo - CONFIG.LARGURA_FUNDO, offsetTop, CONFIG.LARGURA_FUNDO, alturaZoom);
@@ -125,7 +125,7 @@ function desenhar() {
 
         // --- DESENHO DO JOGADOR ---
         if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO") {
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = 15;
             ctx.shadowColor = player.cor;
             ctx.fillStyle = player.cor;
             ctx.fillRect(player.x, player.y, player.largura, player.altura);
@@ -145,15 +145,13 @@ function desenhar() {
 }
 
 function desenharCaixaDialogo() {
-    const cx = 50, cy = 40, cw = 700, ch = 90;
+    const cx = 50, cy = 40, cw = 700, ch = 80;
     ctx.fillStyle = "#00f2ff";
-    ctx.fillRect(cx - 2, cy - 2, cw + 4, ch + 4);
-    ctx.fillStyle = "rgba(10, 5, 25, 0.9)";
+    ctx.fillRect(cx - 1, cy - 1, cw + 2, ch + 2);
+    ctx.fillStyle = "rgba(10, 5, 25, 0.85)";
     ctx.fillRect(cx, cy, cw, ch);
     ctx.fillStyle = "white";
-    ctx.font = "18px 'Courier New', monospace";
+    ctx.font = "16px 'Courier New', monospace";
     ctx.textAlign = "left";
-    ctx.fillText(dialogo.texto[dialogo.indiceAtual], cx + 20, cy + 40);
-    ctx.font = "11px Arial";
-    ctx.fillText("ESPAÇO para continuar...", cx + 20, cy + 75);
+    ctx.fillText(dialogo.texto[dialogo.indiceAtual], cx + 20, cy + 45);
 }
