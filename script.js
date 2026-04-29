@@ -6,7 +6,7 @@ canvas.width = 800;
 canvas.height = 400;
 
 // Máquina de Estados do Jogo
-let estadoAtual = "TELA_INICIAL"; // Estados: "TELA_INICIAL", "DIALOGO", "JOGANDO"
+let estadoAtual = "TELA_INICIAL"; 
 
 const player = {
     x: 50,
@@ -38,20 +38,17 @@ const dialogo = {
         y: 250,
         largura: 700,
         altura: 120,
-        corFundo: "#000033", // Azul bem escuro
-        corBorda: "#00001a"  // Mais escuro ainda
+        corFundo: "#000033",
+        corBorda: "#00001a" 
     }
 };
 
-// Captura as teclas
 window.addEventListener("keydown", (e) => {
     teclas[e.code] = true;
-
-    // Se estiver no diálogo e apertar Espaço/Enter, avança o texto
     if (estadoAtual === "DIALOGO" && (e.code === "Space" || e.code === "Enter")) {
         dialogo.indiceAtual++;
         if (dialogo.indiceAtual >= dialogo.texto.length) {
-            estadoAtual = "JOGANDO"; // Se acabou o texto, vai pro jogo!
+            estadoAtual = "JOGANDO"; 
         }
     }
 });
@@ -60,16 +57,13 @@ window.addEventListener("keyup", (e) => {
     teclas[e.code] = false;
 });
 
-// Evento do Botão Start
 btnStart.addEventListener("click", () => {
     estadoAtual = "DIALOGO";
-    btnStart.style.display = "none"; // Esconde o botão
+    btnStart.style.display = "none"; 
 });
-
 
 function atualizar() {
     if (estadoAtual === "JOGANDO") {
-        // Movimentação A e D
         if (teclas["KeyA"] && player.x > 0) {
             player.x -= player.velocidade;
             player.direcao = "esquerda";
@@ -79,17 +73,14 @@ function atualizar() {
             player.direcao = "direita";
         }
 
-        // Pulo com W ou Espaço
         if ((teclas["KeyW"] || teclas["Space"]) && player.noChao) {
             player.velY = player.pulo;
             player.noChao = false;
         }
 
-        // Física
         player.velY += player.gravidade;
         player.y += player.velY;
 
-        // Colisão Chão
         if (player.y + player.altura >= chaoY) {
             player.y = chaoY - player.altura;
             player.velY = 0;
@@ -105,7 +96,6 @@ function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (estadoAtual === "TELA_INICIAL") {
-        // Estética Undertale/OneShot: Letras pixeladas ou espaçadas
         ctx.fillStyle = "white";
         ctx.font = "40px 'Courier New', monospace";
         ctx.textAlign = "center";
@@ -113,15 +103,12 @@ function desenhar() {
     } 
     
     else if (estadoAtual === "DIALOGO") {
-        // Desenha a Borda da Caixa
         ctx.fillStyle = dialogo.caixa.corBorda;
         ctx.fillRect(dialogo.caixa.x - 4, dialogo.caixa.y - 4, dialogo.caixa.largura + 8, dialogo.caixa.altura + 8);
 
-        // Desenha o Fundo da Caixa (Azul escuro)
         ctx.fillStyle = dialogo.caixa.corFundo;
         ctx.fillRect(dialogo.caixa.x, dialogo.caixa.y, dialogo.caixa.largura, dialogo.caixa.altura);
 
-        // Desenha o Texto
         ctx.fillStyle = "white";
         ctx.font = "20px 'Courier New', monospace";
         ctx.textAlign = "left";
@@ -133,7 +120,14 @@ function desenhar() {
     } 
     
     else if (estadoAtual === "JOGANDO") {
-        ctx.textAlign = "left"; // Reseta o alinhamento do texto
+        ctx.textAlign = "left"; 
+
+        // --- EXIBIÇÃO DE COORDENADAS ---
+        ctx.fillStyle = "rgba(255, 255, 255, 0.7)"; // Branco semi-transparente
+        ctx.font = "16px 'Courier New', monospace";
+        // Arredondamos os valores para não aparecerem decimais gigantes
+        ctx.fillText(`X: ${Math.floor(player.x)}  Y: ${Math.floor(player.y)}`, 20, 30);
+        // -------------------------------
 
         // Chão
         ctx.fillStyle = "#333";
@@ -143,7 +137,7 @@ function desenhar() {
         ctx.fillStyle = player.cor;
         ctx.fillRect(player.x, player.y, player.largura, player.altura);
 
-        // Olhos (O Flip)
+        // Olhos
         ctx.fillStyle = "white";
         if (player.direcao === "direita") {
             ctx.fillRect(player.x + 25, player.y + 10, 8, 8);
@@ -153,5 +147,4 @@ function desenhar() {
     }
 }
 
-// Inicia o loop
 atualizar();
