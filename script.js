@@ -2,17 +2,17 @@ const canvas = document.getElementById("jogoCanvas");
 const ctx = canvas.getContext("2d");
 const btnStart = document.getElementById("btnStart");
 
-// --- CONFIGURAÇÕES DE PERSPECTIVA ---
+// --- CONFIGURAÇÕES DE ZOOM E AMBIENTE ---
 const CONFIG = {
     LARGURA_CANVAS: 800,
     ALTURA_CANVAS: 400,
-    GRAVIDADE: 0.8,
-    // Ajustado para 345 para o personagem pisar na "estrada" da imagem
-    CHAO_Y: 345, 
+    GRAVIDADE: 0.7,
+    // CHAO_Y ajustado para a linha da calçada com a imagem ampliada
+    CHAO_Y: 335, 
     VELOCIDADE_JOGADOR: 5,
     FORCA_PULO: -12,
-    LARGURA_FUNDO: 900,
-    FATOR_PARALLAX: 0.5
+    LARGURA_FUNDO: 1200, // Largura virtual para o parallax
+    FATOR_PARALLAX: 0.6
 };
 
 canvas.width = CONFIG.LARGURA_CANVAS;
@@ -26,14 +26,12 @@ fundoCidade.onload = () => atualizar();
 let estadoAtual = "TELA_INICIAL";
 let cameraX = 0;
 const teclas = {};
-const inimigos = [];
 
 const player = {
     x: 100,
     y: 0,
-    // Personagem um pouco menor (28px) para combinar com a distância da estrada
-    largura: 28,
-    altura: 28,
+    largura: 30,
+    altura: 30,
     cor: "#00f2ff",
     velY: 0,
     noChao: false,
@@ -42,37 +40,20 @@ const player = {
 
 const dialogo = {
     texto: [
-        "A estrada de neon parece não ter fim...",
-        "Cuidado com os cubos de energia instável!",
-        "Use A, D e W para sobreviver à noite."
+        "A metrópole nunca dorme...",
+        "Caminhando pelo limite da Neo-Cidade.",
+        "Sinta a energia do neon nos seus pés."
     ],
     indiceAtual: 0,
 };
 
-function criarInimigo() {
-    const spawnX = cameraX + canvas.width + Math.random() * 500;
-    inimigos.push({
-        x: spawnX,
-        // Inimigos também nascem na altura da estrada
-        y: CONFIG.CHAO_Y - 25,
-        largura: 25,
-        altura: 25,
-        cor: "#ff0055" 
-    });
-}
-
-function verificarColisao(a, b) {
-    return a.x < b.x + b.largura && a.x + a.largura > b.x &&
-           a.y < b.y + b.altura && a.y + a.altura > b.y;
-}
-
+// --- ENTRADA DE USUÁRIO ---
 window.addEventListener("keydown", (e) => {
     teclas[e.code] = true;
     if (estadoAtual === "DIALOGO" && (e.code === "Space" || e.code === "Enter")) {
         dialogo.indiceAtual++;
         if (dialogo.indiceAtual >= dialogo.texto.length) {
             estadoAtual = "JOGANDO";
-            setInterval(criarInimigo, 2500);
         }
     }
 });
@@ -108,13 +89,6 @@ function atualizar() {
         }
 
         cameraX = Math.max(0, player.x - 150);
-
-        inimigos.forEach((ini, index) => {
-            if (verificarColisao(player, ini)) {
-                player.x = cameraX + 20; // Pequeno "tranco" ao bater
-            }
-            if (ini.x < cameraX - 100) inimigos.splice(index, 1);
-        });
     }
     desenhar();
     requestAnimationFrame(atualizar);
@@ -129,30 +103,29 @@ function desenhar() {
         ctx.fillStyle = "#00f2ff";
         ctx.font = "40px 'Courier New', monospace";
         ctx.textAlign = "center";
-        ctx.fillText("NEON CITY RUNNER", canvas.width / 2, 180);
+        ctx.fillText("NEON CITY EXPLORER", canvas.width / 2, 180);
     } 
     
     else {
-        // --- FUNDO COM PARALLAX ---
+        // --- DESENHO DO FUNDO COM EFEITO DE ZOOM ---
+        // Aumentamos a altura desenhada para dar o efeito de proximidade
+        let zoomScale = 1.2; 
+        let alturaZoom = canvas.height * zoomScale;
+        let offsetTop = -(alturaZoom - canvas.height) / 2; // Centraliza o zoom verticalmente
+
         let deslizeFundo = -(cameraX * CONFIG.FATOR_PARALLAX) % CONFIG.LARGURA_FUNDO;
-        ctx.drawImage(fundoCidade, deslizeFundo, 0, CONFIG.LARGURA_FUNDO, canvas.height);
-        ctx.drawImage(fundoCidade, deslizeFundo + CONFIG.LARGURA_FUNDO, 0, CONFIG.LARGURA_FUNDO, canvas.height);
-        ctx.drawImage(fundoCidade, deslizeFundo - CONFIG.LARGURA_FUNDO, 0, CONFIG.LARGURA_FUNDO, canvas.height);
+
+        // Desenhando o fundo com zoom aplicado
+        ctx.drawImage(fundoCidade, deslizeFundo, offsetTop, CONFIG.LARGURA_FUNDO, alturaZoom);
+        ctx.drawImage(fundoCidade, deslizeFundo + CONFIG.LARGURA_FUNDO, offsetTop, CONFIG.LARGURA_FUNDO, alturaZoom);
+        ctx.drawImage(fundoCidade, deslizeFundo - CONFIG.LARGURA_FUNDO, offsetTop, CONFIG.LARGURA_FUNDO, alturaZoom);
 
         ctx.save();
         ctx.translate(-cameraX, 0);
 
-        // --- INIMIGOS ---
-        inimigos.forEach(ini => {
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = ini.cor;
-            ctx.fillStyle = ini.cor;
-            ctx.fillRect(ini.x, ini.y, ini.largura, ini.altura);
-        });
-
-        // --- JOGADOR ---
+        // --- DESENHO DO JOGADOR ---
         if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO") {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = 20;
             ctx.shadowColor = player.cor;
             ctx.fillStyle = player.cor;
             ctx.fillRect(player.x, player.y, player.largura, player.altura);
@@ -172,7 +145,7 @@ function desenhar() {
 }
 
 function desenharCaixaDialogo() {
-    const cx = 50, cy = 50, cw = 700, ch = 100; // Movi para cima para não tapar a rua
+    const cx = 50, cy = 40, cw = 700, ch = 90;
     ctx.fillStyle = "#00f2ff";
     ctx.fillRect(cx - 2, cy - 2, cw + 4, ch + 4);
     ctx.fillStyle = "rgba(10, 5, 25, 0.9)";
@@ -180,7 +153,7 @@ function desenharCaixaDialogo() {
     ctx.fillStyle = "white";
     ctx.font = "18px 'Courier New', monospace";
     ctx.textAlign = "left";
-    ctx.fillText(dialogo.texto[dialogo.indiceAtual], cx + 20, cy + 45);
-    ctx.font = "12px Arial";
-    ctx.fillText("Pressione ESPAÇO...", cx + 20, cy + 80);
+    ctx.fillText(dialogo.texto[dialogo.indiceAtual], cx + 20, cy + 40);
+    ctx.font = "11px Arial";
+    ctx.fillText("ESPAÇO para continuar...", cx + 20, cy + 75);
 }
