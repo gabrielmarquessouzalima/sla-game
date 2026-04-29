@@ -7,11 +7,11 @@ const CONFIG = {
     LARGURA_CANVAS: 800,
     ALTURA_CANVAS: 400,
     GRAVIDADE: 0.7,
-    // Ajustado para o pé do boneco tocar a base da imagem panorâmica
-    CHAO_Y: 360, 
+    // Ajustado para o boneco ficar no asfalto da imagem panorâmica
+    CHAO_Y: 340, 
     VELOCIDADE_JOGADOR: 5,
     FORCA_PULO: -12,
-    LARGURA_FUNDO: 1600, // Imagem de panorama costuma ser bem larga
+    LARGURA_FUNDO: 1152, // Largura original do sprite para repetição perfeita
     FATOR_PARALLAX: 0.5
 };
 
@@ -19,7 +19,7 @@ canvas.width = CONFIG.LARGURA_CANVAS;
 canvas.height = CONFIG.ALTURA_CANVAS;
 
 const fundoCidade = new Image();
-// Utilizando o link direto da imagem de panorama estilo Night City
+// Link direto da imagem de panorama (camada superior do sprite)
 fundoCidade.src = "https://i.pinimg.com/originals/2d/3a/05/2d3a0503080e5672906e5720e6f5193c.jpg";
 
 fundoCidade.onload = () => atualizar();
@@ -41,14 +41,14 @@ const player = {
 
 const dialogo = {
     texto: [
-        "O horizonte de neon é infinito...",
-        "Explorando o panorama da metrópole.",
-        "Siga em frente para ver a cidade toda."
+        "A metrópole de pixels se estende...",
+        "Você está na passarela superior da cidade.",
+        "Use A e D para explorar este panorama."
     ],
     indiceAtual: 0,
 };
 
-// --- ENTRADA DE USUÁRIO ---
+// --- CONTROLES ---
 window.addEventListener("keydown", (e) => {
     teclas[e.code] = true;
     if (estadoAtual === "DIALOGO" && (e.code === "Space" || e.code === "Enter")) {
@@ -104,14 +104,16 @@ function desenhar() {
         ctx.fillStyle = "#00f2ff";
         ctx.font = "40px 'Courier New', monospace";
         ctx.textAlign = "center";
-        ctx.fillText("NEON PANORAMA", canvas.width / 2, 180);
+        ctx.fillText("PIXEL NIGHT CITY", canvas.width / 2, 180);
     } 
     
     else {
-        // --- DESENHO DO FUNDO (PANORAMA COMPLETO) ---
+        // --- DESENHO DO PANORAMA ---
+        // Ajustamos para desenhar apenas a parte superior do sprite original
         let deslizeFundo = -(cameraX * CONFIG.FATOR_PARALLAX) % CONFIG.LARGURA_FUNDO;
 
-        // Desenhamos a imagem completa sem cortes laterais (stretch para o canvas)
+        // Desenhamos a imagem em loop
+        // Como o sprite original tem várias partes, aqui usamos o topo
         ctx.drawImage(fundoCidade, deslizeFundo, 0, CONFIG.LARGURA_FUNDO, canvas.height);
         ctx.drawImage(fundoCidade, deslizeFundo + CONFIG.LARGURA_FUNDO, 0, CONFIG.LARGURA_FUNDO, canvas.height);
         ctx.drawImage(fundoCidade, deslizeFundo - CONFIG.LARGURA_FUNDO, 0, CONFIG.LARGURA_FUNDO, canvas.height);
