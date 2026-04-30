@@ -8,18 +8,22 @@ canvas.height = 400;
 let estadoAtual = "TELA_INICIAL"; 
 
 const player = {
-    // Ajustado para spawnar no "0,0" visual (chão)
     x: 0, 
-    y: 310, // Posição Y inicial ajustada para o chão (chaoY - altura)
+    y: 310, 
     largura: 40,
     altura: 40,
     cor: "#00aaff",
-    velocidade: 5,
+    velocidade: 6,
     velY: 0,
     gravidade: 0.8,
     pulo: -15,
     noChao: false,
     direcao: "direita" 
+};
+
+// --- Sistema de Câmera ---
+const camera = {
+    x: 0
 };
 
 const chaoY = 350;
@@ -28,17 +32,17 @@ const teclas = {};
 // --- Configurações do Parallax ---
 const parallax = {
     camadas: [
-        { x: 0, velocidade: 0.5, cor: "#050515", alturaBase: 180, larguraPredio: 100, espacamento: 120 },
-        { x: 0, velocidade: 1.2, cor: "#0d0d25", alturaBase: 120, larguraPredio: 80,  espacamento: 100 },
-        { x: 0, velocidade: 2.5, cor: "#161630", alturaBase: 80,  larguraPredio: 60,  espacamento: 90 }
+        { x: 0, velocidade: 0.1, cor: "#050515", alturaBase: 180, larguraPredio: 100, espacamento: 120 },
+        { x: 0, velocidade: 0.4, cor: "#0d0d25", alturaBase: 120, larguraPredio: 80,  espacamento: 100 },
+        { x: 0, velocidade: 0.7, cor: "#161630", alturaBase: 80,  larguraPredio: 60,  espacamento: 90 }
     ]
 };
 
 const dialogo = {
     texto: [
         "Desperte...",
-        "Você está em um mundo estranho agora.",
-        "Use A e D para andar, e W para pular."
+        "O mundo agora é vasto e sem fim.",
+        "A coordenada X agora mostrará o quanto você viajou."
     ],
     indiceAtual: 0,
     caixa: { x: 50, y: 250, largura: 700, altura: 120, corFundo: "#000033", corBorda: "#00001a" }
@@ -63,42 +67,52 @@ function desenharCenario() {
     ctx.fillStyle = "#00000a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Estrelas com um leve movimento parallax
     ctx.fillStyle = "white";
     for(let i = 0; i < 40; i++) {
-        let x = (i * 137) % canvas.width;
+        let x = ((i * 137) - (camera.x * 0.05)) % canvas.width;
+        if (x < 0) x += canvas.width;
         let y = (i * 243) % 200;
         ctx.fillRect(x, y, 1, 1);
     }
 
     parallax.camadas.forEach((camada, index) => {
         ctx.fillStyle = camada.cor;
-        let padraoLargura = camada.espacamento * 10; 
-        let offsetX = camada.x % padraoLargura;
+        let espacoTotal = camada.espacamento;
+        
+        // Calculamos o deslocamento com base na câmera e na velocidade da camada
+        let scrollX = (camera.x * camada.velocidade) % espacoTotal;
 
-        for (let j = -1; j < 2; j++) { 
-            for (let i = 0; i < 10; i++) {
-                let xPos = (j * padraoLargura) + (i * camada.espacamento) + offsetX;
-                if (xPos + camada.larguraPredio > 0 && xPos < canvas.width) {
-                    let h = camada.alturaBase + (Math.abs(Math.sin(i + index)) * 50);
-                    ctx.fillRect(xPos, chaoY - h, camada.larguraPredio, h);
-                }
-            }
+        // Desenha prédios suficientes para cobrir a tela
+        for (let i = -1; i < (canvas.width / espacoTotal) + 2; i++) {
+            let xPos = (i * espacoTotal) - scrollX;
+            
+            // Usamos o índice real do prédio no mundo para manter a altura consistente
+            let indicePredioMundo = Math.floor((camera.x * camada.velocidade) / espacoTotal) + i;
+            let h = camada.alturaBase + (Math.abs(Math.sin(indicePredioMundo + index)) * 60);
+            
+            ctx.fillRect(xPos, chaoY - h, camada.larguraPredio, h);
         }
     });
 }
 
 function atualizar() {
     if (estadoAtual === "JOGANDO") {
-        if (teclas["KeyA"] && player.x > 0) {
+        // Movimento do Player (Sem limites na direita agora!)
+        if (teclas["KeyA"]) {
             player.x -= player.velocidade;
             player.direcao = "esquerda";
-            parallax.camadas.forEach(c => c.x += c.velocidade);
+            if (player.x < 0) player.x = 0; // Limite da borda esquerda
         }
-        if (teclas["KeyD"] && player.x < canvas.width - player.largura) {
+        if (teclas["KeyD"]) {
             player.x += player.velocidade;
             player.direcao = "direita";
-            parallax.camadas.forEach(c => c.x -= c.velocidade);
         }
+
+        // --- Lógica da Câmera ---
+        // A câmera segue o player, mantendo-o um pouco à esquerda do centro
+        camera.x = player.x - 150; 
+        if (camera.x < 0) camera.x = 0;
 
         if ((teclas["KeyW"] || teclas["Space"]) && player.noChao) {
             player.velY = player.pulo;
@@ -127,7 +141,7 @@ function desenhar() {
         ctx.fillStyle = "white";
         ctx.font = "40px 'Courier New', monospace";
         ctx.textAlign = "center";
-        ctx.fillText("NOME DO SEU RPG", canvas.width / 2, 150);
+        ctx.fillText("CIDADE INFINITA", canvas.width / 2, 150);
     } 
     else if (estadoAtual === "DIALOGO") {
         ctx.fillStyle = "#00000a";
@@ -143,26 +157,29 @@ function desenhar() {
     } 
     else if (estadoAtual === "JOGANDO") {
         desenharCenario();
+
+        // Chão (também precisa de scroll)
         ctx.fillStyle = "#111";
         ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
 
-        // --- LÓGICA DE COORDENADAS REDUZIDAS ---
-        // Mapeia X de 0-760 para 0-100
-        let displayX = Math.floor((player.x / (canvas.width - player.largura)) * 100);
-        // Mapeia Y de forma que o chão seja 0 e o topo seja 100 (invertido para ser intuitivo)
+        // Coordenadas Reduzidas (Escala: cada 1000 pixels de caminhada = 100 unidades)
+        let displayX = Math.floor(player.x / 10); 
         let displayY = Math.floor(((chaoY - player.altura - player.y) / (chaoY - player.altura)) * 100);
 
         ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
         ctx.font = "16px 'Courier New', monospace";
         ctx.textAlign = "left";
         ctx.fillText(`COORD X: ${displayX}  COORD Y: ${displayY}`, 20, 30);
-        // ---------------------------------------
+
+        // Player (Desenhado em relação à câmera)
+        let playerRelativoX = player.x - camera.x;
 
         ctx.fillStyle = player.cor;
-        ctx.fillRect(player.x, player.y, player.largura, player.altura);
+        ctx.fillRect(playerRelativoX, player.y, player.largura, player.altura);
 
+        // Olhos
         ctx.fillStyle = "white";
-        let olhoX = player.direcao === "direita" ? player.x + 25 : player.x + 7;
+        let olhoX = player.direcao === "direita" ? playerRelativoX + 25 : playerRelativoX + 7;
         ctx.fillRect(olhoX, player.y + 10, 8, 8);
     }
 }
