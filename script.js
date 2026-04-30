@@ -8,8 +8,9 @@ canvas.height = 400;
 let estadoAtual = "TELA_INICIAL"; 
 
 const player = {
-    x: 50,
-    y: 300,
+    // Ajustado para spawnar no "0,0" visual (chão)
+    x: 0, 
+    y: 310, // Posição Y inicial ajustada para o chão (chaoY - altura)
     largura: 40,
     altura: 40,
     cor: "#00aaff",
@@ -24,7 +25,7 @@ const player = {
 const chaoY = 350;
 const teclas = {};
 
-// --- Configurações do Parallax (Corrigido para Loop Infinito) ---
+// --- Configurações do Parallax ---
 const parallax = {
     camadas: [
         { x: 0, velocidade: 0.5, cor: "#050515", alturaBase: 180, larguraPredio: 100, espacamento: 120 },
@@ -58,13 +59,10 @@ btnStart.addEventListener("click", () => {
     btnStart.style.display = "none"; 
 });
 
-// --- Função de Cenário com Loop Infinito sem Saltos ---
 function desenharCenario() {
-    // Fundo do céu
     ctx.fillStyle = "#00000a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Estrelas fixas
     ctx.fillStyle = "white";
     for(let i = 0; i < 40; i++) {
         let x = (i * 137) % canvas.width;
@@ -74,28 +72,15 @@ function desenharCenario() {
 
     parallax.camadas.forEach((camada, index) => {
         ctx.fillStyle = camada.cor;
-        
-        // O segredo do loop infinito: usar o resto da divisão pela distância total do padrão
-        let padraoLargura = camada.espacamento * 10; // Definimos um bloco de 10 prédios como padrão
+        let padraoLargura = camada.espacamento * 10; 
         let offsetX = camada.x % padraoLargura;
 
-        // Desenhamos o padrão duas vezes (uma seguida da outra) para garantir que sempre haja preenchimento
         for (let j = -1; j < 2; j++) { 
             for (let i = 0; i < 10; i++) {
                 let xPos = (j * padraoLargura) + (i * camada.espacamento) + offsetX;
-                
-                // Só desenha se estiver visível ou próximo da tela para performance
                 if (xPos + camada.larguraPredio > 0 && xPos < canvas.width) {
                     let h = camada.alturaBase + (Math.abs(Math.sin(i + index)) * 50);
                     ctx.fillRect(xPos, chaoY - h, camada.larguraPredio, h);
-
-                    // Detalhe de janelas na camada mais próxima
-                    if (index === 2 && i % 2 === 0) {
-                        ctx.fillStyle = "#f1c40f";
-                        ctx.fillRect(xPos + 10, chaoY - h + 20, 4, 4);
-                        ctx.fillRect(xPos + camada.larguraPredio - 15, chaoY - h + 40, 4, 4);
-                        ctx.fillStyle = camada.cor;
-                    }
                 }
             }
         }
@@ -107,13 +92,11 @@ function atualizar() {
         if (teclas["KeyA"] && player.x > 0) {
             player.x -= player.velocidade;
             player.direcao = "esquerda";
-            // Move o cenário para a direita
             parallax.camadas.forEach(c => c.x += c.velocidade);
         }
         if (teclas["KeyD"] && player.x < canvas.width - player.largura) {
             player.x += player.velocidade;
             player.direcao = "direita";
-            // Move o cenário para a esquerda
             parallax.camadas.forEach(c => c.x -= c.velocidade);
         }
 
@@ -131,7 +114,6 @@ function atualizar() {
             player.noChao = true;
         }
     }
-
     desenhar();
     requestAnimationFrame(atualizar);
 }
@@ -158,28 +140,27 @@ function desenhar() {
         ctx.font = "20px 'Courier New', monospace";
         ctx.textAlign = "left";
         ctx.fillText(dialogo.texto[dialogo.indiceAtual], dialogo.caixa.x + 20, dialogo.caixa.y + 40);
-        ctx.font = "14px 'Courier New', monospace";
-        ctx.fillStyle = "#888";
-        ctx.fillText("[Aperte Espaço ou Enter para continuar]", dialogo.caixa.x + 20, dialogo.caixa.y + 100);
     } 
     else if (estadoAtual === "JOGANDO") {
         desenharCenario();
-
-        // Chão
         ctx.fillStyle = "#111";
         ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
 
-        // UI
+        // --- LÓGICA DE COORDENADAS REDUZIDAS ---
+        // Mapeia X de 0-760 para 0-100
+        let displayX = Math.floor((player.x / (canvas.width - player.largura)) * 100);
+        // Mapeia Y de forma que o chão seja 0 e o topo seja 100 (invertido para ser intuitivo)
+        let displayY = Math.floor(((chaoY - player.altura - player.y) / (chaoY - player.altura)) * 100);
+
         ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
         ctx.font = "16px 'Courier New', monospace";
         ctx.textAlign = "left";
-        ctx.fillText(`X: ${Math.floor(player.x)}  Y: ${Math.floor(player.y)}`, 20, 30);
+        ctx.fillText(`COORD X: ${displayX}  COORD Y: ${displayY}`, 20, 30);
+        // ---------------------------------------
 
-        // Player
         ctx.fillStyle = player.cor;
         ctx.fillRect(player.x, player.y, player.largura, player.altura);
 
-        // Olhos
         ctx.fillStyle = "white";
         let olhoX = player.direcao === "direita" ? player.x + 25 : player.x + 7;
         ctx.fillRect(olhoX, player.y + 10, 8, 8);
