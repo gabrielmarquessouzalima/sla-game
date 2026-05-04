@@ -45,7 +45,8 @@ const dialogo = {
         "você se perdeu neste mundo depois daquilo",
         "o odio que você sente...",
         "é inigualavel, um odio sobre você mesmo...",
-        "você se prende em sua propria mente pensando por que fez aquilo...",
+        "você se prende em sua propria mente...",
+        "pensando por que fez aquilo...",
         "mas talvez...",
         "você nunca encontre a resposta..."
     ],
