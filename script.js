@@ -42,7 +42,7 @@ const dialogo = {
     texto: [
         "Desperte...",
         "você não se lembra do que aconteceu la...",
-        "você se perdeu neste mundo depois de que aconteceu aquilo o odio que você sente...",
+        "você se perdeu neste mundo depois de que aconteceu/ aquilo o odio que você sente...",
         "é inigualavel um odio sobre você mesmo...",
         "você se prende em sua propria mente pensando por que fez aquilo...",
         "mas talvez...",
