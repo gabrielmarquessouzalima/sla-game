@@ -41,8 +41,12 @@ const parallax = {
 const dialogo = {
     texto: [
         "Desperte...",
-        "O mundo agora é vasto e sem fim.",
-        "A coordenada X agora mostrará o quanto você viajou."
+        "você não se lembra do que aconteceu la...",
+        "você se perdeu neste mundo depois de que aconteceu aquilo o odio que você sente...",
+        "é inigualavel um odio sobre você mesmo...",
+        "você se prende em sua propria mente pensando por que fez aquilo...",
+        "mas talvez...",
+        "você nunca encontre a resposta..."
     ],
     indiceAtual: 0,
     caixa: { x: 50, y: 250, largura: 700, altura: 120, corFundo: "#000033", corBorda: "#00001a" }
