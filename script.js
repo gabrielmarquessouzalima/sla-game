@@ -5,14 +5,21 @@ const btnStart = document.getElementById("btnStart");
 canvas.width = 800;
 canvas.height = 400;
 
+// --- Carregamento da Imagem do Personagem ---
+const playerImg = new Image();
+// Certifique-se de que o arquivo 'image_0.png' está na mesma pasta que este arquivo HTML/JS
+playerImg.src = 'image_0.png'; 
+
 let estadoAtual = "TELA_INICIAL"; 
 
 const player = {
     x: 0, 
     y: 310, 
-    largura: 40,
-    altura: 40,
-    cor: "#00aaff",
+    // Ajustei o tamanho para combinar com a imagem e o cenário
+    largura: 32, 
+    altura: 64,
+    // A cor não é mais necessária, mas vou deixá-la aqui como 'reserva'
+    cor: "#00aaff", 
     velocidade: 6,
     velY: 0,
     gravidade: 0.8,
@@ -104,7 +111,7 @@ function desenharCenario() {
 
 function atualizar() {
     if (estadoAtual === "JOGANDO") {
-        // Movimento do Player (Sem limites na direita agora!)
+        // Movimento do Player
         if (teclas["KeyA"]) {
             player.x -= player.velocidade;
             player.direcao = "esquerda";
@@ -128,6 +135,7 @@ function atualizar() {
         player.velY += player.gravidade;
         player.y += player.velY;
 
+        // Ajuste da colisão com o chão baseado na nova altura
         if (player.y + player.altura >= chaoY) {
             player.y = chaoY - player.altura;
             player.velY = 0;
@@ -168,8 +176,9 @@ function desenhar() {
         ctx.fillStyle = "#111";
         ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
 
-        // Coordenadas Reduzidas (Escala: cada 1000 pixels de caminhada = 100 unidades)
+        // Coordenadas Reduzidas
         let displayX = Math.floor(player.x / 10); 
+        // Ajuste no cálculo de displayY para a nova altura
         let displayY = Math.floor(((chaoY - player.altura - player.y) / (chaoY - player.altura)) * 100);
 
         ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
@@ -180,14 +189,35 @@ function desenhar() {
         // Player (Desenhado em relação à câmera)
         let playerRelativoX = player.x - camera.x;
 
-        ctx.fillStyle = player.cor;
-        ctx.fillRect(playerRelativoX, player.y, player.largura, player.altura);
+        // --- Novo Código de Desenho do Personagem com Imagem ---
+        ctx.save(); // Salva o estado atual do contexto
 
-        // Olhos
-        ctx.fillStyle = "white";
-        let olhoX = player.direcao === "direita" ? playerRelativoX + 25 : playerRelativoX + 7;
-        ctx.fillRect(olhoX, player.y + 10, 8, 8);
+        if (player.direcao === "esquerda") {
+            // Se estiver indo para a esquerda, espelha a imagem
+            ctx.scale(-1, 1);
+            // Desenha a imagem na posição x negativa (devido ao scale)
+            ctx.drawImage(
+                playerImg, 
+                -(playerRelativoX + player.largura), // x invertido
+                player.y, 
+                player.largura, 
+                player.altura
+            );
+        } else {
+            // Desenha a imagem normalmente
+            ctx.drawImage(
+                playerImg, 
+                playerRelativoX, 
+                player.y, 
+                player.largura, 
+                player.altura
+            );
+        }
+
+        ctx.restore(); // Restaura o estado original do contexto (remove o espelhamento)
+        // O código antigo de desenhar o quadrado azul e os olhos foi removido.
     }
 }
 
+// Inicia o loop do jogo após carregar o código
 atualizar();
