@@ -5,17 +5,14 @@ const btnStart = document.getElementById("btnStart");
 canvas.width = 800;
 canvas.height = 400;
 
-// --- Carregamento da Imagem ---
-const playerImg = new Image();
-playerImg.src = "player.png"; // Certifique-se de que o nome do arquivo seja exatamente este
-
 let estadoAtual = "TELA_INICIAL"; 
 
 const player = {
     x: 0, 
     y: 310, 
-    largura: 35, // Ajustei levemente para combinar com a silhueta da imagem
-    altura: 60,  // O personagem é mais alto que largo
+    largura: 40,
+    altura: 40,
+    cor: "#00aaff",
     velocidade: 6,
     velY: 0,
     gravidade: 0.8,
@@ -24,6 +21,7 @@ const player = {
     direcao: "direita" 
 };
 
+// --- Sistema de Câmera ---
 const camera = {
     x: 0
 };
@@ -31,6 +29,7 @@ const camera = {
 const chaoY = 350;
 const teclas = {};
 
+// --- Configurações do Parallax ---
 const parallax = {
     camadas: [
         { x: 0, velocidade: 0.1, cor: "#050515", alturaBase: 180, larguraPredio: 100, espacamento: 120 },
@@ -74,6 +73,7 @@ function desenharCenario() {
     ctx.fillStyle = "#00000a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Estrelas com um leve movimento parallax
     ctx.fillStyle = "white";
     for(let i = 0; i < 40; i++) {
         let x = ((i * 137) - (camera.x * 0.05)) % canvas.width;
@@ -85,12 +85,18 @@ function desenharCenario() {
     parallax.camadas.forEach((camada, index) => {
         ctx.fillStyle = camada.cor;
         let espacoTotal = camada.espacamento;
+        
+        // Calculamos o deslocamento com base na câmera e na velocidade da camada
         let scrollX = (camera.x * camada.velocidade) % espacoTotal;
 
+        // Desenha prédios suficientes para cobrir a tela
         for (let i = -1; i < (canvas.width / espacoTotal) + 2; i++) {
             let xPos = (i * espacoTotal) - scrollX;
+            
+            // Usamos o índice real do prédio no mundo para manter a altura consistente
             let indicePredioMundo = Math.floor((camera.x * camada.velocidade) / espacoTotal) + i;
             let h = camada.alturaBase + (Math.abs(Math.sin(indicePredioMundo + index)) * 60);
+            
             ctx.fillRect(xPos, chaoY - h, camada.larguraPredio, h);
         }
     });
@@ -98,16 +104,19 @@ function desenharCenario() {
 
 function atualizar() {
     if (estadoAtual === "JOGANDO") {
+        // Movimento do Player (Sem limites na direita agora!)
         if (teclas["KeyA"]) {
             player.x -= player.velocidade;
             player.direcao = "esquerda";
-            if (player.x < 0) player.x = 0;
+            if (player.x < 0) player.x = 0; // Limite da borda esquerda
         }
         if (teclas["KeyD"]) {
             player.x += player.velocidade;
             player.direcao = "direita";
         }
 
+        // --- Lógica da Câmera ---
+        // A câmera segue o player, mantendo-o um pouco à esquerda do centro
         camera.x = player.x - 150; 
         if (camera.x < 0) camera.x = 0;
 
@@ -155,9 +164,11 @@ function desenhar() {
     else if (estadoAtual === "JOGANDO") {
         desenharCenario();
 
+        // Chão (também precisa de scroll)
         ctx.fillStyle = "#111";
         ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
 
+        // Coordenadas Reduzidas (Escala: cada 1000 pixels de caminhada = 100 unidades)
         let displayX = Math.floor(player.x / 10); 
         let displayY = Math.floor(((chaoY - player.altura - player.y) / (chaoY - player.altura)) * 100);
 
@@ -166,20 +177,16 @@ function desenhar() {
         ctx.textAlign = "left";
         ctx.fillText(`COORD X: ${displayX}  COORD Y: ${displayY}`, 20, 30);
 
-        // --- Desenho do Personagem ---
+        // Player (Desenhado em relação à câmera)
         let playerRelativoX = player.x - camera.x;
 
-        ctx.save(); // Salva o estado do contexto para espelhar a imagem
-        if (player.direcao === "esquerda") {
-            // Inverte a imagem horizontalmente se ele estiver indo para a esquerda
-            ctx.translate(playerRelativoX + player.largura, player.y);
-            ctx.scale(-1, 1);
-            ctx.drawImage(playerImg, 0, 0, player.largura, player.altura);
-        } else {
-            // Desenha normal para a direita
-            ctx.drawImage(playerImg, playerRelativoX, player.y, player.largura, player.altura);
-        }
-        ctx.restore(); // Restaura o contexto
+        ctx.fillStyle = player.cor;
+        ctx.fillRect(playerRelativoX, player.y, player.largura, player.altura);
+
+        // Olhos
+        ctx.fillStyle = "white";
+        let olhoX = player.direcao === "direita" ? playerRelativoX + 25 : playerRelativoX + 7;
+        ctx.fillRect(olhoX, player.y + 10, 8, 8);
     }
 }
 
