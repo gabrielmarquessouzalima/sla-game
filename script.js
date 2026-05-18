@@ -31,7 +31,10 @@ const npc = {
     dialogo: [
         "Hum?",
         "O que você está fazendo aqui?",
-        "Você não deveria estar aqui, normalmente você acorda mais cedo."
+        "Você não deveria estar aqui.",
+        "normalmente você acorda mais cedo.",
+        "não isso não esta certo!",
+        "desperte! você tem que acordar!"
     ],
     indiceAtual: 0,
     jaConversou: false,
