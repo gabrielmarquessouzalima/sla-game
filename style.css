@@ -5,7 +5,7 @@ body {
     justify-content: center; 
     align-items: center; 
     height: 100vh; 
-    font-family: 'Courier New', Courier, monospace; /* Fonte estilo retrô */
+    font-family: 'Courier New', Courier, monospace; 
     position: relative;
 }
 
@@ -14,7 +14,6 @@ canvas {
     border: 4px solid #fff; 
 }
 
-/* Botão de Start que aparece na tela inicial */
 #btnStart {
     position: absolute;
     padding: 15px 40px;
