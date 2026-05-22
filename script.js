@@ -7,18 +7,32 @@ canvas.height = 400;
 
 let estadoAtual = "TELA_INICIAL"; 
 
+// --- Carregamento de Sprites ---
+const imgPlayerParado = new Image();
+imgPlayerParado.src = "player_parado.png"; 
+
+const imgPlayerCorrendo = new Image();
+imgPlayerCorrendo.src = "player_correndo.png"; 
+
+// --- Objeto do Player Atualizado ---
 const player = {
     x: 0, 
     y: 310, 
-    largura: 40,
-    altura: 40,
-    cor: "#00aaff",
+    largura: 40,      // Tamanho que ele será desenhado na tela
+    altura: 40,       // Tamanho que ele será desenhado na tela
     velocidade: 6,
     velY: 0,
     gravidade: 0.8,
     pulo: -15,
     noChao: false,
-    direcao: "direita" 
+    direcao: "direita",
+    
+    // Configurações da folha de sprites (Sprite Sheet)
+    spriteLargura: 32,  // LARGURA real de APENAS UM frame na sua imagem
+    spriteAltura: 32,   // ALTURA real do frame na sua imagem
+    frameAtual: 0,      // Alterna entre 0 e 1 (seus dois sprites de andar)
+    tempoAnimacao: 0,   // Contador para controlar a velocidade da troca de frames
+    estaAndando: false
 };
 
 // --- Novo Personagem (NPC) ---
@@ -135,24 +149,39 @@ function desenharCenario() {
 
 function atualizar() {
     if (estadoAtual === "JOGANDO") {
+        player.estaAndando = false;
+
         // Movimento do Player
         if (teclas["KeyA"]) {
             player.x -= player.velocidade;
             player.direcao = "esquerda";
+            player.estaAndando = true;
             if (player.x < 0) player.x = 0;
         }
         if (teclas["KeyD"]) {
             player.x += player.velocidade;
             player.direcao = "direita";
+            player.estaAndando = true;
+        }
+
+        // Controle da animação (troca de frames)
+        if (player.estaAndando && player.noChao) {
+            player.tempoAnimacao++;
+            if (player.tempoAnimacao >= 10) { // Controla a velocidade (menor = mais rápido)
+                player.frameAtual = player.frameAtual === 0 ? 1 : 0; 
+                player.tempoAnimacao = 0;
+            }
+        } else {
+            player.frameAtual = 0; // Reseta o frame se parado ou pulando
         }
 
         // --- Checar Proximidade do NPC ---
         let distancia = Math.abs(player.x - npc.x);
         if (distancia < npc.distanciaInteracao && !npc.jaConversou) {
             estadoAtual = "DIALOGO_NPC";
-            // Zera as teclas para o player não continuar andando sozinho
             teclas["KeyA"] = false;
             teclas["KeyD"] = false;
+            player.estaAndando = false;
         }
 
         // Lógica da Câmera
@@ -178,8 +207,6 @@ function atualizar() {
 }
 
 function desenharCaixaTexto(texto) {
-    // IMPORTANTE: O retângulo que limpava a tela inteira com fundo preto foi removido daqui
-    
     // Borda da caixa
     ctx.fillStyle = caixaDialogo.corBorda;
     ctx.fillRect(caixaDialogo.x - 4, caixaDialogo.y - 4, caixaDialogo.largura + 8, caixaDialogo.altura + 8);
@@ -212,12 +239,10 @@ function desenhar() {
         ctx.fillText("CIDADE INFINITA", canvas.width / 2, 150);
     } 
     else if (estadoAtual === "DIALOGO_INICIAL") {
-        // Mantém a introdução com fundo totalmente preto
         ctx.fillStyle = "#00000a";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
     } 
-    // Se estiver jogando OU no diálogo do NPC, renderiza o mundo primeiro
     else if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         desenharCenario();
 
@@ -245,17 +270,41 @@ function desenhar() {
             ctx.fillRect(npcRelativoX + 7, npc.y + 10, 8, 8);
         }
 
-        // Player (Desenhado em relação à câmera)
+        // --- Player Renderizado com Sprite e Inversão Espelhada ---
         let playerRelativoX = player.x - camera.x;
-        ctx.fillStyle = player.cor;
-        ctx.fillRect(playerRelativoX, player.y, player.largura, player.altura);
+        
+        ctx.save(); // Salva o estado do canvas antes de aplicar rotações/escalas
+        
+        // Se o player estiver olhando para a esquerda, espelhamos horizontalmente o canvas
+        if (player.direcao === "esquerda") {
+            ctx.translate(playerRelativoX + player.largura / 2, player.y + player.altura / 2);
+            ctx.scale(-1, 1);
+            ctx.translate(-(playerRelativoX + player.largura / 2), -(player.y + player.altura / 2));
+        }
 
-        // Olhos do Player
-        ctx.fillStyle = "white";
-        let olhoX = player.direcao === "direita" ? playerRelativoX + 25 : playerRelativoX + 7;
-        ctx.fillRect(olhoX, player.y + 10, 8, 8);
+        if (player.estaAndando) {
+            // Renderiza o frame atual da imagem de corrida
+            ctx.drawImage(
+                imgPlayerCorrendo,
+                player.frameAtual * player.spriteLargura, 0, 
+                player.spriteLargura, player.spriteAltura,   
+                playerRelativoX, player.y,                   
+                player.largura, player.altura                
+            );
+        } else {
+            // Renderiza a imagem dele parado
+            ctx.drawImage(
+                imgPlayerParado,
+                0, 0,
+                player.spriteLargura, player.spriteAltura,
+                playerRelativoX, player.y,
+                player.largura, player.altura
+            );
+        }
 
-        // SOBREPOSIÇÃO: Se o estado for o do NPC, a caixa de texto entra por último na tela
+        ctx.restore(); // Restaura o canvas para o seu estado normal (sem espelhamento)
+
+        // SOBREPOSIÇÃO: Caixa de diálogo do NPC entra por último na tela
         if (estadoAtual === "DIALOGO_NPC") {
             desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
         }
