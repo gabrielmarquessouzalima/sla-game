@@ -7,19 +7,21 @@ canvas.height = 400;
 
 let estadoAtual = "TELA_INICIAL"; 
 
-// --- Carregamento de Sprites ---
+// --- Carregamento de Sprites com os seus caminhos locais ---
 const imgPlayerParado = new Image();
-imgPlayerParado.src = "player_parado.png"; 
+imgPlayerParado.crossOrigin = "anonymous"; // Tenta mitigar bloqueios do navegador
+imgPlayerParado.src = "file:///C:/Users/aluno/Downloads/IMG_20260522_074304.jpg"; 
 
 const imgPlayerCorrendo = new Image();
-imgPlayerCorrendo.src = "player_correndo.png"; 
+imgPlayerCorrendo.crossOrigin = "anonymous"; // Tenta mitigar bloqueios do navegador
+imgPlayerCorrendo.src = "file:///C:/Users/aluno/Downloads/IMG_20260522_074333.jpg"; 
 
-// --- Objeto do Player Atualizado com Segurança ---
+// --- Objeto do Player Atualizado ---
 const player = {
     x: 0, 
     y: 310, 
-    largura: 40,      // Tamanho exibido na tela
-    altura: 40,       // Tamanho exibido na tela
+    largura: 40,      // Tamanho que ele será desenhado na tela
+    altura: 40,       // Tamanho que ele será desenhado na tela
     velocidade: 6,
     velY: 0,
     gravidade: 0.8,
@@ -27,21 +29,24 @@ const player = {
     noChao: false,
     direcao: "direita",
     
-    // Configurações da animação
-    spriteLargura: 32,  // Valor padrão (será atualizado dinamicamente ao carregar)
-    spriteAltura: 32,   // Valor padrão
-    frameAtual: 0,      
-    tempoAnimacao: 0,   
+    // Configurações da folha de sprites (Baseado em fotos/prints)
+    spriteLargura: 32,  // Será ajustado automaticamente pelo código abaixo
+    spriteAltura: 32,   // Será ajustado automaticamente pelo código abaixo
+    frameAtual: 0,      // Alterna entre 0 e 1 (seus dois sprites de andar)
+    tempoAnimacao: 0,   // Contador para controlar a velocidade da troca de frames
     estaAndando: false
 };
 
-// Atualiza o tamanho dos cortes assim que as imagens terminarem de carregar no navegador
+// Ajuste dinâmico para pegar o tamanho exato das suas fotos de Downloads
 imgPlayerParado.onload = function() {
     player.spriteAltura = imgPlayerParado.height;
+    player.spriteLargura = imgPlayerParado.width; 
 };
+
 imgPlayerCorrendo.onload = function() {
-    // Como a folha de corrida tem 2 frames, a largura de um frame é a metade da imagem total
+    // Divide por 2 assumindo que a foto de corrida tem os dois sprites lado a lado
     player.spriteLargura = imgPlayerCorrendo.width / 2;
+    player.spriteAltura = imgPlayerCorrendo.height;
 };
 
 // --- Novo Personagem (NPC) ---
@@ -129,7 +134,6 @@ function desenharCenario() {
     ctx.fillStyle = "#00000a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Estrelas
     ctx.fillStyle = "white";
     for(let i = 0; i < 40; i++) {
         let x = ((i * 137) - (camera.x * 0.05)) % canvas.width;
@@ -264,7 +268,7 @@ function desenhar() {
             ctx.fillRect(npcRelativoX + 7, npc.y + 10, 8, 8);
         }
 
-        // --- Renderização do Player com Trava de Segurança Contra Travamentos ---
+        // --- Renderização do Player ---
         let playerRelativoX = player.x - camera.x;
         
         ctx.save(); 
@@ -275,8 +279,8 @@ function desenhar() {
             ctx.translate(-(playerRelativoX + player.largura / 2), -(player.y + player.altura / 2));
         }
 
-        // CHECAGEM: Verifica se as imagens carregaram e possuem dados válidos
-        if (imgPlayerParado.complete && imgPlayerCorrendo.complete && imgPlayerParado.width > 0 && player.spriteLargura > 0) {
+        // Se o navegador conseguir ler o link "file:///", desenha a imagem
+        if (imgPlayerParado.complete && imgPlayerCorrendo.complete && imgPlayerParado.width > 0) {
             if (player.estaAndando) {
                 ctx.drawImage(
                     imgPlayerCorrendo,
@@ -295,7 +299,7 @@ function desenhar() {
                 );
             }
         } else {
-            // BACKUP VISUAL: Se as imagens falharem, exibe o bloco azul clássico (O JOGO NÃO TRAVA!)
+            // Backup visual (Quadrado azul) caso o navegador trave o link "file:///"
             ctx.fillStyle = "#00aaff";
             ctx.fillRect(playerRelativoX, player.y, player.largura, player.altura);
             
