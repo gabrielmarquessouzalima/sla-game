@@ -178,9 +178,7 @@ function atualizar() {
 }
 
 function desenharCaixaTexto(texto) {
-    // Desenha a caixa preta de fundo de tela de diálogo para manter o padrão que você criou
-    ctx.fillStyle = "#00000a";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // IMPORTANTE: O retângulo que limpava a tela inteira com fundo preto foi removido daqui
     
     // Borda da caixa
     ctx.fillStyle = caixaDialogo.corBorda;
@@ -214,12 +212,13 @@ function desenhar() {
         ctx.fillText("CIDADE INFINITA", canvas.width / 2, 150);
     } 
     else if (estadoAtual === "DIALOGO_INICIAL") {
+        // Mantém a introdução com fundo totalmente preto
+        ctx.fillStyle = "#00000a";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
     } 
-    else if (estadoAtual === "DIALOGO_NPC") {
-        desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
-    }
-    else if (estadoAtual === "JOGANDO") {
+    // Se estiver jogando OU no diálogo do NPC, renderiza o mundo primeiro
+    else if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         desenharCenario();
 
         // Chão
@@ -237,12 +236,11 @@ function desenhar() {
 
         // --- Desenhar o NPC (em relação à câmera) ---
         let npcRelativoX = npc.x - camera.x;
-        // Só desenha se estiver visível na tela para poupar processamento
         if (npcRelativoX > -50 && npcRelativoX < canvas.width + 50) {
             ctx.fillStyle = npc.cor;
             ctx.fillRect(npcRelativoX, npc.y, npc.largura, npc.altura);
             
-            // Olho do NPC (olhando para a esquerda, esperando o player)
+            // Olho do NPC
             ctx.fillStyle = "white";
             ctx.fillRect(npcRelativoX + 7, npc.y + 10, 8, 8);
         }
@@ -256,6 +254,11 @@ function desenhar() {
         ctx.fillStyle = "white";
         let olhoX = player.direcao === "direita" ? playerRelativoX + 25 : playerRelativoX + 7;
         ctx.fillRect(olhoX, player.y + 10, 8, 8);
+
+        // SOBREPOSIÇÃO: Se o estado for o do NPC, a caixa de texto entra por último na tela
+        if (estadoAtual === "DIALOGO_NPC") {
+            desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
+        }
     }
 }
 
