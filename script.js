@@ -5,20 +5,44 @@ const btnStart = document.getElementById("btnStart");
 canvas.width = 800;
 canvas.height = 400;
 
-let estadoAtual = "TELA_INICIAL"; 
+let estadoAtual = "TELA_INICIAL";
 
 const player = {
-    x: 0, 
-    y: 310, 
+    x: 0,
+    y: 310,
     largura: 40,
-    altura: 40,
-    cor: "#00aaff",
+    altura: 80, // Ajustado para a altura do novo personagem
+    sprites: {
+        paradoDireita: new Image(),
+        paradoEsquerda: new Image(),
+        andandoDireita: [], // Para a animação que você vai enviar
+        andandoEsquerda: [], // Para a animação que você vai enviar
+    },
+    frameAtual: 0,
+    contadorAnimação: 0,
     velocidade: 6,
     velY: 0,
     gravidade: 0.8,
     pulo: -15,
     noChao: false,
-    direcao: "direita" 
+    direcao: "direita",
+    estadoSprite: "parado" // "parado" ou "andando"
+};
+
+// Carrega os sprites iniciais a partir da sua imagem (perfil direito)
+player.sprites.paradoDireita.src = 'perfil_direito.png'; // Use a sua imagem original
+
+// Para o sprite parado à esquerda, vamos criar uma versão espelhada em um canvas temporário
+player.sprites.paradoEsquerda.src = ''; // Deixe em branco inicialmente
+player.sprites.paradoDireita.onload = () => {
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = player.sprites.paradoDireita.width;
+    tempCanvas.height = player.sprites.paradoDireita.height;
+    tempCtx.translate(tempCanvas.width, 0);
+    tempCtx.scale(-1, 1);
+    tempCtx.drawImage(player.sprites.paradoDireita, 0, 0);
+    player.sprites.paradoEsquerda.src = tempCanvas.toDataURL();
 };
 
 // --- Novo Personagem (NPC) ---
@@ -53,8 +77,8 @@ const teclas = {};
 const parallax = {
     camadas: [
         { x: 0, velocidade: 0.1, cor: "#050515", alturaBase: 180, larguraPredio: 100, espacamento: 120 },
-        { x: 0, velocidade: 0.4, cor: "#0d0d25", alturaBase: 120, larguraPredio: 80,  espacamento: 100 },
-        { x: 0, velocidade: 0.7, cor: "#161630", alturaBase: 80,  larguraPredio: 60,  espacamento: 90 }
+        { x: 0, velocidade: 0.4, cor: "#0d0d25", alturaBase: 120, larguraPredio: 80, espacamento: 100 },
+        { x: 0, velocidade: 0.7, cor: "#161630", alturaBase: 80, larguraPredio: 60, espacamento: 90 }
     ]
 };
 
@@ -79,15 +103,15 @@ const caixaDialogo = { x: 50, y: 250, largura: 700, altura: 120, corFundo: "#000
 
 window.addEventListener("keydown", (e) => {
     teclas[e.code] = true;
-    
+
     // Avançar Diálogo Inicial
     if (estadoAtual === "DIALOGO_INICIAL" && (e.code === "Space" || e.code === "Enter")) {
         dialogoInicial.indiceAtual++;
         if (dialogoInicial.indiceAtual >= dialogoInicial.texto.length) {
-            estadoAtual = "JOGANDO"; 
+            estadoAtual = "JOGANDO";
         }
     }
-    
+
     // Avançar Diálogo do NPC
     if (estadoAtual === "DIALOGO_NPC" && (e.code === "Space" || e.code === "Enter")) {
         npc.indiceAtual++;
@@ -102,7 +126,7 @@ window.addEventListener("keyup", (e) => teclas[e.code] = false);
 
 btnStart.addEventListener("click", () => {
     estadoAtual = "DIALOGO_INICIAL";
-    btnStart.style.display = "none"; 
+    btnStart.style.display = "none";
 });
 
 function desenharCenario() {
@@ -127,23 +151,44 @@ function desenharCenario() {
             let xPos = (i * espacoTotal) - scrollX;
             let indicePredioMundo = Math.floor((camera.x * camada.velocidade) / espacoTotal) + i;
             let h = camada.alturaBase + (Math.abs(Math.sin(indicePredioMundo + index)) * 60);
-            
+
             ctx.fillRect(xPos, chaoY - h, camada.larguraPredio, h);
         }
     });
 }
 
+function desenharPlayer(xRelativo, y) {
+    let spriteAtual;
+
+    if (player.estadoSprite === "parado") {
+        spriteAtual = player.direcao === "direita" ? player.sprites.paradoDireita : player.sprites.paradoEsquerda;
+    } else {
+        // --- BLOCO PARA A ANIMAÇÃO DE ANDAR QUE VOCÊ VAI ENVIAR ---
+        // Aqui teremos a lógica para escolher o frame certo dos arrays player.sprites.andandoDireita
+        // e player.sprites.andandoEsquerda. Por enquanto, usamos o sprite parado.
+        spriteAtual = player.direcao === "direita" ? player.sprites.paradoDireita : player.sprites.paradoEsquerda;
+    }
+
+    if (spriteAtual.complete) { // Garante que a imagem esteja carregada
+        ctx.drawImage(spriteAtual, xRelativo, y, player.largura, player.altura);
+    }
+}
+
 function atualizar() {
     if (estadoAtual === "JOGANDO") {
+        player.estadoSprite = "parado"; // Reset para o estado padrão
+
         // Movimento do Player
         if (teclas["KeyA"]) {
             player.x -= player.velocidade;
             player.direcao = "esquerda";
+            player.estadoSprite = "andando";
             if (player.x < 0) player.x = 0;
         }
         if (teclas["KeyD"]) {
             player.x += player.velocidade;
             player.direcao = "direita";
+            player.estadoSprite = "andando";
         }
 
         // --- Checar Proximidade do NPC ---
@@ -153,10 +198,11 @@ function atualizar() {
             // Zera as teclas para o player não continuar andando sozinho
             teclas["KeyA"] = false;
             teclas["KeyD"] = false;
+            player.estadoSprite = "parado";
         }
 
         // Lógica da Câmera
-        camera.x = player.x - 150; 
+        camera.x = player.x - 150;
         if (camera.x < 0) camera.x = 0;
 
         if ((teclas["KeyW"] || teclas["Space"]) && player.noChao) {
@@ -179,21 +225,21 @@ function atualizar() {
 
 function desenharCaixaTexto(texto) {
     // IMPORTANTE: O retângulo que limpava a tela inteira com fundo preto foi removido daqui
-    
+
     // Borda da caixa
     ctx.fillStyle = caixaDialogo.corBorda;
     ctx.fillRect(caixaDialogo.x - 4, caixaDialogo.y - 4, caixaDialogo.largura + 8, caixaDialogo.altura + 8);
-    
+
     // Fundo da caixa
     ctx.fillStyle = caixaDialogo.corFundo;
     ctx.fillRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
-    
+
     // Texto
     ctx.fillStyle = "white";
     ctx.font = "20px 'Courier New', monospace";
     ctx.textAlign = "left";
     ctx.fillText(texto, caixaDialogo.x + 20, caixaDialogo.y + 55);
-    
+
     // Dica para avançar
     ctx.font = "12px 'Courier New', monospace";
     ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
@@ -210,13 +256,17 @@ function desenhar() {
         ctx.font = "40px 'Courier New', monospace";
         ctx.textAlign = "center";
         ctx.fillText("CIDADE INFINITA", canvas.width / 2, 150);
-    } 
+        // Desenha o seu personagem na tela inicial
+        if (player.sprites.paradoDireita.complete) {
+            ctx.drawImage(player.sprites.paradoDireita, canvas.width / 2 - player.largura / 2, 220, player.largura, player.altura);
+        }
+    }
     else if (estadoAtual === "DIALOGO_INICIAL") {
         // Mantém a introdução com fundo totalmente preto
         ctx.fillStyle = "#00000a";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
-    } 
+    }
     // Se estiver jogando OU no diálogo do NPC, renderiza o mundo primeiro
     else if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         desenharCenario();
@@ -226,7 +276,7 @@ function desenhar() {
         ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
 
         // Coordenadas
-        let displayX = Math.floor(player.x / 10); 
+        let displayX = Math.floor(player.x / 10);
         let displayY = Math.floor(((chaoY - player.altura - player.y) / (chaoY - player.altura)) * 100);
 
         ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
@@ -239,7 +289,7 @@ function desenhar() {
         if (npcRelativoX > -50 && npcRelativoX < canvas.width + 50) {
             ctx.fillStyle = npc.cor;
             ctx.fillRect(npcRelativoX, npc.y, npc.largura, npc.altura);
-            
+
             // Olho do NPC
             ctx.fillStyle = "white";
             ctx.fillRect(npcRelativoX + 7, npc.y + 10, 8, 8);
@@ -247,13 +297,7 @@ function desenhar() {
 
         // Player (Desenhado em relação à câmera)
         let playerRelativoX = player.x - camera.x;
-        ctx.fillStyle = player.cor;
-        ctx.fillRect(playerRelativoX, player.y, player.largura, player.altura);
-
-        // Olhos do Player
-        ctx.fillStyle = "white";
-        let olhoX = player.direcao === "direita" ? playerRelativoX + 25 : playerRelativoX + 7;
-        ctx.fillRect(olhoX, player.y + 10, 8, 8);
+        desenharPlayer(playerRelativoX, player.y);
 
         // SOBREPOSIÇÃO: Se o estado for o do NPC, a caixa de texto entra por último na tela
         if (estadoAtual === "DIALOGO_NPC") {
