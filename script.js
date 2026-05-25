@@ -17,7 +17,7 @@ imgPlayerCorrendo.src = "IMG_20260525_102751.png";
 // --- Objeto do Player ---
 const player = {
     x: 0, 
-    y: 270,           // MUDOU DE 310 PARA 270: Ajusta a altura inicial para ele não começar dentro do chão
+    y: 271,           // MUDOU DE 310 PARA 270: Ajusta a altura inicial para ele não começar dentro do chão
     largura: 50,      // MUDOU DE 40 PARA 50: Deixa ele um pouco mais encorpado
     altura: 80,       // MUDOU DE 40 PARA 80: DOBROU A ALTURA! Agora ele vai ficar esticado e proporcional
     velocidade: 6,
