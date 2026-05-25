@@ -276,7 +276,7 @@ function desenhar() {
 
         // Desenhar segundo NPC (Verde na coord X: 500)
         let npc2RelativoX = npc2.x - camera.x;
-        if (npc2RelativoX > -50 && npc2RelativoX < canvas.width + 50) {
+        if (npc2RelativoX > -500 && npc2RelativoX < canvas.width + 50) {
             ctx.fillStyle = npc2.cor;
             ctx.fillRect(npc2RelativoX, npc2.y, npc2.largura, npc2.altura);
             ctx.fillStyle = "white";
