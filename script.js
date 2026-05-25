@@ -17,9 +17,9 @@ imgPlayerCorrendo.src = "IMG_20260525_102751.png";
 // --- Objeto do Player ---
 const player = {
     x: 0, 
-    y: 268,           // MUDOU DE 310 PARA 270: Ajusta a altura inicial para ele não começar dentro do chão
-    largura: 50,      // MUDOU DE 40 PARA 50: Deixa ele um pouco mais encorpado
-    altura: 80,       // MUDOU DE 40 PARA 80: DOBROU A ALTURA! Agora ele vai ficar esticado e proporcional
+    y: 270,           // Mantido o Y que você ajustou para não flutuar
+    largura: 50,     
+    altura: 80,       
     velocidade: 6,
     velY: 0,
     gravidade: 0.8,
@@ -42,12 +42,11 @@ imgPlayerParado.onload = function() {
 };
 
 imgPlayerCorrendo.onload = function() {
-    // Divide por 2 assumindo que a foto de corrida tem os dois sprites lado a lado
     player.spriteLargura = imgPlayerCorrendo.width / 2;
     player.spriteAltura = imgPlayerCorrendo.height;
 };
 
-// --- Novo Personagem (NPC) ---
+// --- Primeiro Personagem (NPC Vermelho) ---
 const npc = {
     x: 2500, 
     y: 310,
@@ -67,6 +66,15 @@ const npc = {
     distanciaInteracao: 80 
 };
 
+// --- SEU NOVO PERSONAGEM NA COORDENADA 500 ---
+const npc2 = {
+    x: 500, 
+    y: 310,
+    largura: 40,
+    altura: 40,
+    cor: "#55ff55" // Quadrado verde para você diferenciar
+};
+
 // --- Sistema de Câmera ---
 const camera = {
     x: 0
@@ -78,7 +86,7 @@ const teclas = {};
 // --- Configurações do Parallax ---
 const parallax = {
     camadas: [
-        { x: 0, velocidade: 0.1, cor: "#050515", alturaBase: 180, larguraPredio: 100, espacamento: 120 },
+        { x: 0, velocidad: 0.1, cor: "#050515", alturaBase: 180, larguraPredio: 100, espacamento: 120 },
         { x: 0, velocidade: 0.4, cor: "#0d0d25", alturaBase: 120, larguraPredio: 80,  espacamento: 100 },
         { x: 0, velocidade: 0.7, cor: "#161630", alturaBase: 80,  larguraPredio: 60,  espacamento: 90 }
     ]
@@ -257,13 +265,22 @@ function desenhar() {
         ctx.textAlign = "left";
         ctx.fillText(`COORD X: ${displayX}  COORD Y: ${displayY}`, 20, 30);
 
+        // Desenhar primeiro NPC (Vermelho)
         let npcRelativoX = npc.x - camera.x;
         if (npcRelativoX > -50 && npcRelativoX < canvas.width + 50) {
             ctx.fillStyle = npc.cor;
             ctx.fillRect(npcRelativoX, npc.y, npc.largura, npc.altura);
-            
             ctx.fillStyle = "white";
             ctx.fillRect(npcRelativoX + 7, npc.y + 10, 8, 8);
+        }
+
+        // Desenhar segundo NPC (Verde na coord X: 500)
+        let npc2RelativoX = npc2.x - camera.x;
+        if (npc2RelativoX > -50 && npc2RelativoX < canvas.width + 50) {
+            ctx.fillStyle = npc2.cor;
+            ctx.fillRect(npc2RelativoX, npc2.y, npc2.largura, npc2.altura);
+            ctx.fillStyle = "white";
+            ctx.fillRect(npc2RelativoX + 7, npc2.y + 10, 8, 8);
         }
 
         // --- Renderização do Player ---
@@ -296,10 +313,8 @@ function desenhar() {
                 );
             }
         } else {
-            // Se as imagens não carregarem por estarem na pasta errada, desenha o bloco azul pra não travar
             ctx.fillStyle = "#00aaff";
             ctx.fillRect(playerRelativoX, player.y, player.largura, player.altura);
-            
             ctx.fillStyle = "white";
             let olhoX = player.direcao === "direita" ? playerRelativoX + 25 : playerRelativoX + 7;
             ctx.fillRect(olhoX, player.y + 10, 8, 8);
@@ -313,5 +328,4 @@ function desenhar() {
     }
 }
 
-// Inicia o loop principal do jogo
 atualizar();
