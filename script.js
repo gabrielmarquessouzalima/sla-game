@@ -69,7 +69,7 @@ const npc = {
 
 // --- SEU NOVO PERSONAGEM NA COORDENADA 500 ---
 const npc2 = {
-    x: 500, 
+    x: 5000, 
     y: 310,
     largura: 40,
     altura: 40,
