@@ -7,16 +7,14 @@ canvas.height = 400;
 
 let estadoAtual = "TELA_INICIAL"; 
 
-// --- Carregamento de Sprites com os seus caminhos locais ---
+// --- Carregamento de Sprites Corrigido ---
 const imgPlayerParado = new Image();
-imgPlayerParado.crossOrigin = "anonymous"; 
-imgPlayerParado.src = "file:///C:/Users/aluno/Downloads/IMG_20260525_102813.png"; // Novo sprite parado
+imgPlayerParado.src = "IMG_20260525_102813.png"; 
 
 const imgPlayerCorrendo = new Image();
-imgPlayerCorrendo.crossOrigin = "anonymous"; 
-imgPlayerCorrendo.src = "file:///C:/Users/aluno/Downloads/IMG_20260525_102751.png"; // Novo sprite correndo
+imgPlayerCorrendo.src = "IMG_20260525_102751.png"; 
 
-// --- Objeto do Player Atualizado ---
+// --- Objeto do Player ---
 const player = {
     x: 0, 
     y: 310, 
@@ -29,7 +27,7 @@ const player = {
     noChao: false,
     direcao: "direita",
     
-    // Configurações da folha de sprites (Baseado em fotos/prints)
+    // Configurações da folha de sprites
     spriteLargura: 32,  
     spriteAltura: 32,   
     frameAtual: 0,      
@@ -37,7 +35,7 @@ const player = {
     estaAndando: false
 };
 
-// Ajuste dinâmico para pegar o tamanho exato das suas fotos de Downloads
+// Ajuste dinâmico para pegar o tamanho exato das suas fotos
 imgPlayerParado.onload = function() {
     player.spriteAltura = imgPlayerParado.height;
     player.spriteLargura = imgPlayerParado.width; 
@@ -279,7 +277,6 @@ function desenhar() {
             ctx.translate(-(playerRelativoX + player.largura / 2), -(player.y + player.altura / 2));
         }
 
-        // Se o navegador conseguir ler o link "file:///", desenha a imagem
         if (imgPlayerParado.complete && imgPlayerCorrendo.complete && imgPlayerParado.width > 0) {
             if (player.estaAndando) {
                 ctx.drawImage(
@@ -299,7 +296,7 @@ function desenhar() {
                 );
             }
         } else {
-            // Backup visual (Quadrado azul) caso o navegador trave o link "file:///"
+            // Se as imagens não carregarem por estarem na pasta errada, desenha o bloco azul pra não travar
             ctx.fillStyle = "#00aaff";
             ctx.fillRect(playerRelativoX, player.y, player.largura, player.altura);
             
@@ -316,4 +313,5 @@ function desenhar() {
     }
 }
 
+// Inicia o loop principal do jogo
 atualizar();
