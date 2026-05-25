@@ -9,19 +9,19 @@ let estadoAtual = "TELA_INICIAL";
 
 // --- Carregamento de Sprites com os seus caminhos locais ---
 const imgPlayerParado = new Image();
-imgPlayerParado.crossOrigin = "anonymous"; // Tenta mitigar bloqueios do navegador
-imgPlayerParado.src = "file:///C:/Users/aluno/Downloads/IMG_20260522_074304.jpg"; 
+imgPlayerParado.crossOrigin = "anonymous"; 
+imgPlayerParado.src = "file:///C:/Users/aluno/Downloads/IMG_20260525_102813.png"; // Novo sprite parado
 
 const imgPlayerCorrendo = new Image();
-imgPlayerCorrendo.crossOrigin = "anonymous"; // Tenta mitigar bloqueios do navegador
-imgPlayerCorrendo.src = "file:///C:/Users/aluno/Downloads/IMG_20260522_074333.jpg"; 
+imgPlayerCorrendo.crossOrigin = "anonymous"; 
+imgPlayerCorrendo.src = "file:///C:/Users/aluno/Downloads/IMG_20260525_102751.png"; // Novo sprite correndo
 
 // --- Objeto do Player Atualizado ---
 const player = {
     x: 0, 
     y: 310, 
-    largura: 40,      // Tamanho que ele será desenhado na tela
-    altura: 40,       // Tamanho que ele será desenhado na tela
+    largura: 40,     
+    altura: 40,       
     velocidade: 6,
     velY: 0,
     gravidade: 0.8,
@@ -30,10 +30,10 @@ const player = {
     direcao: "direita",
     
     // Configurações da folha de sprites (Baseado em fotos/prints)
-    spriteLargura: 32,  // Será ajustado automaticamente pelo código abaixo
-    spriteAltura: 32,   // Será ajustado automaticamente pelo código abaixo
-    frameAtual: 0,      // Alterna entre 0 e 1 (seus dois sprites de andar)
-    tempoAnimacao: 0,   // Contador para controlar a velocidade da troca de frames
+    spriteLargura: 32,  
+    spriteAltura: 32,   
+    frameAtual: 0,      
+    tempoAnimacao: 0,   
     estaAndando: false
 };
 
