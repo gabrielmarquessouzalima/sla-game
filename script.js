@@ -7,19 +7,23 @@ canvas.height = 400;
 
 let estadoAtual = "TELA_INICIAL"; 
 
-// --- Carregamento de Sprites Corrigido ---
+// --- Carregamento de Sprites do Player ---
 const imgPlayerParado = new Image();
 imgPlayerParado.src = "IMG_20260525_102813.png"; 
 
 const imgPlayerCorrendo = new Image();
 imgPlayerCorrendo.src = "IMG_20260525_102751.png"; 
 
+// --- NOVO: Carregamento do Sprite do Espírito Azul ---
+const imgNpcEspirito = new Image();
+imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png"; 
+
 // --- Objeto do Player ---
 const player = {
     x: 0, 
-    y: 268,           // MUDOU DE 310 PARA 268: Ajusta a altura inicial para ele não começar dentro do chão
-    largura: 50,      // MUDOU DE 40 PARA 50: Deixa ele um pouco mais encorpado
-    altura: 80,       // MUDOU DE 40 PARA 80: DOBROU A ALTURA! Agora ele vai ficar esticado e proporcional
+    y: 268,           
+    largura: 50,      
+    altura: 80,       
     velocidade: 6,
     velY: 0,
     gravidade: 0.8,
@@ -42,7 +46,6 @@ imgPlayerParado.onload = function() {
 };
 
 imgPlayerCorrendo.onload = function() {
-    // Divide por 2 assumindo que a foto de corrida tem os dois sprites lado a lado
     player.spriteLargura = imgPlayerCorrendo.width / 2;
     player.spriteAltura = imgPlayerCorrendo.height;
 };
@@ -50,10 +53,9 @@ imgPlayerCorrendo.onload = function() {
 // --- Configurações dos NPCs ---
 const npc = {
     x: 2500, 
-    y: 310,
-    largura: 40,
-    altura: 40,
-    cor: "#ff5555", 
+    y: 270,          // Ajustado para o espírito flutuar/ficar na altura certa do chão
+    largura: 60,     // Aumentado para valorizar o sprite do fantasma
+    altura: 80,      // Altura proporcional ao jogador
     dialogo: [
         "Hum?",
         "O que você está fazendo aqui?",
@@ -72,7 +74,7 @@ const npc2 = {
     y: 310,
     largura: 40,
     altura: 40,
-    cor: "#55ff55" // Quadrado verde para diferenciar do vermelho
+    cor: "#55ff55" 
 };
 
 // --- Sistema de Câmera ---
@@ -100,7 +102,7 @@ const dialogoInicial = {
         "você se perdeu neste mundo depois daquilo",
         "o odio que você sente...",
         "é inigualavel, um odio sobre você mesmo...",
-        "você se prende em sua propria mente...",
+        "você se prende in sua propria mente...",
         "pensando por que fez aquilo...",
         "mas talvez...",
         "você nunca encontre a resposta..."
@@ -125,7 +127,7 @@ window.addEventListener("keydown", (e) => {
         if (npc.indiceAtual >= npc.dialogo.length) {
             estadoAtual = "JOGANDO";
             npc.jaConversou = true; 
-            npc.x = -9999; // CORREÇÃO: Move o NPC para fora do mapa para ele sumir!
+            npc.x = -9999; // Move o NPC para fora do mapa assim que o diálogo termina
         }
     }
 });
@@ -190,7 +192,7 @@ function atualizar() {
             player.frameAtual = 0; 
         }
 
-        // CORREÇÃO: Só calcula a distância e inicia o diálogo se o NPC ainda não sumiu (-9999)
+        // Verifica o diálogo se o NPC ainda estiver ativo
         if (!npc.jaConversou && npc.x !== -9999) {
             let distancia = Math.abs(player.x - npc.x);
             if (distancia < npc.distanciaInteracao) {
@@ -269,14 +271,15 @@ function desenhar() {
         ctx.textAlign = "left";
         ctx.fillText(`COORD X: ${displayX}  COORD Y: ${displayY}`, 20, 30);
 
-        // Desenhar primeiro NPC (Vermelho)
+        // --- RENDERIZAÇÃO DO NPC 1 (Espírito Azul) ---
         let npcRelativoX = npc.x - camera.x;
-        if (npcRelativoX > -50 && npcRelativoX < canvas.width + 50) {
-            ctx.fillStyle = npc.cor;
-            ctx.fillRect(npcRelativoX, npc.y, npc.largura, npc.altura);
-            
-            ctx.fillStyle = "white";
-            ctx.fillRect(npcRelativoX + 7, npc.y + 10, 8, 8);
+        if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
+            if (imgNpcEspirito.complete && imgNpcEspirito.width > 0) {
+                ctx.drawImage(imgNpcEspirito, npcRelativoX, npc.y, npc.largura, npc.altura);
+            } else {
+                ctx.fillStyle = "#00ffff"; // Cor ciano de backup se a imagem falhar
+                ctx.fillRect(npcRelativoX, npc.y, npc.largura, npc.altura);
+            }
         }
 
         // Desenhar segundo NPC (Verde na coord X: 500)
@@ -319,7 +322,6 @@ function desenhar() {
                 );
             }
         } else {
-            // Se as imagens não carregarem por estarem na pasta errada, desenha o bloco azul pra não travar
             ctx.fillStyle = "#00aaff";
             ctx.fillRect(playerRelativoX, player.y, player.largura, player.altura);
             
