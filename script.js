@@ -47,7 +47,7 @@ imgPlayerCorrendo.onload = function() {
     player.spriteAltura = imgPlayerCorrendo.height;
 };
 
-// --- Novo Personagem (NPC) ---
+// --- Configurações dos NPCs ---
 const npc = {
     x: 2500, 
     y: 310,
@@ -67,7 +67,6 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- SEU NOVO PERSONAGEM NA COORDENADA 500 ---
 const npc2 = {
     x: 5000, 
     y: 310,
@@ -126,6 +125,7 @@ window.addEventListener("keydown", (e) => {
         if (npc.indiceAtual >= npc.dialogo.length) {
             estadoAtual = "JOGANDO";
             npc.jaConversou = true; 
+            npc.x = -9999; // CORREÇÃO: Move o NPC para fora do mapa para ele sumir!
         }
     }
 });
@@ -190,12 +190,15 @@ function atualizar() {
             player.frameAtual = 0; 
         }
 
-        let distancia = Math.abs(player.x - npc.x);
-        if (distancia < npc.distanciaInteracao && !npc.jaConversou) {
-            estadoAtual = "DIALOGO_NPC";
-            teclas["KeyA"] = false;
-            teclas["KeyD"] = false;
-            player.estaAndando = false;
+        // CORREÇÃO: Só calcula a distância e inicia o diálogo se o NPC ainda não sumiu (-9999)
+        if (!npc.jaConversou && npc.x !== -9999) {
+            let distancia = Math.abs(player.x - npc.x);
+            if (distancia < npc.distanciaInteracao) {
+                estadoAtual = "DIALOGO_NPC";
+                teclas["KeyA"] = false;
+                teclas["KeyD"] = false;
+                player.estaAndando = false;
+            }
         }
 
         camera.x = player.x - 150; 
