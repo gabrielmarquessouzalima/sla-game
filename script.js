@@ -277,20 +277,22 @@ function desenhar() {
         ctx.textAlign = "left";
         ctx.fillText(`COORD X: ${displayX}  COORD Y: ${displayY}`, 20, 30);
 
-        // --- RENDERIZAÇÃO DO NPC 1 (Espírito Azul) ---
-        let npcRelativoX = npc.x - camera.x;
-        if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
-            
-            // Calcula o deslocamento da flutuação (sobe e desce em até 8 pixels)
-            let flutuarY = npc.y + Math.sin(npc.tempoFlutuar) * 8;
+      // --- RENDERIZAÇÃO DO NPC 1 (Espírito Azul) ---
+let npcRelativoX = npc.x - camera.x;
+if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
+    
+    // Essa linha calcula a onda do balanço:
+    let flutuarY = npc.y + Math.sin(npc.tempoFlutuar) * 8;
 
-            if (imgNpcEspirito.complete && imgNpcEspirito.width > 0) {
-                ctx.drawImage(imgNpcEspirito, npcRelativoX, flutuarY, npc.largura, npc.altura);
-            } else {
-                ctx.fillStyle = "#00ffff"; 
-                ctx.fillRect(npcRelativoX, flutuarY, npc.largura, npc.altura);
-            }
-        }
+    if (imgNpcEspirito.complete && imgNpcEspirito.width > 0) {
+        // IMPORTANTE: Aqui precisa estar 'flutuarY' e NÃO 'npc.y'
+        ctx.drawImage(imgNpcEspirito, npcRelativoX, flutuarY, npc.largura, npc.altura);
+    } else {
+        // IMPORTANTE: Aqui também precisa estar 'flutuarY'
+        ctx.fillStyle = "#00ffff"; 
+        ctx.fillRect(npcRelativoX, flutuarY, npc.largura, npc.altura);
+    }
+}
 
         // Desenhar segundo NPC (Verde na coord X: 500)
         let npc2RelativoX = npc2.x - camera.x;
