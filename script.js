@@ -14,7 +14,7 @@ imgPlayerParado.src = "IMG_20260525_102813.png";
 const imgPlayerCorrendo = new Image();
 imgPlayerCorrendo.src = "IMG_20260525_102751.png"; 
 
-// --- NOVO: Carregamento do Sprite do Espírito Azul ---
+// --- Carregamento do Sprite do Espírito Azul ---
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png"; 
 
@@ -56,7 +56,7 @@ const npc = {
     y: 270,          
     largura: 60,     
     altura: 80,      
-    tempoFlutuar: 0, // --- NOVA LINHA: Controla a velocidade da flutuação ---
+    tempoFlutuar: 0, // Controla a velocidade da flutuação
     dialogo: [
         "Hum?",
         "O que você está fazendo aqui?",
@@ -168,6 +168,11 @@ function desenharCenario() {
 }
 
 function atualizar() {
+    // --- ATUALIZAÇÃO: Faz o espírito flutuar enquanto o jogador joga ou conversa com ele ---
+    if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
+        npc.tempoFlutuar += 0.05;
+    }
+
     if (estadoAtual === "JOGANDO") {
         player.estaAndando = false;
 
@@ -275,11 +280,15 @@ function desenhar() {
         // --- RENDERIZAÇÃO DO NPC 1 (Espírito Azul) ---
         let npcRelativoX = npc.x - camera.x;
         if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
+            
+            // Calcula o deslocamento da flutuação (sobe e desce em até 8 pixels)
+            let flutuarY = npc.y + Math.sin(npc.tempoFlutuar) * 8;
+
             if (imgNpcEspirito.complete && imgNpcEspirito.width > 0) {
-                ctx.drawImage(imgNpcEspirito, npcRelativoX, npc.y, npc.largura, npc.altura);
+                ctx.drawImage(imgNpcEspirito, npcRelativoX, flutuarY, npc.largura, npc.altura);
             } else {
-                ctx.fillStyle = "#00ffff"; // Cor ciano de backup se a imagem falhar
-                ctx.fillRect(npcRelativoX, npc.y, npc.largura, npc.altura);
+                ctx.fillStyle = "#00ffff"; 
+                ctx.fillRect(npcRelativoX, flutuarY, npc.largura, npc.altura);
             }
         }
 
