@@ -53,9 +53,10 @@ imgPlayerCorrendo.onload = function() {
 // --- Configurações dos NPCs ---
 const npc = {
     x: 2500, 
-    y: 270,          // Ajustado para o espírito flutuar/ficar na altura certa do chão
-    largura: 60,     // Aumentado para valorizar o sprite do fantasma
-    altura: 80,      // Altura proporcional ao jogador
+    y: 270,          
+    largura: 60,     
+    altura: 80,      
+    tempoFlutuar: 0, // --- NOVA LINHA: Controla a velocidade da flutuação ---
     dialogo: [
         "Hum?",
         "O que você está fazendo aqui?",
