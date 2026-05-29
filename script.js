@@ -89,15 +89,17 @@ const teclas = {};
 // --- Configurações do Parallax Cyberpunk/Neon (Velocidades reduzidas) ---
 const parallax = {
     camadas: [
-        { x: 0, velocidade: 0.02, cor: "#090014", alturaBase: 200, larguraPredio: 110, espacamento: 140 }, // Bem ao fundo
-        { x: 0, velocidade: 0.06, cor: "#120024", alturaBase: 140, larguraPredio: 85,  espacamento: 110 }, // Meio termo
-        { x: 0, velocidade: 0.15, cor: "#1b003a", alturaBase: 90,  larguraPredio: 65,  espacamento: 95 }   // Mais próximo
+        { x: 0, velocidade: 0.02, cor: "#090014", alturaBase: 200, larguraPredio: 110, espacamento: 140 }, 
+        { x: 0, velocidade: 0.06, cor: "#120024", alturaBase: 140, larguraPredio: 85,  espacamento: 110 }, 
+        { x: 0, velocidade: 0.15, cor: "#1b003a", alturaBase: 90,  larguraPredio: 65,  espacamento: 95 }   
     ]
 };
 
-// --- Sistema de Chuva ---
+// --- Sistema de Chuva e Respingo ---
 const maxPingos = 60;
 const chuva = [];
+const respingos = []; // Lista nova para guardar as gotinhas do impacto no chão
+
 for (let i = 0; i < maxPingos; i++) {
     chuva.push({
         x: Math.random() * canvas.width,
@@ -105,6 +107,21 @@ for (let i = 0; i < maxPingos; i++) {
         velocidade: 8 + Math.random() * 5, 
         tamanho: 4 + Math.random() * 6
     });
+}
+
+// Função para criar as gotinhas estourando no chão
+function criarRespingo(x, y) {
+    // Cria de 3 a 4 gotinhas por impacto
+    let quantidade = 3 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < quantidade; i++) {
+        respingos.push({
+            x: x,
+            y: y,
+            velX: (Math.random() - 0.5) * 3,  // Espalha para esquerda ou direita
+            velY: -Math.random() * 3 - 1,     // Joga a gotinha para cima
+            vida: 10 + Math.random() * 10     // Tempo até sumir
+        });
+    }
 }
 
 // Diálogo Inicial
@@ -153,11 +170,9 @@ btnStart.addEventListener("click", () => {
 });
 
 function desenharCenario() {
-    // Céu noturno escuro cyberpunk
     ctx.fillStyle = "#020005";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Estrelas distantes do fundo
     ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
     for(let i = 0; i < 30; i++) {
         let x = ((i * 137) - (camera.x * 0.01)) % canvas.width;
@@ -166,25 +181,20 @@ function desenharCenario() {
         ctx.fillRect(x, y, 1, 1);
     }
 
-    // Desenha as camadas de prédios
     parallax.camadas.forEach((camada, indexCamada) => {
         let espacoTotal = camada.espacamento;
         let scrollX = (camera.x * camada.velocidade) % espacoTotal;
 
         for (let i = -1; i < (canvas.width / espacoTotal) + 2; i++) {
             let xPos = (i * espacoTotal) - scrollX;
-            
-            // Posição fixa real do prédio no mundo inteiro (não muda com o scroll da tela!)
             let idPredioMundo = Math.floor((camera.x * camada.velocidade) / espacoTotal) + i;
             
             let h = camada.alturaBase + (Math.abs(Math.sin(idPredioMundo + indexCamada)) * 70);
             let topoY = chaoY - h;
 
-            // Desenha a silhueta principal do prédio
             ctx.fillStyle = camada.cor;
             ctx.fillRect(xPos, topoY, camada.larguraPredio, h);
 
-            // Adiciona poucas janelas fixas e aleatórias (apenas nas duas camadas mais próximas)
             if (indexCamada > 0) {
                 let linhaJanela = 0;
                 for (let wy = topoY + 20; wy < chaoY - 20; wy += 25) {
@@ -193,24 +203,17 @@ function desenharCenario() {
                     for (let wx = xPos + 15; wx < xPos + camada.larguraPredio - 15; wx += 20) {
                         colunaJanela++;
 
-                        // Semente matemática fixa baseada na ID do prédio + linha + coluna da janela
-                        // Isso garante que cada janela decida o seu estado uma única vez e nunca mude enquanto você anda
                         let sementeJanela = Math.abs(Math.sin(idPredioMundo * 7 + linhaJanela * 13 + colunaJanela * 31));
 
-                        // 1. Menos janelas: Só existem janelas reais se passar desse teste de probabilidade
                         if (sementeJanela > 0.4) {
-                            
-                            // Calculamos a posição real X na tela para desenhar
                             let finalWx = wx;
 
-                            // 2. Aleatoriedade estática: 30% de chance de estar ACESA (Amarela), 70% APAGADA (Preta)
                             if (sementeJanela > 0.82) {
-                                ctx.fillStyle = "rgba(255, 230, 100, 0.8)"; // Amarelo aconchegante iluminado
+                                ctx.fillStyle = "rgba(255, 230, 100, 0.8)"; 
                             } else {
-                                ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; // Totalmente apagada/escura
+                                ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; 
                             }
 
-                            // Desenha o quadradinho da janela
                             ctx.fillRect(finalWx, wy, 4, 6);
                         }
                     }
@@ -220,11 +223,12 @@ function desenharCenario() {
     });
 }
 
-// Atualiza e renderiza a chuva
+// Atualiza e renderiza a chuva junto com os novos respingos
 function gerenciarChuva() {
     ctx.strokeStyle = "rgba(174, 219, 255, 0.4)"; 
     ctx.lineWidth = 1;
     
+    // 1. Desenha e move os pingos da chuva
     chuva.forEach(pingo => {
         ctx.beginPath();
         ctx.moveTo(pingo.x, pingo.y);
@@ -236,11 +240,38 @@ function gerenciarChuva() {
             pingo.x -= 0.5;
         }
 
+        // Detecta colisão com o chão
         if (pingo.y > chaoY) {
+            // Cria o efeito de respingo bem no ponto X onde o pingo bateu
+            criarRespingo(pingo.x, chaoY);
+            
+            // Reseta o pingo no céu
             pingo.y = -10;
             pingo.x = Math.random() * canvas.width;
         }
     });
+
+    // 2. Desenha, move e atualiza os respingos no chão
+    ctx.fillStyle = "rgba(174, 219, 255, 0.6)"; // Cor das gotinhas do respingo
+    for (let i = respingos.length - 1; i >= 0; i--) {
+        let r = respingos[i];
+        
+        // Desenha a mini gotinha (tamanho 2x2 pixels bem sutil)
+        ctx.fillRect(r.x, r.y, 2, 2);
+
+        // Move a gotinha baseada nas velocidades
+        if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC" || estadoAtual === "DIALOGO_INICIAL") {
+            r.x += r.velX;
+            r.y += r.velY;
+            r.velY += 0.2; // Efeito da gravidade puxando o respingo de volta para baixo
+            r.vida--;
+        }
+
+        // Se o tempo de vida da gotinha acabar, remove ela da lista
+        if (r.vida <= 0) {
+            respingos.splice(i, 1);
+        }
+    }
 }
 
 function atualizar() {
@@ -421,6 +452,7 @@ function desenhar() {
         }
         ctx.restore(); 
 
+        // A chuva e os respingos rodam por último para ficarem por cima do chão e personagens
         gerenciarChuva();
 
         if (estadoAtual === "DIALOGO_NPC") {
