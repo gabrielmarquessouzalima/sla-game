@@ -95,17 +95,17 @@ const parallax = {
     ]
 };
 
-// Cores neon para as janelas dos prédios
+// Cores neon para as janelas acesas
 const coresJanelas = ["#ff0055", "#00ffcc", "#ffcc00", "#ff00ff"];
 
-// --- NOVO: Sistema de Chuva ---
+// --- Sistema de Chuva ---
 const maxPingos = 60;
 const chuva = [];
 for (let i = 0; i < maxPingos; i++) {
     chuva.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        velocidade: 8 + Math.random() * 5, // velocidades variadas para efeito de profundidade
+        velocidade: 8 + Math.random() * 5, 
         tamanho: 4 + Math.random() * 6
     });
 }
@@ -169,7 +169,7 @@ function desenharCenario() {
         ctx.fillRect(x, y, 1, 1);
     }
 
-    // Desenha as camadas de prédios com janelas iluminadas
+    // Desenha as camadas de prédios com janelas iluminadas e apagadas
     parallax.camadas.forEach((camada, indexCamada) => {
         let espacoTotal = camada.espacamento;
         let scrollX = (camera.x * camada.velocidade) % espacoTotal;
@@ -178,7 +178,6 @@ function desenharCenario() {
             let xPos = (i * espacoTotal) - scrollX;
             let indicePredioMundo = Math.floor((camera.x * camada.velocidade) / espacoTotal) + i;
             
-            // Altura do prédio gerada por seno para manter a consistência do mapa
             let h = camada.alturaBase + (Math.abs(Math.sin(indicePredioMundo + indexCamada)) * 70);
             let topoY = chaoY - h;
 
@@ -186,20 +185,31 @@ function desenharCenario() {
             ctx.fillStyle = camada.cor;
             ctx.fillRect(xPos, topoY, camada.larguraPredio, h);
 
-            // Desenha janelas pixeladas iluminadas nos prédios das camadas da frente
-            if (indexCamada > 0) {
-                // Semente matemática estável baseada no índice do prédio para as janelas não "piscarem" do nada
-                let semente = Math.abs(Math.sin(indicePredioMundo * 45));
-                
-                ctx.fillStyle = coresJanelas[Math.floor(semente * coresJanelas.length)];
-                
-                // Distribui janelinhas pelo tamanho do prédio
-                for (let wy = topoY + 15; wy < chaoY - 10; wy += 20) {
-                    for (let wx = xPos + 10; wx < xPos + camada.larguraPredio - 10; wx += 15) {
-                        // Só desenha se a semente permitir, para criar padrões variados de luzes acesas/apagadas
-                        if ((wx + wy) % 3 === 0) {
-                            ctx.fillRect(wx, wy, 4, 5);
+            // Adiciona janelas em todas as camadas de prédios para dar mais detalhes
+            let sementePredio = Math.abs(Math.sin(indicePredioMundo * 79 + indexCamada * 13));
+            
+            // Distribui as colunas e linhas de janelas baseadas no tamanho do prédio
+            for (let wy = topoY + 15; wy < chaoY - 15; wy += 18) {
+                for (let wx = xPos + 12; wx < xPos + camada.larguraPredio - 12; wx += 14) {
+                    
+                    // Cria um padrão estável para decidir quais janelas existem e quais estão acesas
+                    let sementeJanela = Math.abs(Math.sin(wx * 12.3 + wy * 37.7));
+                    
+                    // 1. Só desenha a janela se passar nesse teste (para não virar um bloco gigante de luz)
+                    if (sementeJanela > 0.3) {
+                        
+                        // 2. Teste de Acesa ou Apagada (65% de chance de estar apagada, 35% de estar acesa)
+                        if (sementeJanela > 0.65) {
+                            // JANELA ACESA: Escolhe uma cor neon aleatória estável para o prédio
+                            let corIndex = Math.floor((sementePredio * 10 + sementeJanela * 5) % coresJanelas.length);
+                            ctx.fillStyle = coresJanelas[corIndex];
+                        } else {
+                            // JANELA APAGADA: Usa uma cor preta bem suave/translúcida que combina com a sombra do prédio
+                            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
                         }
+
+                        // Desenha o quadradinho pixel art da janela
+                        ctx.fillRect(wx, wy, 4, 5);
                     }
                 }
             }
@@ -207,25 +217,22 @@ function desenharCenario() {
     });
 }
 
-// --- NOVO: Atualiza e renderiza a chuva ---
+// Atualiza e renderiza a chuva
 function gerenciarChuva() {
-    ctx.strokeStyle = "rgba(174, 219, 255, 0.4)"; // Cor azulada/transparente da chuva
+    ctx.strokeStyle = "rgba(174, 219, 255, 0.4)"; 
     ctx.lineWidth = 1;
     
     chuva.forEach(pingo => {
-        // Desenha o pingo na diagonal simulando vento leve
         ctx.beginPath();
         ctx.moveTo(pingo.x, pingo.y);
         ctx.lineTo(pingo.x - 2, pingo.y + pingo.tamanho);
         ctx.stroke();
 
-        // Movimenta o pingo para baixo e para o lado esquerda
         if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC" || estadoAtual === "DIALOGO_INICIAL") {
             pingo.y += pingo.velocidade;
             pingo.x -= 0.5;
         }
 
-        // Se passar do chão, reseta no topo da tela com um X aleatório
         if (pingo.y > chaoY) {
             pingo.y = -10;
             pingo.x = Math.random() * canvas.width;
@@ -295,10 +302,10 @@ function atualizar() {
 }
 
 function desenharCaixaTexto(texto) {
-    ctx.fillStyle = "rgba(0, 0, 26, 0.9)"; // Leve opacidade para ver o fundo de neon atrás da caixa
+    ctx.fillStyle = "rgba(0, 0, 26, 0.9)"; 
     ctx.fillRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
     
-    ctx.strokeStyle = "#ff0055"; // Borda rosa neon
+    ctx.strokeStyle = "#ff0055"; 
     ctx.lineWidth = 2;
     ctx.strokeRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
     
@@ -308,7 +315,7 @@ function desenharCaixaTexto(texto) {
     ctx.fillText(texto, caixaDialogo.x + 20, caixaDialogo.y + 55);
     
     ctx.font = "12px 'Courier New', monospace";
-    ctx.fillStyle = "rgba(0, 255, 204, 0.7)"; // Texto auxiliar em ciano neon
+    ctx.fillStyle = "rgba(0, 255, 204, 0.7)"; 
     ctx.fillText("[Espaço / Enter] para continuar", caixaDialogo.x + 20, caixaDialogo.y + 100);
 }
 
@@ -324,13 +331,12 @@ function desenhar() {
         ctx.textAlign = "center";
         ctx.fillText("CIDADE INFINITA", canvas.width / 2, 150);
         
-        gerenciarChuva(); // A chuva cai mesmo na tela inicial!
+        gerenciarChuva(); 
     } 
     else if (estadoAtual === "DIALOGO_INICIAL") {
         desenharCenario();
         gerenciarChuva();
         
-        // Chão escuro
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
         
@@ -339,12 +345,10 @@ function desenhar() {
     else if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         desenharCenario();
 
-        // Chão Cyberpunk escuro
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
         
-        // Linha divisória do chão brilhante em neon roxo
-        ctx.fillStyle = "#ff00ff";
+        ctx.fillStyle = "#ff00ffff";
         ctx.fillRect(0, chaoY, canvas.width, 2);
 
         let displayX = Math.floor(player.x / 10); 
@@ -414,7 +418,6 @@ function desenhar() {
         }
         ctx.restore(); 
 
-        // A chuva é desenhada na frente dos prédios e dos personagens
         gerenciarChuva();
 
         if (estadoAtual === "DIALOGO_NPC") {
