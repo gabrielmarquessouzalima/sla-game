@@ -227,6 +227,9 @@ function desenharCenario() {
 }
 
 function gerenciarChuva() {
+    // Pegamos a posição na tela onde o player real está desenhado para bater com os pingos da tela
+    let playerTelaX = player.x - camera.x;
+
     chuva.forEach(pingo => {
         let pingoTelaX = (pingo.x - (camera.x * pingo.fatorParallax)) % canvas.width;
         if (pingoTelaX < 0) pingoTelaX += canvas.width; 
@@ -244,6 +247,22 @@ function gerenciarChuva() {
             pingo.x -= 0.5 * pingo.fatorParallax; 
         }
 
+        // --- NOVA COLISÃO: Chuva caindo no Personagem ---
+        // Apenas gotas das camadas mais próximas colidem para manter o efeito visual coerente
+        if (estadoAtual === "JOGANDO" && pingo.fatorParallax > 0.6) {
+            if (pingoTelaX > playerTelaX && 
+                pingoTelaX < playerTelaX + player.largura && 
+                pingo.y > player.y && 
+                pingo.y < player.y + player.altura) {
+                
+                // Cria o respingo exatamente onde o pingo atingiu o corpo do player
+                criarRespingo(pingoTelaX, pingo.y, pingo.fatorParallax);
+                pingo.y = -20; // Reseta a gota lá pro céu
+                return; // Pula a checagem do chão para essa gota
+            }
+        }
+
+        // Detecta colisão com o chão
         if (pingo.y > chaoY) {
             criarRespingo(pingoTelaX, chaoY, pingo.fatorParallax);
             pingo.y = -20;
@@ -363,12 +382,10 @@ function desenhar() {
         ctx.font = "40px 'Courier New', monospace";
         ctx.textAlign = "center";
         ctx.fillText("CIDADE INFINITA", canvas.width / 2, 150);
-        
-        // MODIFICAÇÃO: A chamada do gerenciarChuva() foi removida daqui!
     } 
     else if (estadoAtual === "DIALOGO_INICIAL") {
         desenharCenario();
-        gerenciarChuva(); // Agora ela só roda aqui...
+        gerenciarChuva(); 
         
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
@@ -451,7 +468,7 @@ function desenhar() {
         }
         ctx.restore(); 
 
-        gerenciarChuva(); // ... e aqui!
+        gerenciarChuva();
 
         if (estadoAtual === "DIALOGO_NPC") {
             desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
