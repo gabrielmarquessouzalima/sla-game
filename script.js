@@ -95,25 +95,20 @@ const parallax = {
     ]
 };
 
-// --- Sistema de Chuva e Respingo (ATUALIZADO COM PARALLAX) ---
-const maxPingos = 100; // Aumentei um pouco para preencher bem as camadas de profundidade
+// --- Sistema de Chuva e Respingo ---
+const maxPingos = 100; 
 const chuva = [];
 const respingos = []; 
 
 for (let i = 0; i < maxPingos; i++) {
-    // Sorteia um fator de profundidade (0 = fundo distante, 1 = bem na frente)
     let profundidade = Math.random(); 
     
     chuva.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        // Velocidade vertical baseada na profundidade (fundo cai mais devagar)
         velocidade: 6 + (profundidade * 8), 
-        // Tamanho baseado na profundidade (fundo é menor)
         tamanho: 2 + (profundidade * 7),
-        // Fator do Parallax horizontal: 0.05 no fundo (quase estático) até 1.0 na frente (move junto com o chão)
         fatorParallax: 0.1 + (profundidade * 0.9),
-        // Opacidade: gotas do fundo são mais escuras/transparentes
         opacidade: 0.15 + (profundidade * 0.35)
     });
 }
@@ -127,7 +122,7 @@ function criarRespingo(x, y, fatorParallax) {
             velX: (Math.random() - 0.5) * 2,  
             velY: -Math.random() * 2 - 1,     
             vida: 8 + Math.random() * 8,
-            fatorParallax: fatorParallax // Respingo herda o parallax do pingo
+            fatorParallax: fatorParallax 
         });
     }
 }
@@ -231,16 +226,13 @@ function desenharCenario() {
     });
 }
 
-// --- FUNÇÃO GERENCIAR CHUVA COM PARALLAX REAL ---
 function gerenciarChuva() {
     chuva.forEach(pingo => {
-        // Aplica o efeito Parallax: removemos uma fração da posição da câmera baseado no quão distante o pingo está
         let pingoTelaX = (pingo.x - (camera.x * pingo.fatorParallax)) % canvas.width;
-        if (pingoTelaX < 0) pingoTelaX += canvas.width; // Mantém o pingo infinito na tela
+        if (pingoTelaX < 0) pingoTelaX += canvas.width; 
 
-        // Define a cor e opacidade baseada na camada desse pingo específico
         ctx.strokeStyle = `rgba(174, 219, 255, ${pingo.opacidade})`;
-        ctx.lineWidth = pingo.tamanho > 5 ? 1.5 : 1; // Gotas muito perto ficam ligeiramente mais grossas
+        ctx.lineWidth = pingo.tamanho > 5 ? 1.5 : 1; 
         
         ctx.beginPath();
         ctx.moveTo(pingoTelaX, pingo.y);
@@ -249,19 +241,15 @@ function gerenciarChuva() {
 
         if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC" || estadoAtual === "DIALOGO_INICIAL") {
             pingo.y += pingo.velocidade;
-            // Inclina o pingo sutilmente baseado em sua camada
             pingo.x -= 0.5 * pingo.fatorParallax; 
         }
 
-        // Detecta colisão com o chão
         if (pingo.y > chaoY) {
-            // Cria o respingo mantendo o mesmo parallax da gota mãe
             criarRespingo(pingoTelaX, chaoY, pingo.fatorParallax);
             pingo.y = -20;
         }
     });
 
-    // Atualiza os respingos respeitando o parallax
     for (let i = respingos.length - 1; i >= 0; i--) {
         let r = respingos[i];
         
@@ -271,7 +259,6 @@ function gerenciarChuva() {
         if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC" || estadoAtual === "DIALOGO_INICIAL") {
             r.x += r.velX;
             
-            // Se o player estiver se movendo, ajustamos o respingo na tela conforme o seu fator de parallax
             if (teclas["KeyD"] && estadoAtual === "JOGANDO") r.x -= player.velocidade * r.fatorParallax;
             if (teclas["KeyA"] && estadoAtual === "JOGANDO") r.x += player.velocidade * r.fatorParallax;
 
@@ -377,11 +364,11 @@ function desenhar() {
         ctx.textAlign = "center";
         ctx.fillText("CIDADE INFINITA", canvas.width / 2, 150);
         
-        gerenciarChuva(); 
+        // MODIFICAÇÃO: A chamada do gerenciarChuva() foi removida daqui!
     } 
     else if (estadoAtual === "DIALOGO_INICIAL") {
         desenharCenario();
-        gerenciarChuva();
+        gerenciarChuva(); // Agora ela só roda aqui...
         
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
@@ -464,7 +451,7 @@ function desenhar() {
         }
         ctx.restore(); 
 
-        gerenciarChuva();
+        gerenciarChuva(); // ... e aqui!
 
         if (estadoAtual === "DIALOGO_NPC") {
             desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
