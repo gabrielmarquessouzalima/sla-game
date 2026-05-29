@@ -74,11 +74,12 @@ const npc = {
     distanciaInteracao: 80 
 };
 
+// --- MUDANÇA AQUI: Raposinha com tamanho aumentado (60x60) batendo no queixo do player ---
 const npc2 = {
     x: 5000, 
-    y: 286, // Ajustado para 286 para que com 64 de altura ela encoste perfeitamente no chão (350 - 64)
-    largura: 64, // Ajustado para combinar com a proporção da imagem
-    altura: 64
+    y: 290, // 350 (chão) - 60 (altura) = 290 para ficar com as patas no chão
+    largura: 60, 
+    altura: 60
 };
 
 // --- Sistema de Câmera ---
@@ -420,17 +421,17 @@ function desenhar() {
             }
         }
 
-        // --- RENDERIZAÇÃO DO NPC 2 (Raposinha) ---
+        // --- MUDANÇA AQUI: Desenho da Raposinha com o tamanho novo ajustado ---
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -100 && npc2RelativoX < canvas.width + 100) {
             if (imgNpc2Fox.complete && imgNpc2Fox.width > 0) {
                 ctx.drawImage(imgNpc2Fox, npc2RelativoX, npc2.y, npc2.largura, npc2.altura);
             } else {
-                // Caso a imagem falhe ao carregar por qualquer motivo, mantém o fallback seguro com o olhinho
+                // Caixinha verde reserva reajustada caso a imagem dê algum erro
                 ctx.fillStyle = "#55ff55";
-                ctx.fillRect(npc2RelativoX, npc2.y + 24, 40, 40); // Ajustado para a proporção antiga se der erro
+                ctx.fillRect(npc2RelativoX, npc2.y, npc2.largura, npc2.altura); 
                 ctx.fillStyle = "white";
-                ctx.fillRect(npc2RelativoX + 7, npc2.y + 34, 8, 8);
+                ctx.fillRect(npc2RelativoX + 10, npc2.y + 15, 8, 8);
             }
         }
 
