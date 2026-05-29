@@ -14,9 +14,13 @@ imgPlayerParado.src = "IMG_20260525_102813.png";
 const imgPlayerCorrendo = new Image();
 imgPlayerCorrendo.src = "IMG_20260525_102751.png"; 
 
-// --- Carregamento do Sprite do Espírito Azul ---
+// --- Carregamento do Sprite do Espírito Azul (NPC 1) ---
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png"; 
+
+// --- NOVO: Carregamento do Sprite do Robô TV (NPC 2) ---
+const imgNpcRobo = new Image();
+imgNpcRobo.src = "Untitled_05-25-2026_03-13-21.png"; 
 
 // --- Objeto do Player ---
 const player = {
@@ -70,12 +74,12 @@ const npc = {
     distanciaInteracao: 80 
 };
 
+// Ajustado largura, altura e posição Y para o robô tocar o chão certinho
 const npc2 = {
     x: 5000, 
-    y: 310,
-    largura: 40,
-    altura: 40,
-    cor: "#55ff55" 
+    y: 285, // Ajustado de 310 para 285 para compensar a altura nova de 65 e tocar o chaoY (350)
+    largura: 50,
+    altura: 65
 };
 
 // --- Sistema de Câmera ---
@@ -115,7 +119,7 @@ for (let i = 0; i < maxPingos; i++) {
 
 function criarRespingo(x, y, fatorParallax) {
     let quantidade = 2 + Math.floor(Math.random() * 2);
-    for (let i = 0; i < quantidade; i++) {
+    for (let i = 0; i < quantity = quantidade; i++) {
         respingos.push({
             x: x,
             y: y,
@@ -227,7 +231,6 @@ function desenharCenario() {
 }
 
 function gerenciarChuva() {
-    // Pegamos a posição na tela onde o player real está desenhado para bater com os pingos da tela
     let playerTelaX = player.x - camera.x;
 
     chuva.forEach(pingo => {
@@ -247,22 +250,18 @@ function gerenciarChuva() {
             pingo.x -= 0.5 * pingo.fatorParallax; 
         }
 
-        // --- NOVA COLISÃO: Chuva caindo no Personagem ---
-        // Apenas gotas das camadas mais próximas colidem para manter o efeito visual coerente
         if (estadoAtual === "JOGANDO" && pingo.fatorParallax > 0.6) {
             if (pingoTelaX > playerTelaX && 
                 pingoTelaX < playerTelaX + player.largura && 
                 pingo.y > player.y && 
                 pingo.y < player.y + player.altura) {
                 
-                // Cria o respingo exatamente onde o pingo atingiu o corpo do player
                 criarRespingo(pingoTelaX, pingo.y, pingo.fatorParallax);
-                pingo.y = -20; // Reseta a gota lá pro céu
-                return; // Pula a checagem do chão para essa gota
+                pingo.y = -20; 
+                return; 
             }
         }
 
-        // Detecta colisão com o chão
         if (pingo.y > chaoY) {
             criarRespingo(pingoTelaX, chaoY, pingo.fatorParallax);
             pingo.y = -20;
@@ -422,13 +421,16 @@ function desenhar() {
             }
         }
 
-        // Desenhar segundo NPC (Verde na coord X: 500)
+        // --- ATUALIZADO: RENDERIZAÇÃO DO NPC 2 (Robô TV) ---
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -50 && npc2RelativoX < canvas.width + 50) {
-            ctx.fillStyle = npc2.cor;
-            ctx.fillRect(npc2RelativoX, npc2.y, npc2.largura, npc2.altura);
-            ctx.fillStyle = "white";
-            ctx.fillRect(npc2RelativoX + 7, npc2.y + 10, 8, 8);
+            if (imgNpcRobo.complete && imgNpcRobo.width > 0) {
+                ctx.drawImage(imgNpcRobo, npc2RelativoX, npc2.y, npc2.largura, npc2.altura);
+            } else {
+                // Caso a imagem falhe por algum motivo, desenha um bloco reserva
+                ctx.fillStyle = "#55ff55";
+                ctx.fillRect(npc2RelativoX, npc2.y, npc2.largura, npc2.altura);
+            }
         }
 
         // --- Renderização do Player ---
