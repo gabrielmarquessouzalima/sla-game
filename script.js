@@ -95,9 +95,6 @@ const parallax = {
     ]
 };
 
-// Cores neon para as janelas acesas
-const coresJanelas = ["#ff0055", "#00ffcc", "#ffcc00", "#ff00ff"];
-
 // --- Sistema de Chuva ---
 const maxPingos = 60;
 const chuva = [];
@@ -169,47 +166,53 @@ function desenharCenario() {
         ctx.fillRect(x, y, 1, 1);
     }
 
-    // Desenha as camadas de prédios com janelas iluminadas e apagadas
+    // Desenha as camadas de prédios
     parallax.camadas.forEach((camada, indexCamada) => {
         let espacoTotal = camada.espacamento;
         let scrollX = (camera.x * camada.velocidade) % espacoTotal;
 
         for (let i = -1; i < (canvas.width / espacoTotal) + 2; i++) {
             let xPos = (i * espacoTotal) - scrollX;
-            let indicePredioMundo = Math.floor((camera.x * camada.velocidade) / espacoTotal) + i;
             
-            let h = camada.alturaBase + (Math.abs(Math.sin(indicePredioMundo + indexCamada)) * 70);
+            // Posição fixa real do prédio no mundo inteiro (não muda com o scroll da tela!)
+            let idPredioMundo = Math.floor((camera.x * camada.velocidade) / espacoTotal) + i;
+            
+            let h = camada.alturaBase + (Math.abs(Math.sin(idPredioMundo + indexCamada)) * 70);
             let topoY = chaoY - h;
 
             // Desenha a silhueta principal do prédio
             ctx.fillStyle = camada.cor;
             ctx.fillRect(xPos, topoY, camada.larguraPredio, h);
 
-            // Adiciona janelas em todas as camadas de prédios para dar mais detalhes
-            let sementePredio = Math.abs(Math.sin(indicePredioMundo * 79 + indexCamada * 13));
-            
-            // Distribui as colunas e linhas de janelas baseadas no tamanho do prédio
-            for (let wy = topoY + 15; wy < chaoY - 15; wy += 18) {
-                for (let wx = xPos + 12; wx < xPos + camada.larguraPredio - 12; wx += 14) {
-                    
-                    // Cria um padrão estável para decidir quais janelas existem e quais estão acesas
-                    let sementeJanela = Math.abs(Math.sin(wx * 12.3 + wy * 37.7));
-                    
-                    // 1. Só desenha a janela se passar nesse teste (para não virar um bloco gigante de luz)
-                    if (sementeJanela > 0.3) {
-                        
-                        // 2. Teste de Acesa ou Apagada (65% de chance de estar apagada, 35% de estar acesa)
-                        if (sementeJanela > 0.65) {
-                            // JANELA ACESA: Escolhe uma cor neon aleatória estável para o prédio
-                            let corIndex = Math.floor((sementePredio * 10 + sementeJanela * 5) % coresJanelas.length);
-                            ctx.fillStyle = coresJanelas[corIndex];
-                        } else {
-                            // JANELA APAGADA: Usa uma cor preta bem suave/translúcida que combina com a sombra do prédio
-                            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-                        }
+            // Adiciona poucas janelas fixas e aleatórias (apenas nas duas camadas mais próximas)
+            if (indexCamada > 0) {
+                let linhaJanela = 0;
+                for (let wy = topoY + 20; wy < chaoY - 20; wy += 25) {
+                    linhaJanela++;
+                    let colunaJanela = 0;
+                    for (let wx = xPos + 15; wx < xPos + camada.larguraPredio - 15; wx += 20) {
+                        colunaJanela++;
 
-                        // Desenha o quadradinho pixel art da janela
-                        ctx.fillRect(wx, wy, 4, 5);
+                        // Semente matemática fixa baseada na ID do prédio + linha + coluna da janela
+                        // Isso garante que cada janela decida o seu estado uma única vez e nunca mude enquanto você anda
+                        let sementeJanela = Math.abs(Math.sin(idPredioMundo * 7 + linhaJanela * 13 + colunaJanela * 31));
+
+                        // 1. Menos janelas: Só existem janelas reais se passar desse teste de probabilidade
+                        if (sementeJanela > 0.4) {
+                            
+                            // Calculamos a posição real X na tela para desenhar
+                            let finalWx = wx;
+
+                            // 2. Aleatoriedade estática: 30% de chance de estar ACESA (Amarela), 70% APAGADA (Preta)
+                            if (sementeJanela > 0.82) {
+                                ctx.fillStyle = "rgba(255, 230, 100, 0.8)"; // Amarelo aconchegante iluminado
+                            } else {
+                                ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; // Totalmente apagada/escura
+                            }
+
+                            // Desenha o quadradinho da janela
+                            ctx.fillRect(finalWx, wy, 4, 6);
+                        }
                     }
                 }
             }
