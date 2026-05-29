@@ -56,7 +56,7 @@ const npc = {
     y: 180,          
     largura: 60,     
     altura: 80,      
-    tempoFlutuar: 0, // Controla a velocidade da flutuação
+    tempoFlutuar: 0, 
     dialogo: [
         "Hum?",
         "O que você está fazendo aqui?",
@@ -86,14 +86,29 @@ const camera = {
 const chaoY = 350;
 const teclas = {};
 
-// --- Configurações do Parallax ---
+// --- Configurações do Parallax Cyberpunk/Neon (Velocidades reduzidas) ---
 const parallax = {
     camadas: [
-        { x: 0, velocidade: 0.1, cor: "#050515", alturaBase: 180, larguraPredio: 100, espacamento: 120 },
-        { x: 0, velocidade: 0.4, cor: "#0d0d25", alturaBase: 120, larguraPredio: 80,  espacamento: 100 },
-        { x: 0, velocidade: 0.7, cor: "#161630", alturaBase: 80,  larguraPredio: 60,  espacamento: 90 }
+        { x: 0, velocidade: 0.02, cor: "#090014", alturaBase: 200, larguraPredio: 110, espacamento: 140 }, // Bem ao fundo
+        { x: 0, velocidade: 0.06, cor: "#120024", alturaBase: 140, larguraPredio: 85,  espacamento: 110 }, // Meio termo
+        { x: 0, velocidade: 0.15, cor: "#1b003a", alturaBase: 90,  larguraPredio: 65,  espacamento: 95 }   // Mais próximo
     ]
 };
+
+// Cores neon para as janelas dos prédios
+const coresJanelas = ["#ff0055", "#00ffcc", "#ffcc00", "#ff00ff"];
+
+// --- NOVO: Sistema de Chuva ---
+const maxPingos = 60;
+const chuva = [];
+for (let i = 0; i < maxPingos; i++) {
+    chuva.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        velocidade: 8 + Math.random() * 5, // velocidades variadas para efeito de profundidade
+        tamanho: 4 + Math.random() * 6
+    });
+}
 
 // Diálogo Inicial
 const dialogoInicial = {
@@ -128,7 +143,7 @@ window.addEventListener("keydown", (e) => {
         if (npc.indiceAtual >= npc.dialogo.length) {
             estadoAtual = "JOGANDO";
             npc.jaConversou = true; 
-            npc.x = -9999; // Move o NPC para fora do mapa assim que o diálogo termina
+            npc.x = -9999; 
         }
     }
 });
@@ -141,34 +156,84 @@ btnStart.addEventListener("click", () => {
 });
 
 function desenharCenario() {
-    ctx.fillStyle = "#00000a";
+    // Céu noturno escuro cyberpunk
+    ctx.fillStyle = "#020005";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = "white";
-    for(let i = 0; i < 40; i++) {
-        let x = ((i * 137) - (camera.x * 0.05)) % canvas.width;
+    // Estrelas distantes do fundo
+    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+    for(let i = 0; i < 30; i++) {
+        let x = ((i * 137) - (camera.x * 0.01)) % canvas.width;
         if (x < 0) x += canvas.width;
-        let y = (i * 243) % 200;
+        let y = (i * 243) % 150;
         ctx.fillRect(x, y, 1, 1);
     }
 
-    parallax.camadas.forEach((camada, index) => {
-        ctx.fillStyle = camada.cor;
+    // Desenha as camadas de prédios com janelas iluminadas
+    parallax.camadas.forEach((camada, indexCamada) => {
         let espacoTotal = camada.espacamento;
         let scrollX = (camera.x * camada.velocidade) % espacoTotal;
 
         for (let i = -1; i < (canvas.width / espacoTotal) + 2; i++) {
             let xPos = (i * espacoTotal) - scrollX;
             let indicePredioMundo = Math.floor((camera.x * camada.velocidade) / espacoTotal) + i;
-            let h = camada.alturaBase + (Math.abs(Math.sin(indicePredioMundo + index)) * 60);
             
-            ctx.fillRect(xPos, chaoY - h, camada.larguraPredio, h);
+            // Altura do prédio gerada por seno para manter a consistência do mapa
+            let h = camada.alturaBase + (Math.abs(Math.sin(indicePredioMundo + indexCamada)) * 70);
+            let topoY = chaoY - h;
+
+            // Desenha a silhueta principal do prédio
+            ctx.fillStyle = camada.cor;
+            ctx.fillRect(xPos, topoY, camada.larguraPredio, h);
+
+            // Desenha janelas pixeladas iluminadas nos prédios das camadas da frente
+            if (indexCamada > 0) {
+                // Semente matemática estável baseada no índice do prédio para as janelas não "piscarem" do nada
+                let semente = Math.abs(Math.sin(indicePredioMundo * 45));
+                
+                ctx.fillStyle = coresJanelas[Math.floor(semente * coresJanelas.length)];
+                
+                // Distribui janelinhas pelo tamanho do prédio
+                for (let wy = topoY + 15; wy < chaoY - 10; wy += 20) {
+                    for (let wx = xPos + 10; wx < xPos + camada.larguraPredio - 10; wx += 15) {
+                        // Só desenha se a semente permitir, para criar padrões variados de luzes acesas/apagadas
+                        if ((wx + wy) % 3 === 0) {
+                            ctx.fillRect(wx, wy, 4, 5);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// --- NOVO: Atualiza e renderiza a chuva ---
+function gerenciarChuva() {
+    ctx.strokeStyle = "rgba(174, 219, 255, 0.4)"; // Cor azulada/transparente da chuva
+    ctx.lineWidth = 1;
+    
+    chuva.forEach(pingo => {
+        // Desenha o pingo na diagonal simulando vento leve
+        ctx.beginPath();
+        ctx.moveTo(pingo.x, pingo.y);
+        ctx.lineTo(pingo.x - 2, pingo.y + pingo.tamanho);
+        ctx.stroke();
+
+        // Movimenta o pingo para baixo e para o lado esquerda
+        if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC" || estadoAtual === "DIALOGO_INICIAL") {
+            pingo.y += pingo.velocidade;
+            pingo.x -= 0.5;
+        }
+
+        // Se passar do chão, reseta no topo da tela com um X aleatório
+        if (pingo.y > chaoY) {
+            pingo.y = -10;
+            pingo.x = Math.random() * canvas.width;
         }
     });
 }
 
 function atualizar() {
-    // --- ATUALIZAÇÃO: Faz o espírito flutuar enquanto o jogador joga ou conversa com ele ---
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
     }
@@ -198,7 +263,6 @@ function atualizar() {
             player.frameAtual = 0; 
         }
 
-        // Verifica o diálogo se o NPC ainda estiver ativo
         if (!npc.jaConversou && npc.x !== -9999) {
             let distancia = Math.abs(player.x - npc.x);
             if (distancia < npc.distanciaInteracao) {
@@ -231,11 +295,12 @@ function atualizar() {
 }
 
 function desenharCaixaTexto(texto) {
-    ctx.fillStyle = caixaDialogo.corBorda;
-    ctx.fillRect(caixaDialogo.x - 4, caixaDialogo.y - 4, caixaDialogo.largura + 8, caixaDialogo.altura + 8);
-    
-    ctx.fillStyle = caixaDialogo.corFundo;
+    ctx.fillStyle = "rgba(0, 0, 26, 0.9)"; // Leve opacidade para ver o fundo de neon atrás da caixa
     ctx.fillRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
+    
+    ctx.strokeStyle = "#ff0055"; // Borda rosa neon
+    ctx.lineWidth = 2;
+    ctx.strokeRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
     
     ctx.fillStyle = "white";
     ctx.font = "20px 'Courier New', monospace";
@@ -243,7 +308,7 @@ function desenharCaixaTexto(texto) {
     ctx.fillText(texto, caixaDialogo.x + 20, caixaDialogo.y + 55);
     
     ctx.font = "12px 'Courier New', monospace";
-    ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.fillStyle = "rgba(0, 255, 204, 0.7)"; // Texto auxiliar em ciano neon
     ctx.fillText("[Espaço / Enter] para continuar", caixaDialogo.x + 20, caixaDialogo.y + 100);
 }
 
@@ -251,55 +316,63 @@ function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (estadoAtual === "TELA_INICIAL") {
-        ctx.fillStyle = "#00001a";
+        ctx.fillStyle = "#050010";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "white";
+        
+        ctx.fillStyle = "#00ffcc";
         ctx.font = "40px 'Courier New', monospace";
         ctx.textAlign = "center";
         ctx.fillText("CIDADE INFINITA", canvas.width / 2, 150);
+        
+        gerenciarChuva(); // A chuva cai mesmo na tela inicial!
     } 
     else if (estadoAtual === "DIALOGO_INICIAL") {
-        ctx.fillStyle = "#00000a";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        desenharCenario();
+        gerenciarChuva();
+        
+        // Chão escuro
+        ctx.fillStyle = "#0a0712";
+        ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
+        
         desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
     } 
     else if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         desenharCenario();
 
-        ctx.fillStyle = "#111";
+        // Chão Cyberpunk escuro
+        ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
+        
+        // Linha divisória do chão brilhante em neon roxo
+        ctx.fillStyle = "#ff00ff";
+        ctx.fillRect(0, chaoY, canvas.width, 2);
 
         let displayX = Math.floor(player.x / 10); 
         let displayY = Math.floor(((chaoY - player.altura - player.y) / (chaoY - player.altura)) * 100);
 
-        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+        ctx.fillStyle = "rgba(0, 255, 204, 0.8)";
         ctx.font = "16px 'Courier New', monospace";
         ctx.textAlign = "left";
         ctx.fillText(`COORD X: ${displayX}  COORD Y: ${displayY}`, 20, 30);
 
-      // --- RENDERIZAÇÃO DO NPC 1 (Espírito Azul) ---
-let npcRelativoX = npc.x - camera.x;
-if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
-    
-    // Essa linha calcula a onda do balanço:
-    let flutuarY = npc.y + Math.sin(npc.tempoFlutuar) * 8;
+        // --- RENDERIZAÇÃO DO NPC 1 (Espírito Azul) ---
+        let npcRelativoX = npc.x - camera.x;
+        if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
+            let flutuarY = npc.y + Math.sin(npc.tempoFlutuar) * 8;
 
-    if (imgNpcEspirito.complete && imgNpcEspirito.width > 0) {
-        // IMPORTANTE: Aqui precisa estar 'flutuarY' e NÃO 'npc.y'
-        ctx.drawImage(imgNpcEspirito, npcRelativoX, flutuarY, npc.largura, npc.altura);
-    } else {
-        // IMPORTANTE: Aqui também precisa estar 'flutuarY'
-        ctx.fillStyle = "#00ffff"; 
-        ctx.fillRect(npcRelativoX, flutuarY, npc.largura, npc.altura);
-    }
-}
+            if (imgNpcEspirito.complete && imgNpcEspirito.width > 0) {
+                ctx.drawImage(imgNpcEspirito, npcRelativoX, flutuarY, npc.largura, npc.altura);
+            } else {
+                ctx.fillStyle = "#00ffff"; 
+                ctx.fillRect(npcRelativoX, flutuarY, npc.largura, npc.altura);
+            }
+        }
 
         // Desenhar segundo NPC (Verde na coord X: 500)
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -50 && npc2RelativoX < canvas.width + 50) {
             ctx.fillStyle = npc2.cor;
             ctx.fillRect(npc2RelativoX, npc2.y, npc2.largura, npc2.altura);
-            
             ctx.fillStyle = "white";
             ctx.fillRect(npc2RelativoX + 7, npc2.y + 10, 8, 8);
         }
@@ -308,7 +381,6 @@ if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
         let playerRelativoX = player.x - camera.x;
         
         ctx.save(); 
-        
         if (player.direcao === "esquerda") {
             ctx.translate(playerRelativoX + player.largura / 2, player.y + player.altura / 2);
             ctx.scale(-1, 1);
@@ -336,13 +408,14 @@ if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
         } else {
             ctx.fillStyle = "#00aaff";
             ctx.fillRect(playerRelativoX, player.y, player.largura, player.altura);
-            
             ctx.fillStyle = "white";
             let olhoX = player.direcao === "direita" ? playerRelativoX + 25 : playerRelativoX + 7;
             ctx.fillRect(olhoX, player.y + 10, 8, 8);
         }
-
         ctx.restore(); 
+
+        // A chuva é desenhada na frente dos prédios e dos personagens
+        gerenciarChuva();
 
         if (estadoAtual === "DIALOGO_NPC") {
             desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
