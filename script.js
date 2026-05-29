@@ -78,8 +78,8 @@ const npc = {
 const npc2 = {
     x: 5000, 
     y: 280, // Ajustado para 280 (350 do chão - 70 de altura)
-    largura: 70, 
-    altura: 70
+    largura: 100, 
+    altura: 100
 };
 
 // --- Sistema de Câmera ---
