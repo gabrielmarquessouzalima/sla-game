@@ -477,4 +477,4 @@ function desenhar() {
 }
 
 // Inicia o loop principal do jogo
-atualizar();
+atualizar(); 
