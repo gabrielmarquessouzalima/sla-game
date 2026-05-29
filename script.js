@@ -27,7 +27,7 @@ const player = {
     x: 0, 
     y: 268,           
     largura: 50,      
-    altura: 80,       
+    altura: 85,       
     velocidade: 6,
     velY: 0,
     gravidade: 0.8,
