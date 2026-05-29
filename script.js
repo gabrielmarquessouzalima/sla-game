@@ -53,7 +53,7 @@ imgPlayerCorrendo.onload = function() {
 // --- Configurações dos NPCs ---
 const npc = {
     x: 2500, 
-    y: 350,          
+    y: 270,          
     largura: 60,     
     altura: 80,      
     tempoFlutuar: 0, // Controla a velocidade da flutuação
