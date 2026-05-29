@@ -20,7 +20,7 @@ imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png";
 
 // --- Carregamento do Sprite do NPC 2 (Raposinha) ---
 const imgNpc2Fox = new Image();
-imgNpc2Fox.src = "fox.png.png"; // Usa o nome do arquivo que você enviou
+imgNpc2Fox.src = "fox.png.png"; 
 
 // --- Objeto do Player ---
 const player = {
@@ -74,12 +74,12 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- MUDANÇA AQUI: Raposinha com tamanho aumentado (60x60) batendo no queixo do player ---
+// --- ALTERADO AQUI: Raposinha agora com tamanho 70x70 ---
 const npc2 = {
     x: 5000, 
-    y: 290, // 350 (chão) - 60 (altura) = 290 para ficar com as patas no chão
-    largura: 60, 
-    altura: 60
+    y: 280, // Ajustado para 280 (350 do chão - 70 de altura)
+    largura: 70, 
+    altura: 70
 };
 
 // --- Sistema de Câmera ---
@@ -421,17 +421,16 @@ function desenhar() {
             }
         }
 
-        // --- MUDANÇA AQUI: Desenho da Raposinha com o tamanho novo ajustado ---
+        // --- RENDERIZAÇÃO DO NPC 2 (Raposinha aumentada) ---
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -100 && npc2RelativoX < canvas.width + 100) {
             if (imgNpc2Fox.complete && imgNpc2Fox.width > 0) {
                 ctx.drawImage(imgNpc2Fox, npc2RelativoX, npc2.y, npc2.largura, npc2.altura);
             } else {
-                // Caixinha verde reserva reajustada caso a imagem dê algum erro
                 ctx.fillStyle = "#55ff55";
                 ctx.fillRect(npc2RelativoX, npc2.y, npc2.largura, npc2.altura); 
                 ctx.fillStyle = "white";
-                ctx.fillRect(npc2RelativoX + 10, npc2.y + 15, 8, 8);
+                ctx.fillRect(npc2RelativoX + 12, npc2.y + 18, 10, 10);
             }
         }
 
