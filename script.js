@@ -86,7 +86,7 @@ const camera = {
 const chaoY = 350;
 const teclas = {};
 
-// --- Configurações do Parallax Cyberpunk/Neon ---
+// --- Configurações do Parallax Cyberpunk/Neon (Velocidades reduzidas) ---
 const parallax = {
     camadas: [
         { x: 0, velocidade: 0.02, cor: "#090014", alturaBase: 200, larguraPredio: 110, espacamento: 140 }, 
@@ -98,7 +98,7 @@ const parallax = {
 // --- Sistema de Chuva e Respingo ---
 const maxPingos = 60;
 const chuva = [];
-const respingos = []; 
+const respingos = []; // Lista nova para guardar as gotinhas do impacto no chão
 
 for (let i = 0; i < maxPingos; i++) {
     chuva.push({
@@ -109,15 +109,17 @@ for (let i = 0; i < maxPingos; i++) {
     });
 }
 
+// Função para criar as gotinhas estourando no chão
 function criarRespingo(x, y) {
+    // Cria de 3 a 4 gotinhas por impacto
     let quantidade = 3 + Math.floor(Math.random() * 2);
     for (let i = 0; i < quantidade; i++) {
         respingos.push({
             x: x,
             y: y,
-            velX: (Math.random() - 0.5) * 3,  
-            velY: -Math.random() * 3 - 1,     
-            vida: 10 + Math.random() * 10     
+            velX: (Math.random() - 0.5) * 3,  // Espalha para esquerda ou direita
+            velY: -Math.random() * 3 - 1,     // Joga a gotinha para cima
+            vida: 10 + Math.random() * 10     // Tempo até sumir
         });
     }
 }
@@ -221,10 +223,12 @@ function desenharCenario() {
     });
 }
 
+// Atualiza e renderiza a chuva junto com os novos respingos
 function gerenciarChuva() {
     ctx.strokeStyle = "rgba(174, 219, 255, 0.4)"; 
     ctx.lineWidth = 1;
     
+    // 1. Desenha e move os pingos da chuva
     chuva.forEach(pingo => {
         ctx.beginPath();
         ctx.moveTo(pingo.x, pingo.y);
@@ -236,25 +240,34 @@ function gerenciarChuva() {
             pingo.x -= 0.5;
         }
 
+        // Detecta colisão com o chão
         if (pingo.y > chaoY) {
+            // Cria o efeito de respingo bem no ponto X onde o pingo bateu
             criarRespingo(pingo.x, chaoY);
+            
+            // Reseta o pingo no céu
             pingo.y = -10;
             pingo.x = Math.random() * canvas.width;
         }
     });
 
-    ctx.fillStyle = "rgba(174, 219, 255, 0.6)"; 
+    // 2. Desenha, move e atualiza os respingos no chão
+    ctx.fillStyle = "rgba(174, 219, 255, 0.6)"; // Cor das gotinhas do respingo
     for (let i = respingos.length - 1; i >= 0; i--) {
         let r = respingos[i];
+        
+        // Desenha a mini gotinha (tamanho 2x2 pixels bem sutil)
         ctx.fillRect(r.x, r.y, 2, 2);
 
+        // Move a gotinha baseada nas velocidades
         if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC" || estadoAtual === "DIALOGO_INICIAL") {
             r.x += r.velX;
             r.y += r.velY;
-            r.velY += 0.2; 
+            r.velY += 0.2; // Efeito da gravidade puxando o respingo de volta para baixo
             r.vida--;
         }
 
+        // Se o tempo de vida da gotinha acabar, remove ela da lista
         if (r.vida <= 0) {
             respingos.splice(i, 1);
         }
@@ -324,7 +337,7 @@ function atualizar() {
 
 function desenharCaixaTexto(texto) {
     ctx.fillStyle = "rgba(0, 0, 26, 0.9)"; 
-    ctx.fillRect(caixaDialogo.x, cajaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
+    ctx.fillRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
     
     ctx.strokeStyle = "#ff0055"; 
     ctx.lineWidth = 2;
@@ -439,6 +452,7 @@ function desenhar() {
         }
         ctx.restore(); 
 
+        // A chuva e os respingos rodam por último para ficarem por cima do chão e personagens
         gerenciarChuva();
 
         if (estadoAtual === "DIALOGO_NPC") {
