@@ -20,7 +20,7 @@ imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png";
 
 // --- NOVO: Carregamento do Sprite do Poste (Renomeie sua imagem para poste.png) ---
 const imgPoste = new Image();
-imgPoste.src = "poste.png.jepg"; 
+imgPoste.src = "poste.png.jpeg"; 
 
 // --- Objeto do Player ---
 const player = {
