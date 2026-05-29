@@ -86,7 +86,7 @@ const camera = {
 const chaoY = 350;
 const teclas = {};
 
-// --- Configurações do Parallax Cyberpunk/Neon (Velocidades reduzidas) ---
+// --- Configurações do Parallax Cyberpunk/Neon ---
 const parallax = {
     camadas: [
         { x: 0, velocidade: 0.02, cor: "#090014", alturaBase: 200, larguraPredio: 110, espacamento: 140 }, 
@@ -95,31 +95,39 @@ const parallax = {
     ]
 };
 
-// --- Sistema de Chuva e Respingo ---
-const maxPingos = 60;
+// --- Sistema de Chuva e Respingo (ATUALIZADO COM PARALLAX) ---
+const maxPingos = 100; // Aumentei um pouco para preencher bem as camadas de profundidade
 const chuva = [];
-const respingos = []; // Lista nova para guardar as gotinhas do impacto no chão
+const respingos = []; 
 
 for (let i = 0; i < maxPingos; i++) {
+    // Sorteia um fator de profundidade (0 = fundo distante, 1 = bem na frente)
+    let profundidade = Math.random(); 
+    
     chuva.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        velocidade: 8 + Math.random() * 5, 
-        tamanho: 4 + Math.random() * 6
+        // Velocidade vertical baseada na profundidade (fundo cai mais devagar)
+        velocidade: 6 + (profundidade * 8), 
+        // Tamanho baseado na profundidade (fundo é menor)
+        tamanho: 2 + (profundidade * 7),
+        // Fator do Parallax horizontal: 0.05 no fundo (quase estático) até 1.0 na frente (move junto com o chão)
+        fatorParallax: 0.1 + (profundidade * 0.9),
+        // Opacidade: gotas do fundo são mais escuras/transparentes
+        opacidade: 0.15 + (profundidade * 0.35)
     });
 }
 
-// Função para criar as gotinhas estourando no chão
-function criarRespingo(x, y) {
-    // Cria de 3 a 4 gotinhas por impacto
-    let quantidade = 3 + Math.floor(Math.random() * 2);
+function criarRespingo(x, y, fatorParallax) {
+    let quantidade = 2 + Math.floor(Math.random() * 2);
     for (let i = 0; i < quantidade; i++) {
         respingos.push({
             x: x,
             y: y,
-            velX: (Math.random() - 0.5) * 3,  // Espalha para esquerda ou direita
-            velY: -Math.random() * 3 - 1,     // Joga a gotinha para cima
-            vida: 10 + Math.random() * 10     // Tempo até sumir
+            velX: (Math.random() - 0.5) * 2,  
+            velY: -Math.random() * 2 - 1,     
+            vida: 8 + Math.random() * 8,
+            fatorParallax: fatorParallax // Respingo herda o parallax do pingo
         });
     }
 }
@@ -223,51 +231,55 @@ function desenharCenario() {
     });
 }
 
-// Atualiza e renderiza a chuva junto com os novos respingos
+// --- FUNÇÃO GERENCIAR CHUVA COM PARALLAX REAL ---
 function gerenciarChuva() {
-    ctx.strokeStyle = "rgba(174, 219, 255, 0.4)"; 
-    ctx.lineWidth = 1;
-    
-    // 1. Desenha e move os pingos da chuva
     chuva.forEach(pingo => {
+        // Aplica o efeito Parallax: removemos uma fração da posição da câmera baseado no quão distante o pingo está
+        let pingoTelaX = (pingo.x - (camera.x * pingo.fatorParallax)) % canvas.width;
+        if (pingoTelaX < 0) pingoTelaX += canvas.width; // Mantém o pingo infinito na tela
+
+        // Define a cor e opacidade baseada na camada desse pingo específico
+        ctx.strokeStyle = `rgba(174, 219, 255, ${pingo.opacidade})`;
+        ctx.lineWidth = pingo.tamanho > 5 ? 1.5 : 1; // Gotas muito perto ficam ligeiramente mais grossas
+        
         ctx.beginPath();
-        ctx.moveTo(pingo.x, pingo.y);
-        ctx.lineTo(pingo.x - 2, pingo.y + pingo.tamanho);
+        ctx.moveTo(pingoTelaX, pingo.y);
+        ctx.lineTo(pingoTelaX - (pingo.fatorParallax * 2), pingo.y + pingo.tamanho);
         ctx.stroke();
 
         if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC" || estadoAtual === "DIALOGO_INICIAL") {
             pingo.y += pingo.velocidade;
-            pingo.x -= 0.5;
+            // Inclina o pingo sutilmente baseado em sua camada
+            pingo.x -= 0.5 * pingo.fatorParallax; 
         }
 
         // Detecta colisão com o chão
         if (pingo.y > chaoY) {
-            // Cria o efeito de respingo bem no ponto X onde o pingo bateu
-            criarRespingo(pingo.x, chaoY);
-            
-            // Reseta o pingo no céu
-            pingo.y = -10;
-            pingo.x = Math.random() * canvas.width;
+            // Cria o respingo mantendo o mesmo parallax da gota mãe
+            criarRespingo(pingoTelaX, chaoY, pingo.fatorParallax);
+            pingo.y = -20;
         }
     });
 
-    // 2. Desenha, move e atualiza os respingos no chão
-    ctx.fillStyle = "rgba(174, 219, 255, 0.6)"; // Cor das gotinhas do respingo
+    // Atualiza os respingos respeitando o parallax
     for (let i = respingos.length - 1; i >= 0; i--) {
         let r = respingos[i];
         
-        // Desenha a mini gotinha (tamanho 2x2 pixels bem sutil)
-        ctx.fillRect(r.x, r.y, 2, 2);
+        ctx.fillStyle = `rgba(174, 219, 255, 0.5)`;
+        ctx.fillRect(r.x, r.y, 1.5, 1.5);
 
-        // Move a gotinha baseada nas velocidades
         if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC" || estadoAtual === "DIALOGO_INICIAL") {
             r.x += r.velX;
+            
+            // Se o player estiver se movendo, ajustamos o respingo na tela conforme o seu fator de parallax
+            if (teclas["KeyD"] && estadoAtual === "JOGANDO") r.x -= player.velocidade * r.fatorParallax;
+            if (teclas["KeyA"] && estadoAtual === "JOGANDO") r.x += player.velocidade * r.fatorParallax;
+
             r.y += r.velY;
-            r.velY += 0.2; // Efeito da gravidade puxando o respingo de volta para baixo
+            r.velY += 0.2; 
             r.vida--;
         }
 
-        // Se o tempo de vida da gotinha acabar, remove ela da lista
         if (r.vida <= 0) {
             respingos.splice(i, 1);
         }
@@ -452,7 +464,6 @@ function desenhar() {
         }
         ctx.restore(); 
 
-        // A chuva e os respingos rodam por último para ficarem por cima do chão e personagens
         gerenciarChuva();
 
         if (estadoAtual === "DIALOGO_NPC") {
