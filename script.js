@@ -18,10 +18,6 @@ imgPlayerCorrendo.src = "IMG_20260525_102751.png";
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png"; 
 
-// --- NOVO: Carregamento do Sprite do Poste (Renomeie sua imagem para poste.png) ---
-const imgPoste = new Image();
-imgPoste.src = "poste.png.jpeg"; 
-
 // --- Objeto do Player ---
 const player = {
     x: 0, 
@@ -225,34 +221,6 @@ function desenharCenario() {
     });
 }
 
-// --- NOVO: Desenhar os postes na estrada de 80 em 80 metros (800 pixels) ---
-function desenharPostes() {
-    let espacamentoPostes = 800; // Equivalente a 80 metros no jogo
-    
-    // Calcula qual é o primeiro poste visível na tela baseado na câmera
-    let primeiroPosteIndex = Math.floor(camera.x / espacamentoPostes);
-    
-    // Desenha os postes que estão aparecendo na tela e um pouco além
-    for (let i = primeiroPosteIndex; i < primeiroPosteIndex + 3; i++) {
-        let posteXReal = i * espacamentoPostes + 300; // +300 para o primeiro poste não nascer colado no zero
-        let posteXNaTela = posteXReal - camera.x;
-        
-        let posteLargura = 40;
-        let posteAltura = 120;
-        let posteY = chaoY - posteAltura; // Encostado no chão
-
-        if (imgPoste.complete && imgPoste.width > 0) {
-            ctx.drawImage(imgPoste, posteXNaTela, posteY, posteLargura, posteAltura);
-        } else {
-            // Se a imagem falhar, desenha um poste reserva (linha cinza com topo amarelo)
-            ctx.fillStyle = "#555";
-            ctx.fillRect(posteXNaTela + 18, posteY, 4, posteAltura);
-            ctx.fillStyle = "#ffcc00";
-            ctx.fillRect(posteXNaTela + 10, posteY, 20, 8);
-        }
-    }
-}
-
 function gerenciarChuva() {
     ctx.strokeStyle = "rgba(174, 219, 255, 0.4)"; 
     ctx.lineWidth = 1;
@@ -356,7 +324,7 @@ function atualizar() {
 
 function desenharCaixaTexto(texto) {
     ctx.fillStyle = "rgba(0, 0, 26, 0.9)"; 
-    ctx.fillRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
+    ctx.fillRect(caixaDialogo.x, cajaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
     
     ctx.strokeStyle = "#ff0055"; 
     ctx.lineWidth = 2;
@@ -388,7 +356,6 @@ function desenhar() {
     } 
     else if (estadoAtual === "DIALOGO_INICIAL") {
         desenharCenario();
-        desenharPostes(); // Mostra os postes no fundo do diálogo também
         gerenciarChuva();
         
         ctx.fillStyle = "#0a0712";
@@ -398,9 +365,6 @@ function desenhar() {
     } 
     else if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         desenharCenario();
-        
-        // DESENHA OS POSTES (Fica atrás do jogador e na frente do parallax de prédios)
-        desenharPostes();
 
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
