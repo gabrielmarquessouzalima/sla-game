@@ -81,13 +81,13 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// Raposinha Gigante 110x110
+// --- RAPOSINHA AJUSTADA PARA FICAR NO CHÃO ---
 const npc2 = {
     x: 5000, 
-    y: 240, 
+    y: 255, // Mudado de 240 para 255 para compensar a borda da imagem e colar no chão!
     largura: 110, 
     altura: 110
-};
+};;
 
 const camera = { x: 0 };
 const chaoY = 350;
