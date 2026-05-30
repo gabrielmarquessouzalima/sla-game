@@ -7,18 +7,16 @@ canvas.height = 400;
 
 let estadoAtual = "TELA_INICIAL"; 
 
-// --- Carregamento de Sprites do Player ---
+// --- Carregamento de Sprites ---
 const imgPlayerParado = new Image();
 imgPlayerParado.src = "IMG_20260525_102813.png"; 
 
 const imgPlayerCorrendo = new Image();
 imgPlayerCorrendo.src = "IMG_20260525_102751.png"; 
 
-// --- Carregamento do Sprite do Espírito Azul ---
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png"; 
 
-// --- Carregamento do Sprite do NPC 2 (Raposinha) ---
 const imgNpc2Fox = new Image();
 imgNpc2Fox.src = "fox.png.png"; 
 
@@ -61,6 +59,21 @@ imgPlayerCorrendo.onload = function() {
     player.spriteAltura = imgPlayerCorrendo.height;
 };
 
+// --- Configurações da Cena Cinematográfica (X: 450) ---
+const cena450 = {
+    ativa: false,
+    concluida: false,
+    alturaBarras: 0,
+    maxAlturaBarras: 80, // Altura que as barras pretas vão cobrir no topo e no fundo
+    indiceAtual: 0,
+    texto: [
+        "hey sou eu...",
+        "vc se lembra de mim?",
+        "nao tenha medo, sei que cometi um erro m-mas...",
+        "por favor me perdoe eu, eu nao queria..."
+    ]
+};
+
 // --- Configurações dos NPCs ---
 const npc = {
     x: 2500, 
@@ -81,10 +94,10 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- RAPOSINHA SIMPLIFICADA (SEM HITBOX) ---
+// --- RAPOSINHA PERFEITA NO SEU COORDENADO 272 ---
 const npc2 = {
     x: 5000, 
-    y: 272, // Posição Y direta. Ajuste aqui se precisar subir ou descer ela!
+    y: 272, 
     largura: 110, 
     altura: 110
 };
@@ -128,7 +141,7 @@ function criarRespingo(x, y, fatorParallax) {
             velX: (Math.random() - 0.5) * 2,  
             velY: -Math.random() * 2 - 1,     
             vida: 8 + Math.random() * 8,
-            fatorParallax: fatorParallax 
+            fatorParallax: factorParallax 
         });
     }
 }
@@ -151,8 +164,19 @@ const dialogoInicial = {
 
 const caixaDialogo = { x: 50, y: 250, largura: 700, altura: 120 };
 
+// --- CONTROLES E INPUTS ---
 window.addEventListener("keydown", (e) => {
     teclas[e.code] = true;
+    
+    // Avançar os pensamentos roxos do player na cena 450
+    if (estadoAtual === "CENA_450" && (e.code === "Space" || e.code === "Enter")) {
+        cena450.indiceAtual++;
+        if (cena450.indiceAtual >= cena450.texto.length) {
+            estadoAtual = "JOGANDO"; 
+            cena450.concluida = true;
+            cena450.ativa = false;
+        }
+    }
     
     if (estadoAtual === "DIALOGO_INICIAL" && (e.code === "Space" || e.code === "Enter")) {
         dialogoInicial.indiceAtual++;
@@ -239,7 +263,7 @@ function gerenciarChuva() {
         ctx.lineTo(pingoTelaX - (pingo.fatorParallax * 2), pingo.y + pingo.tamanho);
         ctx.stroke();
 
-        if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC" || estadoAtual === "DIALOGO_INICIAL") {
+        if (estadoAtual !== "TELA_INICIAL") {
             pingo.y += pingo.velocidade;
             pingo.x -= 0.5 * pingo.fatorParallax; 
         }
@@ -280,12 +304,21 @@ function gerenciarChuva() {
     }
 }
 
+// --- ENGINE E ATUALIZAÇÕES DOS COORDENADOS ---
 function atualizar() {
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
     }
 
     if (estadoAtual === "JOGANDO") {
+        // GATILHO DA CENA CINEMATOGRÁFICA NO X: 450
+        if (player.x >= 450 && !cena450.concluida) {
+            estadoAtual = "CENA_450";
+            cena450.ativa = true;
+            teclas["KeyD"] = false; 
+            player.estaAndando = false;
+        }
+
         player.estaAndando = false;
 
         if (teclas["KeyA"]) {
@@ -339,10 +372,19 @@ function atualizar() {
             player.noChao = true;
         }
     }
+
+    // Controle suave das barras pretas (sobe/desce)
+    if (estadoAtual === "CENA_450") {
+        if (cena450.alturaBarras < cena450.maxAlturaBarras) cena450.alturaBarras += 4;
+    } else {
+        if (cena450.alturaBarras > 0) cena450.alturaBarras -= 4;
+    }
+
     desenhar();
     requestAnimationFrame(atualizar);
 }
 
+// Caixa de Diálogo Azul (Normal)
 function desenharCaixaTexto(texto) {
     ctx.fillStyle = "rgba(0, 0, 26, 0.9)"; 
     ctx.fillRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
@@ -360,6 +402,28 @@ function desenharCaixaTexto(texto) {
     ctx.fillText("[Espaço / Enter] para continuar", caixaDialogo.x + 20, caixaDialogo.y + 100);
 }
 
+// NOVA CAIXA ROXA COM BORDA VERMELHA (Fala do player em cima)
+function desenharCaixaPensamento(texto) {
+    ctx.fillStyle = "rgba(75, 0, 130, 0.9)"; // Roxo escuro
+    ctx.fillRect(caixaDialogo.x, 20, caixaDialogo.largura, 80); // Fica na parte superior da tela
+    
+    ctx.strokeStyle = "#ff0000"; // Borda Vermelha
+    ctx.lineWidth = 3;
+    ctx.strokeRect(caixaDialogo.x, 20, caixaDialogo.largura, 80);
+    
+    ctx.fillStyle = "white";
+    ctx.font = "18px 'Courier New', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(texto, canvas.width / 2, 65);
+}
+
+// Desenha o efeito de cinema na tela
+function desenharBarrasCinematicas() {
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, cena450.alturaBarras); // Barra Superior
+    ctx.fillRect(0, canvas.height - cena450.alturaBarras, canvas.width, cena450.alturaBarras); // Barra Inferior
+}
+
 function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -371,24 +435,18 @@ function desenhar() {
         ctx.textAlign = "center";
         ctx.fillText("CIDADE INFINITA", canvas.width / 2, 150);
     } 
-    else if (estadoAtual === "DIALOGO_INICIAL") {
-        desenharCenario();
-        gerenciarChuva(); 
-        ctx.fillStyle = "#0a0712";
-        ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
-        desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
-    } 
-    else if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
+    else {
         desenharCenario();
 
+        // Linha do Chão
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
         ctx.fillStyle = "#ff00ffff";
         ctx.fillRect(0, chaoY, canvas.width, 2);
 
+        // UI de Coordenadas
         let displayX = Math.floor(player.x / 10); 
         let displayY = Math.floor((chaoY - (player.y + player.offsetY + player.alturaHitbox)));
-
         ctx.fillStyle = "rgba(0, 255, 204, 0.8)";
         ctx.font = "16px 'Courier New', monospace";
         ctx.textAlign = "left";
@@ -406,7 +464,7 @@ function desenhar() {
             }
         }
 
-        // NPC 2 (Raposinha Gigante - Sem Hitbox)
+        // NPC 2 (Raposinha Gigante - No Coordenado 272)
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             if (imgNpc2Fox.complete && imgNpc2Fox.width > 0) {
@@ -419,7 +477,6 @@ function desenhar() {
 
         // Renderização do Player
         let playerRelativoX = player.x - camera.x;
-        
         ctx.save(); 
         if (player.direcao === "esquerda") {
             ctx.translate(playerRelativoX + player.larguraVisual / 2, player.y + player.alturaVisual / 2);
@@ -454,17 +511,21 @@ function desenhar() {
         // HITBOX DO PLAYER (VERDE)
         ctx.strokeStyle = "#00ff00";
         ctx.lineWidth = 1.5;
-        ctx.strokeRect(
-            playerRelativoX + player.offsetX, 
-            player.y + player.offsetY, 
-            player.larguraHitbox, 
-            player.alturaHitbox
-        );
+        ctx.strokeRect(playerRelativoX + player.offsetX, player.y + player.offsetY, player.larguraHitbox, player.alturaHitbox);
 
         gerenciarChuva();
 
+        if (estadoAtual === "DIALOGO_INICIAL") {
+            desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
+        }
         if (estadoAtual === "DIALOGO_NPC") {
             desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
+        }
+
+        // --- CAMADA DA CENA CINEMATOGRÁFICA ---
+        desenharBarrasCinematicas();
+        if (estadoAtual === "CENA_450") {
+            desenharCaixaPensamento(cena450.texto[cena450.indiceAtual]);
         }
     }
 }
