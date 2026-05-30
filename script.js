@@ -64,7 +64,7 @@ const cena450 = {
     ativa: false,
     concluida: false,
     alturaBarras: 0,
-    maxAlturaBarras: 80, // Altura que as barras pretas vão cobrir no topo e no fundo
+    maxAlturaBarras: 80, 
     indiceAtual: 0,
     texto: [
         "hey sou eu...",
@@ -141,7 +141,7 @@ function criarRespingo(x, y, fatorParallax) {
             velX: (Math.random() - 0.5) * 2,  
             velY: -Math.random() * 2 - 1,     
             vida: 8 + Math.random() * 8,
-            fatorParallax: factorParallax 
+            fatorParallax: fatorParallax // Corrigido aqui! (Antes estava factorParallax)
         });
     }
 }
@@ -175,6 +175,9 @@ window.addEventListener("keydown", (e) => {
             estadoAtual = "JOGANDO"; 
             cena450.concluida = true;
             cena450.ativa = false;
+            // Limpa as teclas para evitar que o player saia correndo sozinho depois da cena
+            teclas["KeyD"] = false;
+            teclas["KeyA"] = false;
         }
     }
     
@@ -316,6 +319,7 @@ function atualizar() {
             estadoAtual = "CENA_450";
             cena450.ativa = true;
             teclas["KeyD"] = false; 
+            teclas["KeyA"] = false;
             player.estaAndando = false;
         }
 
@@ -404,10 +408,10 @@ function desenharCaixaTexto(texto) {
 
 // NOVA CAIXA ROXA COM BORDA VERMELHA (Fala do player em cima)
 function desenharCaixaPensamento(texto) {
-    ctx.fillStyle = "rgba(75, 0, 130, 0.9)"; // Roxo escuro
-    ctx.fillRect(caixaDialogo.x, 20, caixaDialogo.largura, 80); // Fica na parte superior da tela
+    ctx.fillStyle = "rgba(75, 0, 130, 0.9)"; 
+    ctx.fillRect(caixaDialogo.x, 20, caixaDialogo.largura, 80); 
     
-    ctx.strokeStyle = "#ff0000"; // Borda Vermelha
+    ctx.strokeStyle = "#ff0000"; 
     ctx.lineWidth = 3;
     ctx.strokeRect(caixaDialogo.x, 20, caixaDialogo.largura, 80);
     
@@ -420,8 +424,8 @@ function desenharCaixaPensamento(texto) {
 // Desenha o efeito de cinema na tela
 function desenharBarrasCinematicas() {
     ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, canvas.width, cena450.alturaBarras); // Barra Superior
-    ctx.fillRect(0, canvas.height - cena450.alturaBarras, canvas.width, cena450.alturaBarras); // Barra Inferior
+    ctx.fillRect(0, 0, canvas.width, cena450.alturaBarras); 
+    ctx.fillRect(0, canvas.height - cena450.alturaBarras, canvas.width, cena450.alturaBarras); 
 }
 
 function desenhar() {
