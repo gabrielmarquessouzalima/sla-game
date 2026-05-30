@@ -33,7 +33,7 @@ const player = {
     offsetX: 13, 
     offsetY: 2,  
     
-    velocidade: 4, // VELOCIDADE REDUZIDA (De 6 para 4)
+    velocidade: 4, 
     velY: 0,
     gravidade: 1.0, 
     pulo: -14,      
@@ -64,10 +64,10 @@ const cena450 = {
     ativa: false,
     concluida: false,
     alturaBarras: 0,
-    maxAlturaBarras: 140, // FECHA MAIS A TELA (De 80 para 140 para isolar player e raposa)
-    velocidadeBarras: 1.5, // FECHAMENTO BEM MAIS LENTO (Antes era 4)
+    maxAlturaBarras: 140, 
+    velocidadeBarras: 1.5, 
     timerEspera: 0,
-    tempoParaDialogo: 120, // 2 segundos de espera (60 frames por segundo * 2)
+    tempoParaDialogo: 120, 
     indiceAtual: 0,
     texto: [
         "hey sou eu...",
@@ -105,7 +105,8 @@ const npc2 = {
     altura: 110
 };
 
-const camera = { x: 0 };
+// Adicionado controle de posição Y na câmera para subir o cenário
+const camera = { x: 0, y: 0 };
 const chaoY = 350;
 const teclas = {};
 
@@ -140,7 +141,7 @@ function criarRespingo(x, y, fatorParallax) {
     for (let i = 0; i < quantidade; i++) {
         respingos.push({
             x: x,
-            y: y,
+            y: y - camera.y, // Ajustado para respeitar a subida da câmera
             velX: (Math.random() - 0.5) * 2,  
             velY: -Math.random() * 2 - 1,     
             vida: 8 + Math.random() * 8,
@@ -171,7 +172,6 @@ const caixaDialogo = { x: 50, y: 250, largura: 700, altura: 120 };
 window.addEventListener("keydown", (e) => {
     teclas[e.code] = true;
     
-    // Avançar os pensamentos roxos na cena 450 (Só funciona APÓS os 2 segundos de introdução)
     if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo && (e.code === "Space" || e.code === "Enter")) {
         cena450.indiceAtual++;
         if (cena450.indiceAtual >= cena450.texto.length) {
@@ -215,7 +215,7 @@ function desenharCenario() {
     for(let i = 0; i < 30; i++) {
         let x = ((i * 137) - (camera.x * 0.01)) % canvas.width;
         if (x < 0) x += canvas.width;
-        let y = (i * 243) % 150;
+        let y = ((i * 243) % 150) - camera.y * 0.5; // Parallax vertical suave nas estrelas
         ctx.fillRect(x, y, 1, 1);
     }
 
@@ -228,14 +228,15 @@ function desenharCenario() {
             let idPredioMundo = Math.floor((camera.x * camada.velocidade) / espacoTotal) + i;
             
             let h = camada.alturaBase + (Math.abs(Math.sin(idPredioMundo + indexCamada)) * 70);
-            let topoY = chaoY - h;
+            // Os prédios também sobem baseados na camera.y
+            let topoY = chaoY - h - camera.y;
 
             ctx.fillStyle = camada.cor;
             ctx.fillRect(xPos, topoY, camada.larguraPredio, h);
 
             if (indexCamada > 0) {
                 let texturadajaneLa = 0;
-                for (let wy = topoY + 20; wy < chaoY - 20; wy += 25) {
+                for (let wy = topoY + 20; wy < (chaoY - camera.y) - 20; wy += 25) {
                     texturadajaneLa++;
                     let colunaJanela = 0;
                     for (let wx = xPos + 15; wx < xPos + camada.larguraPredio - 15; wx += 20) {
@@ -254,18 +255,22 @@ function desenharCenario() {
 
 function gerenciarChuva() {
     let hitboxRealX = player.x + player.offsetX - camera.x;
-    let hitboxRealY = player.y + player.offsetY;
+    let hitboxRealY = player.y + player.offsetY - camera.y; // Hitbox acompanha a subida
 
     chuva.forEach(pingo => {
         let pingoTelaX = (pingo.x - (camera.x * pingo.fatorParallax)) % canvas.width;
         if (pingoTelaX < 0) pingoTelaX += canvas.width; 
 
+        // O pingo visual acompanha a subida da tela baseado no seu parallax
+        let pingoTelaY = (pingo.y - camera.y) % canvas.height;
+        if (pingoTelaY < 0) pingoTelaY += canvas.width;
+
         ctx.strokeStyle = `rgba(174, 219, 255, ${pingo.opacidade})`;
         ctx.lineWidth = pingo.tamanho > 5 ? 1.5 : 1; 
         
         ctx.beginPath();
-        ctx.moveTo(pingoTelaX, pingo.y);
-        ctx.lineTo(pingoTelaX - (pingo.fatorParallax * 2), pingo.y + pingo.tamanho);
+        ctx.moveTo(pingoTelaX, pingoTelaY);
+        ctx.lineTo(pingoTelaX - (pingo.fatorParallax * 2), pingoTelaY + pingo.tamanho);
         ctx.stroke();
 
         if (estadoAtual !== "TELA_INICIAL") {
@@ -276,16 +281,16 @@ function gerenciarChuva() {
         if (estadoAtual === "JOGANDO" && pingo.fatorParallax > 0.6) {
             if (pingoTelaX > hitboxRealX && 
                 pingoTelaX < hitboxRealX + player.larguraHitbox && 
-                pingo.y > hitboxRealY && 
-                pingo.y < hitboxRealY + player.alturaHitbox) {
+                pingoTelaY > hitboxRealY && 
+                pingoTelaY < hitboxRealY + player.alturaHitbox) {
                 
-                criarRespingo(pingoTelaX, pingo.y, pingo.fatorParallax);
+                criarRespingo(pingoTelaX, pingoTelaY + camera.y, pingo.fatorParallax);
                 pingo.y = -20; 
                 return; 
             }
         }
 
-        if (pingo.y > chaoY) {
+        if (pingoTelaY > chaoY - camera.y) {
             criarRespingo(pingoTelaX, chaoY, pingo.fatorParallax);
             pingo.y = -20;
         }
@@ -294,7 +299,8 @@ function gerenciarChuva() {
     for (let i = respingos.length - 1; i >= 0; i--) {
         let r = respingos[i];
         ctx.fillStyle = `rgba(174, 219, 255, 0.5)`;
-        ctx.fillRect(r.x, r.y, 1.5, 1.5);
+        // Respingos desenhados levando em conta o camera.y
+        ctx.fillRect(r.x, r.y - camera.y, 1.5, 1.5);
 
         if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC" || estadoAtual === "DIALOGO_INICIAL") {
             r.x += r.velX;
@@ -319,7 +325,7 @@ function atualizar() {
         if (player.x >= 4500 && !cena450.concluida) {
             estadoAtual = "CENA_450";
             cena450.ativa = true;
-            cena450.timerEspera = 0; // Reinicia o contador da introdução
+            cena450.timerEspera = 0; 
             teclas["KeyD"] = false; 
             teclas["KeyA"] = false;
             player.estaAndando = false;
@@ -379,14 +385,23 @@ function atualizar() {
         }
     }
 
-    // Controle do temporizador e fechamento suave e lento das barras pretas
-    if (estadoAtual === "CENA_450") {
-        cena450.timerEspera++; // Incrementa o relógio interno da cena de introdução
+    // MANTER TELA FECHADA E CENÁRIO SUBIDO (Mesmo após a cena concluída)
+    if (estadoAtual === "CENA_450" || cena450.concluida) {
+        if (estadoAtual === "CENA_450") {
+            cena450.timerEspera++; 
+        }
+        
+        // As barras fecham devagar
         if (cena450.alturaBarras < cena450.maxAlturaBarras) {
-            cena450.alturaBarras += cena450.velocidadeBarras; // Sobe bem mais devagar
+            cena450.alturaBarras += cena450.velocidadeBarras; 
+        }
+        // O cenário sobe sincronizado na mesma velocidade (sobe 90 pixels para o meio perfeito)
+        if (camera.y < 90) {
+            camera.y += (cena450.velocidadeBarras * 0.65); 
         }
     } else {
         if (cena450.alturaBarras > 0) cena450.alturaBarras -= 4;
+        if (camera.y > 0) camera.y -= 3;
     }
 
     desenhar();
@@ -447,11 +462,11 @@ function desenhar() {
     else {
         desenharCenario();
 
-        // Linha do Chão
+        // Linha do Chão (Subindo com a camera.y)
         ctx.fillStyle = "#0a0712";
-        ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
+        ctx.fillRect(0, chaoY - camera.y, canvas.width, (canvas.height - chaoY) + camera.y);
         ctx.fillStyle = "#ff00ffff";
-        ctx.fillRect(0, chaoY, canvas.width, 2);
+        ctx.fillRect(0, chaoY - camera.y, canvas.width, 2);
 
         // UI de Coordenadas
         let displayX = Math.floor(player.x / 10); 
@@ -461,10 +476,10 @@ function desenhar() {
         ctx.textAlign = "left";
         ctx.fillText(`COORD X: ${displayX}  COORD Y: ${Math.max(0, displayY)}`, 20, 30);
 
-        // NPC 1 (Espírito)
+        // NPC 1 (Espírito) - Subindo com a camera.y
         let npcRelativoX = npc.x - camera.x;
         if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
-            let flutuarY = npc.y + Math.sin(npc.tempoFlutuar) * 8;
+            let flutuarY = npc.y + Math.sin(npc.tempoFlutuar) * 8 - camera.y;
             if (imgNpcEspirito.complete && imgNpcEspirito.width > 0) {
                 ctx.drawImage(imgNpcEspirito, npcRelativoX, flutuarY, npc.largura, npc.altura);
             } else {
@@ -473,24 +488,27 @@ function desenhar() {
             }
         }
 
-        // NPC 2 (Raposinha Gigante)
+        // NPC 2 (Raposinha Gigante) - Subindo com a camera.y
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
+            let npc2Y = npc2.y - camera.y;
             if (imgNpc2Fox.complete && imgNpc2Fox.width > 0) {
-                ctx.drawImage(imgNpc2Fox, npc2RelativoX, npc2.y, npc2.largura, npc2.altura);
+                ctx.drawImage(imgNpc2Fox, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
             } else {
                 ctx.fillStyle = "#55ff55";
-                ctx.fillRect(npc2RelativoX, npc2.y, npc2.largura, npc2.altura); 
+                ctx.fillRect(npc2RelativoX, npc2Y, npc2.largura, npc2.altura); 
             }
         }
 
-        // Renderização do Player
+        // Renderização do Player - Subindo com a camera.y
         let playerRelativoX = player.x - camera.x;
+        let playerY = player.y - camera.y;
+        
         ctx.save(); 
         if (player.direcao === "esquerda") {
-            ctx.translate(playerRelativoX + player.larguraVisual / 2, player.y + player.alturaVisual / 2);
+            ctx.translate(playerRelativoX + player.larguraVisual / 2, playerY + player.alturaVisual / 2);
             ctx.scale(-1, 1);
-            ctx.translate(-(playerRelativoX + player.larguraVisual / 2), -(player.y + player.alturaVisual / 2));
+            ctx.translate(-(playerRelativoX + player.larguraVisual / 2), -(playerY + player.alturaVisual / 2));
         }
 
         if (imgPlayerParado.complete && imgPlayerCorrendo.complete && imgPlayerParado.width > 0) {
@@ -499,7 +517,7 @@ function desenhar() {
                     imgPlayerCorrendo,
                     player.frameAtual * player.spriteLargura, 0, 
                     player.spriteLargura, player.spriteAltura,   
-                    playerRelativoX, player.y,                                   
+                    playerRelativoX, playerY,                                   
                     player.larguraVisual, player.alturaVisual                                
                 );
             } else {
@@ -507,20 +525,20 @@ function desenhar() {
                     imgPlayerParado,
                     0, 0,
                     player.spriteLargura, player.spriteAltura,
-                    playerRelativoX, player.y,
+                    playerRelativoX, playerY,
                     player.larguraVisual, player.alturaVisual
                 );
             }
         } else {
             ctx.fillStyle = "#00aaff";
-            ctx.fillRect(playerRelativoX, player.y, player.larguraVisual, player.alturaVisual);
+            ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
         }
         ctx.restore(); 
 
-        // HITBOX DO PLAYER (VERDE)
+        // HITBOX DO PLAYER (VERDE) - Subindo com a camera.y
         ctx.strokeStyle = "#00ff00";
         ctx.lineWidth = 1.5;
-        ctx.strokeRect(playerRelativoX + player.offsetX, player.y + player.offsetY, player.larguraHitbox, player.alturaHitbox);
+        ctx.strokeRect(playerRelativoX + player.offsetX, playerY + player.offsetY, player.larguraHitbox, player.alturaHitbox);
 
         gerenciarChuva();
 
