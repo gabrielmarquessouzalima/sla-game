@@ -59,7 +59,7 @@ imgPlayerCorrendo.onload = function() {
     player.spriteAltura = imgPlayerCorrendo.height;
 };
 
-// --- Configurações da Cena Cinematográfica (X: 450) ---
+// --- Configurações da Cena Cinematográfica (Ativa no COORD X: 450) ---
 const cena450 = {
     ativa: false,
     concluida: false,
@@ -141,7 +141,7 @@ function criarRespingo(x, y, fatorParallax) {
             velX: (Math.random() - 0.5) * 2,  
             velY: -Math.random() * 2 - 1,     
             vida: 8 + Math.random() * 8,
-            fatorParallax: fatorParallax // Corrigido aqui! (Antes estava factorParallax)
+            fatorParallax: fatorParallax
         });
     }
 }
@@ -314,8 +314,8 @@ function atualizar() {
     }
 
     if (estadoAtual === "JOGANDO") {
-        // GATILHO DA CENA CINEMATOGRÁFICA NO X: 450
-        if (player.x >= 450 && !cena450.concluida) {
+        // GATILHO CORRIGIDO: Ativa quando o display na tela chegar em 450 (4500 pixels de mapa)
+        if (player.x >= 4500 && !cena450.concluida) {
             estadoAtual = "CENA_450";
             cena450.ativa = true;
             teclas["KeyD"] = false; 
@@ -406,7 +406,7 @@ function desenharCaixaTexto(texto) {
     ctx.fillText("[Espaço / Enter] para continuar", caixaDialogo.x + 20, caixaDialogo.y + 100);
 }
 
-// NOVA CAIXA ROXA COM BORDA VERMELHA (Fala do player em cima)
+// CAIXA ROXA COM BORDA VERMELHA (Fala do player na parte de cima)
 function desenharCaixaPensamento(texto) {
     ctx.fillStyle = "rgba(75, 0, 130, 0.9)"; 
     ctx.fillRect(caixaDialogo.x, 20, caixaDialogo.largura, 80); 
@@ -468,7 +468,7 @@ function desenhar() {
             }
         }
 
-        // NPC 2 (Raposinha Gigante - No Coordenado 272)
+        // NPC 2 (Raposinha Gigante)
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             if (imgNpc2Fox.complete && imgNpc2Fox.width > 0) {
