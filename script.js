@@ -105,7 +105,6 @@ const npc2 = {
     altura: 110
 };
 
-// Adicionado controle de posição Y na câmera para subir o cenário
 const camera = { x: 0, y: 0 };
 const chaoY = 350;
 const teclas = {};
@@ -119,7 +118,7 @@ const parallax = {
     ]
 };
 
-// --- Sistema de Chuva ---
+// --- Sistema de Chuva Normalizado ---
 const maxPingos = 100; 
 const chuva = [];
 const respingos = []; 
@@ -141,7 +140,7 @@ function criarRespingo(x, y, fatorParallax) {
     for (let i = 0; i < quantidade; i++) {
         respingos.push({
             x: x,
-            y: y - camera.y, // Ajustado para respeitar a subida da câmera
+            y: y, 
             velX: (Math.random() - 0.5) * 2,  
             velY: -Math.random() * 2 - 1,     
             vida: 8 + Math.random() * 8,
@@ -215,7 +214,7 @@ function desenharCenario() {
     for(let i = 0; i < 30; i++) {
         let x = ((i * 137) - (camera.x * 0.01)) % canvas.width;
         if (x < 0) x += canvas.width;
-        let y = ((i * 243) % 150) - camera.y * 0.5; // Parallax vertical suave nas estrelas
+        let y = ((i * 243) % 150) - camera.y * 0.5; 
         ctx.fillRect(x, y, 1, 1);
     }
 
@@ -228,7 +227,6 @@ function desenharCenario() {
             let idPredioMundo = Math.floor((camera.x * camada.velocidade) / espacoTotal) + i;
             
             let h = camada.alturaBase + (Math.abs(Math.sin(idPredioMundo + indexCamada)) * 70);
-            // Os prédios também sobem baseados na camera.y
             let topoY = chaoY - h - camera.y;
 
             ctx.fillStyle = camada.cor;
@@ -253,24 +251,22 @@ function desenharCenario() {
     });
 }
 
+// CHUVA CORRIGIDA: Totalmente independente da subida da camera.y
 function gerenciarChuva() {
     let hitboxRealX = player.x + player.offsetX - camera.x;
-    let hitboxRealY = player.y + player.offsetY - camera.y; // Hitbox acompanha a subida
+    let hitboxRealY = player.y + player.offsetY - camera.y; 
 
     chuva.forEach(pingo => {
         let pingoTelaX = (pingo.x - (camera.x * pingo.fatorParallax)) % canvas.width;
         if (pingoTelaX < 0) pingoTelaX += canvas.width; 
 
-        // O pingo visual acompanha a subida da tela baseado no seu parallax
-        let pingoTelaY = (pingo.y - camera.y) % canvas.height;
-        if (pingoTelaY < 0) pingoTelaY += canvas.width;
-
+        // Movimento padrão de queda na tela limpa
         ctx.strokeStyle = `rgba(174, 219, 255, ${pingo.opacidade})`;
         ctx.lineWidth = pingo.tamanho > 5 ? 1.5 : 1; 
         
         ctx.beginPath();
-        ctx.moveTo(pingoTelaX, pingoTelaY);
-        ctx.lineTo(pingoTelaX - (pingo.fatorParallax * 2), pingoTelaY + pingo.tamanho);
+        ctx.moveTo(pingoTelaX, pingo.y);
+        ctx.lineTo(pingoTelaX - (pingo.fatorParallax * 2), pingo.y + pingo.tamanho);
         ctx.stroke();
 
         if (estadoAtual !== "TELA_INICIAL") {
@@ -278,20 +274,22 @@ function gerenciarChuva() {
             pingo.x -= 0.5 * pingo.fatorParallax; 
         }
 
+        // Colisão com o player (compensando a subida visual dele)
         if (estadoAtual === "JOGANDO" && pingo.fatorParallax > 0.6) {
             if (pingoTelaX > hitboxRealX && 
                 pingoTelaX < hitboxRealX + player.larguraHitbox && 
-                pingoTelaY > hitboxRealY && 
-                pingoTelaY < hitboxRealY + player.alturaHitbox) {
+                pingo.y > hitboxRealY && 
+                pingo.y < hitboxRealY + player.alturaHitbox) {
                 
-                criarRespingo(pingoTelaX, pingoTelaY + camera.y, pingo.fatorParallax);
+                criarRespingo(pingoTelaX, pingo.y, pingo.fatorParallax);
                 pingo.y = -20; 
                 return; 
             }
         }
 
-        if (pingoTelaY > chaoY - camera.y) {
-            criarRespingo(pingoTelaX, chaoY, pingo.fatorParallax);
+        // Colisão com o chão dinâmico que subiu
+        if (pingo.y > chaoY - camera.y) {
+            criarRespingo(pingoTelaX, chaoY - camera.y, pingo.fatorParallax);
             pingo.y = -20;
         }
     });
@@ -299,8 +297,7 @@ function gerenciarChuva() {
     for (let i = respingos.length - 1; i >= 0; i--) {
         let r = respingos[i];
         ctx.fillStyle = `rgba(174, 219, 255, 0.5)`;
-        // Respingos desenhados levando em conta o camera.y
-        ctx.fillRect(r.x, r.y - camera.y, 1.5, 1.5);
+        ctx.fillRect(r.x, r.y, 1.5, 1.5);
 
         if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC" || estadoAtual === "DIALOGO_INICIAL") {
             r.x += r.velX;
@@ -385,17 +382,14 @@ function atualizar() {
         }
     }
 
-    // MANTER TELA FECHADA E CENÁRIO SUBIDO (Mesmo após a cena concluída)
     if (estadoAtual === "CENA_450" || cena450.concluida) {
         if (estadoAtual === "CENA_450") {
             cena450.timerEspera++; 
         }
         
-        // As barras fecham devagar
         if (cena450.alturaBarras < cena450.maxAlturaBarras) {
             cena450.alturaBarras += cena450.velocidadeBarras; 
         }
-        // O cenário sobe sincronizado na mesma velocidade (sobe 90 pixels para o meio perfeito)
         if (camera.y < 90) {
             camera.y += (cena450.velocidadeBarras * 0.65); 
         }
@@ -408,7 +402,6 @@ function atualizar() {
     requestAnimationFrame(atualizar);
 }
 
-// Caixa de Diálogo Azul (Normal)
 function desenharCaixaTexto(texto) {
     ctx.fillStyle = "rgba(0, 0, 26, 0.9)"; 
     ctx.fillRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
@@ -426,7 +419,6 @@ function desenharCaixaTexto(texto) {
     ctx.fillText("[Espaço / Enter] para continuar", caixaDialogo.x + 20, caixaDialogo.y + 100);
 }
 
-// CAIXA ROXA COM BORDA VERMELHA (Fala do player na parte de cima)
 function desenharCaixaPensamento(texto) {
     ctx.fillStyle = "rgba(75, 0, 130, 0.9)"; 
     ctx.fillRect(caixaDialogo.x, 20, caixaDialogo.largura, 80); 
@@ -441,7 +433,6 @@ function desenharCaixaPensamento(texto) {
     ctx.fillText(texto, canvas.width / 2, 65);
 }
 
-// Desenha o efeito de cinema na tela
 function desenharBarrasCinematicas() {
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, canvas.width, cena450.alturaBarras); 
@@ -462,7 +453,7 @@ function desenhar() {
     else {
         desenharCenario();
 
-        // Linha do Chão (Subindo com a camera.y)
+        // Linha do Chão
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY - camera.y, canvas.width, (canvas.height - chaoY) + camera.y);
         ctx.fillStyle = "#ff00ffff";
@@ -476,7 +467,7 @@ function desenhar() {
         ctx.textAlign = "left";
         ctx.fillText(`COORD X: ${displayX}  COORD Y: ${Math.max(0, displayY)}`, 20, 30);
 
-        // NPC 1 (Espírito) - Subindo com a camera.y
+        // NPC 1 (Espírito)
         let npcRelativoX = npc.x - camera.x;
         if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
             let flutuarY = npc.y + Math.sin(npc.tempoFlutuar) * 8 - camera.y;
@@ -488,7 +479,7 @@ function desenhar() {
             }
         }
 
-        // NPC 2 (Raposinha Gigante) - Subindo com a camera.y
+        // NPC 2 (Raposinha Gigante)
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             let npc2Y = npc2.y - camera.y;
@@ -500,7 +491,7 @@ function desenhar() {
             }
         }
 
-        // Renderização do Player - Subindo com a camera.y
+        // Renderização do Player
         let playerRelativoX = player.x - camera.x;
         let playerY = player.y - camera.y;
         
@@ -535,11 +526,12 @@ function desenhar() {
         }
         ctx.restore(); 
 
-        // HITBOX DO PLAYER (VERDE) - Subindo com a camera.y
+        // HITBOX DO PLAYER (VERDE)
         ctx.strokeStyle = "#00ff00";
         ctx.lineWidth = 1.5;
         ctx.strokeRect(playerRelativoX + player.offsetX, playerY + player.offsetY, player.larguraHitbox, player.alturaHitbox);
 
+        // Chuva renderizada de forma limpa na frente de tudo
         gerenciarChuva();
 
         if (estadoAtual === "DIALOGO_INICIAL") {
@@ -552,7 +544,6 @@ function desenhar() {
         // --- CAMADA DA CENA CINEMATOGRÁFICA ---
         desenharBarrasCinematicas();
         
-        // Exibe o diálogo apenas DEPOIS que o tempo de introdução (2 segundos) acabar
         if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo) {
             desenharCaixaPensamento(cena450.texto[cena450.indiceAtual]);
         }
