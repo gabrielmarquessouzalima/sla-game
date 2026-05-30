@@ -22,17 +22,17 @@ imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png";
 const imgNpc2Fox = new Image();
 imgNpc2Fox.src = "fox.png.png"; 
 
-// --- Objeto do Player (AJUSTADO PARA NÃO FLUTUAR) ---
+// --- Objeto do Player ---
 const player = {
     x: 0, 
-    y: 270, // Ajustado para começar direto no chão (350 - 80 de altura)          
+    y: 270, // Posição exata do chão (350 - 80)          
     largura: 50,      
     altura: 80,       
     velocidade: 6,
     velY: 0,
-    gravidade: 1.2, // Aumentado (era 0.8) para o boneco cair mais rápido e ter peso
-    pulo: -12,      // Diminuído (era -15) para ele não subir tanto
-    noChao: false,
+    gravidade: 1.2, 
+    pulo: -12,      
+    noChao: true,
     direcao: "direita",
     
     // Configurações da folha de sprites
@@ -74,9 +74,10 @@ const npc = {
     distanciaInteracao: 80 
 };
 
+// --- CORRIGIDO: Raposinha mantida em 70x70 e bem posicionada ---
 const npc2 = {
     x: 5000, 
-    y: 280, 
+    y: 280, // 350 - 70 = 280 (pés no chão)
     largura: 70, 
     altura: 70
 };
@@ -333,14 +334,17 @@ function atualizar() {
         camera.x = player.x - 150; 
         if (camera.x < 0) camera.x = 0;
 
+        // Ativa o pulo apenas se estiver firmemente no chão
         if ((teclas["KeyW"] || teclas["Space"]) && player.noChao) {
             player.velY = player.pulo;
             player.noChao = false;
         }
 
+        // Aplica a gravidade constantemente
         player.velY += player.gravidade;
         player.y += player.velY;
 
+        // CORREÇÃO DA FLUTUAÇÃO: Garante o alinhamento perfeito com o chão
         if (player.y + player.altura >= chaoY) {
             player.y = chaoY - player.altura;
             player.velY = 0;
@@ -420,7 +424,7 @@ function desenhar() {
             }
         }
 
-        // --- RENDERIZAÇÃO DO NPC 2 (Raposinha) ---
+        // --- RENDERIZAÇÃO DO NPC 2 (Raposinha Reajustada para 70x70) ---
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -100 && npc2RelativoX < canvas.width + 100) {
             if (imgNpc2Fox.complete && imgNpc2Fox.width > 0) {
