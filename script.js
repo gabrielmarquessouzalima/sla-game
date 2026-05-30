@@ -25,11 +25,11 @@ imgNpc2Fox.src = "fox.png.png";
 // --- Objeto do Player com Hitbox Calibrada ---
 const player = {
     x: 0, 
-    y: 100, // Começa no ar para cair suavemente no chão e evitar travar na colisão inicial          
+    y: 100, 
     larguraVisual: 50,      
     alturaVisual: 80,       
     
-    // Dimensões da Hitbox (contornando o personagem)
+    // Dimensões da Hitbox do Player
     larguraHitbox: 24,
     alturaHitbox: 64,
     offsetX: 13, 
@@ -50,7 +50,7 @@ const player = {
     estaAndando: false
 };
 
-// Ajuste dinâmico de tamanho das imagens
+// Ajuste dinâmico de tamanho das imagens do player
 imgPlayerParado.onload = function() {
     player.spriteAltura = imgPlayerParado.height;
     player.spriteLargura = imgPlayerParado.width; 
@@ -81,13 +81,24 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- RAPOSINHA AJUSTADA PARA FICAR NO CHÃO ---
+// --- RAPOSINHA COM SISTEMA DE HITBOX PRÓPRIO ---
 const npc2 = {
     x: 5000, 
-    y: 255, // Mudado de 240 para 255 para compensar a borda da imagem e colar no chão!
-    largura: 110, 
-    altura: 110
-};;
+    y: 0, // O script vai calcular o Y automaticamente abaixo para colar no chão
+    larguraVisual: 110, 
+    alturaVisual: 110,
+    
+    // Configuração do corpo real da raposa dentro da imagem gigante dela
+    larguraHitbox: 80,
+    alturaHitbox: 65,
+    offsetX: 15,
+    offsetY: 45 // Deslocamento vertical para jogar o desenho para baixo e colar as patas no chão!
+};
+
+// Função para colar os pés da raposa no chão perfeitamente baseado na hitbox dela
+function alinharRaposaNoChao() {
+    npc2.y = chaoY - npc2.alturaHitbox - npc2.offsetY;
+}
 
 const camera = { x: 0 };
 const chaoY = 350;
@@ -281,6 +292,9 @@ function gerenciarChuva() {
 }
 
 function atualizar() {
+    // Mantém a raposa sempre perfeitamente alinhada ao chão
+    alinharRaposaNoChao();
+
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
     }
@@ -332,7 +346,6 @@ function atualizar() {
         player.velY += player.gravidade;
         player.y += player.velY;
 
-        // Verificação precisa usando a base da Hitbox
         let baseHitboxY = player.y + player.offsetY + player.alturaHitbox;
         if (baseHitboxY >= chaoY) {
             player.y = chaoY - player.alturaHitbox - player.offsetY;
@@ -387,7 +400,6 @@ function desenhar() {
         ctx.fillStyle = "#ff00ffff";
         ctx.fillRect(0, chaoY, canvas.width, 2);
 
-        // CONTA SIMPLIFICADA E SEGURA CONTRA TRAVAMENTOS (Sem divisões perigosas)
         let displayX = Math.floor(player.x / 10); 
         let displayY = Math.floor((chaoY - (player.y + player.offsetY + player.alturaHitbox)));
 
@@ -396,7 +408,7 @@ function desenhar() {
         ctx.textAlign = "left";
         ctx.fillText(`COORD X: ${displayX}  COORD Y: ${Math.max(0, displayY)}`, 20, 30);
 
-        // NPC 1
+        // NPC 1 (Espírito)
         let npcRelativoX = npc.x - camera.x;
         if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
             let flutuarY = npc.y + Math.sin(npc.tempoFlutuar) * 8;
@@ -408,15 +420,26 @@ function desenhar() {
             }
         }
 
-        // NPC 2 (Raposinha Gigante 110x110)
+        // NPC 2 (Raposinha Gigante com nova Renderização)
         let npc2RelativoX = npc2.x - camera.x;
-        if (npc2RelativoX > -120 && npc2RelativoX < canvas.width + 120) {
+        if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             if (imgNpc2Fox.complete && imgNpc2Fox.width > 0) {
-                ctx.drawImage(imgNpc2Fox, npc2RelativoX, npc2.y, npc2.largura, npc2.altura);
+                ctx.drawImage(imgNpc2Fox, npc2RelativoX, npc2.y, npc2.larguraVisual, npc2.alturaVisual);
             } else {
                 ctx.fillStyle = "#55ff55";
-                ctx.fillRect(npc2RelativoX, npc2.y, npc2.largura, npc2.altura); 
+                ctx.fillRect(npc2RelativoX, npc2.y, npc2.larguraVisual, npc2.alturaVisual); 
             }
+
+            // --- HITBOX DA RAPOSA (AZUL) ---
+            // Linha guia azul para monitorar as patinhas dela no chão
+            ctx.strokeStyle = "#00aaff";
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(
+                npc2RelativoX + npc2.offsetX, 
+                npc2.y + npc2.offsetY, 
+                npc2.larguraHitbox, 
+                npc2.alturaHitbox
+            );
         }
 
         // Renderização do Player
@@ -453,7 +476,7 @@ function desenhar() {
         }
         ctx.restore(); 
 
-        // HITBOX VISUAL (VERDE) - Alinhada certinho com os pés do boneco
+        // HITBOX DO PLAYER (VERDE)
         ctx.strokeStyle = "#00ff00";
         ctx.lineWidth = 1.5;
         ctx.strokeRect(
