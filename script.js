@@ -33,7 +33,7 @@ const player = {
     offsetX: 13, 
     offsetY: 2,  
     
-    velocidade: 6,
+    velocidade: 4, // VELOCIDADE REDUZIDA (De 6 para 4)
     velY: 0,
     gravidade: 1.0, 
     pulo: -14,      
@@ -59,12 +59,15 @@ imgPlayerCorrendo.onload = function() {
     player.spriteAltura = imgPlayerCorrendo.height;
 };
 
-// --- Configurações da Cena Cinematográfica (Ativa no COORD X: 450) ---
+// --- Configurações Avançadas da Cena Cinematográfica ---
 const cena450 = {
     ativa: false,
     concluida: false,
     alturaBarras: 0,
-    maxAlturaBarras: 80, 
+    maxAlturaBarras: 140, // FECHA MAIS A TELA (De 80 para 140 para isolar player e raposa)
+    velocidadeBarras: 1.5, // FECHAMENTO BEM MAIS LENTO (Antes era 4)
+    timerEspera: 0,
+    tempoParaDialogo: 120, // 2 segundos de espera (60 frames por segundo * 2)
     indiceAtual: 0,
     texto: [
         "hey sou eu...",
@@ -168,14 +171,13 @@ const caixaDialogo = { x: 50, y: 250, largura: 700, altura: 120 };
 window.addEventListener("keydown", (e) => {
     teclas[e.code] = true;
     
-    // Avançar os pensamentos roxos do player na cena 450
-    if (estadoAtual === "CENA_450" && (e.code === "Space" || e.code === "Enter")) {
+    // Avançar os pensamentos roxos na cena 450 (Só funciona APÓS os 2 segundos de introdução)
+    if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo && (e.code === "Space" || e.code === "Enter")) {
         cena450.indiceAtual++;
         if (cena450.indiceAtual >= cena450.texto.length) {
             estadoAtual = "JOGANDO"; 
             cena450.concluida = true;
             cena450.ativa = false;
-            // Limpa as teclas para evitar que o player saia correndo sozinho depois da cena
             teclas["KeyD"] = false;
             teclas["KeyA"] = false;
         }
@@ -232,13 +234,13 @@ function desenharCenario() {
             ctx.fillRect(xPos, topoY, camada.larguraPredio, h);
 
             if (indexCamada > 0) {
-                let linhaJanela = 0;
+                let texturadajaneLa = 0;
                 for (let wy = topoY + 20; wy < chaoY - 20; wy += 25) {
-                    linhaJanela++;
+                    texturadajaneLa++;
                     let colunaJanela = 0;
                     for (let wx = xPos + 15; wx < xPos + camada.larguraPredio - 15; wx += 20) {
                         colunaJanela++;
-                        let sementeJanela = Math.abs(Math.sin(idPredioMundo * 7 + linhaJanela * 13 + colunaJanela * 31));
+                        let sementeJanela = Math.abs(Math.sin(idPredioMundo * 7 + texturadajaneLa * 13 + colunaJanela * 31));
                         if (sementeJanela > 0.4) {
                             ctx.fillStyle = sementeJanela > 0.82 ? "rgba(255, 230, 100, 0.8)" : "rgba(0, 0, 0, 0.6)"; 
                             ctx.fillRect(wx, wy, 4, 6);
@@ -314,10 +316,10 @@ function atualizar() {
     }
 
     if (estadoAtual === "JOGANDO") {
-        // GATILHO CORRIGIDO: Ativa quando o display na tela chegar em 450 (4500 pixels de mapa)
         if (player.x >= 4500 && !cena450.concluida) {
             estadoAtual = "CENA_450";
             cena450.ativa = true;
+            cena450.timerEspera = 0; // Reinicia o contador da introdução
             teclas["KeyD"] = false; 
             teclas["KeyA"] = false;
             player.estaAndando = false;
@@ -377,9 +379,12 @@ function atualizar() {
         }
     }
 
-    // Controle suave das barras pretas (sobe/desce)
+    // Controle do temporizador e fechamento suave e lento das barras pretas
     if (estadoAtual === "CENA_450") {
-        if (cena450.alturaBarras < cena450.maxAlturaBarras) cena450.alturaBarras += 4;
+        cena450.timerEspera++; // Incrementa o relógio interno da cena de introdução
+        if (cena450.alturaBarras < cena450.maxAlturaBarras) {
+            cena450.alturaBarras += cena450.velocidadeBarras; // Sobe bem mais devagar
+        }
     } else {
         if (cena450.alturaBarras > 0) cena450.alturaBarras -= 4;
     }
@@ -528,7 +533,9 @@ function desenhar() {
 
         // --- CAMADA DA CENA CINEMATOGRÁFICA ---
         desenharBarrasCinematicas();
-        if (estadoAtual === "CENA_450") {
+        
+        // Exibe o diálogo apenas DEPOIS que o tempo de introdução (2 segundos) acabar
+        if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo) {
             desenharCaixaPensamento(cena450.texto[cena450.indiceAtual]);
         }
     }
