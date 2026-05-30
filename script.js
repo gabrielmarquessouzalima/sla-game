@@ -22,16 +22,25 @@ imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png";
 const imgNpc2Fox = new Image();
 imgNpc2Fox.src = "fox.png.png"; 
 
-// --- Objeto do Player ---
+// --- Objeto do Player com Hitbox Customizada ---
 const player = {
+    // Posições do topo esquerdo do DESENHO da imagem
     x: 0, 
-    y: 270, // Posição exata do chão (350 - 80)          
-    largura: 50,      
-    altura: 80,       
+    y: 270,           
+    larguraVisual: 50,      
+    alturaVisual: 80,       
+    
+    // DIMENSÕES REAIS DA HITBOX (Contornando o boneco dentro da sprite)
+    larguraHitbox: 24,
+    alturaHitbox: 64,
+    // Deslocamento (offset) do desenho em relação à hitbox
+    offsetX: 13, // Empurra o desenho 13px para a esquerda para centralizar o boneco na hitbox
+    offsetY: 2,  // Ajuste fino vertical para alinhar o pé na base
+    
     velocidade: 6,
     velY: 0,
-    gravidade: 1.2, 
-    pulo: -12,      
+    gravidade: 1.0, 
+    pulo: -14,      
     noChao: true,
     direcao: "direita",
     
@@ -74,12 +83,12 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- CORRIGIDO: Raposinha mantida em 70x70 e bem posicionada ---
+// --- RAPOSINHA AUMENTADA (110x110) E COM PÉS NO CHÃO ---
 const npc2 = {
     x: 5000, 
-    y: 280, // 350 - 70 = 280 (pés no chão)
-    largura: 70, 
-    altura: 70
+    y: 240, // 350 (chão) - 110 (altura) = 240
+    largura: 110, 
+    altura: 110
 };
 
 // --- Sistema de Câmera ---
@@ -126,7 +135,7 @@ function criarRespingo(x, y, fatorParallax) {
             velX: (Math.random() - 0.5) * 2,  
             velY: -Math.random() * 2 - 1,     
             vida: 8 + Math.random() * 8,
-            fatorParallax: fatorParallax 
+            fatorParallax: factorParallax 
         });
     }
 }
@@ -231,7 +240,9 @@ function desenharCenario() {
 }
 
 function gerenciarChuva() {
-    let playerTelaX = player.x - camera.x;
+    // Pega a hitbox real na tela para os respingos da chuva baterem certinho
+    let hitboxRealX = player.x + player.offsetX - camera.x;
+    let hitboxRealY = player.y + player.offsetY;
 
     chuva.forEach(pingo => {
         let pingoTelaX = (pingo.x - (camera.x * pingo.fatorParallax)) % canvas.width;
@@ -251,10 +262,11 @@ function gerenciarChuva() {
         }
 
         if (estadoAtual === "JOGANDO" && pingo.fatorParallax > 0.6) {
-            if (pingoTelaX > playerTelaX && 
-                pingoTelaX < playerTelaX + player.largura && 
-                pingo.y > player.y && 
-                pingo.y < player.y + player.altura) {
+            // Colisão da chuva diretamente com os limites da nova Hitbox
+            if (pingoTelaX > hitboxRealX && 
+                pingoTelaX < hitboxRealX + player.larguraHitbox && 
+                pingo.y > hitboxRealY && 
+                pingo.y < hitboxRealY + player.alturaHitbox) {
                 
                 criarRespingo(pingoTelaX, pingo.y, pingo.fatorParallax);
                 pingo.y = -20; 
@@ -321,8 +333,10 @@ function atualizar() {
             player.frameAtual = 0; 
         }
 
+        // Interação baseada no centro da hitbox real do player
+        let centroPlayerX = player.x + player.offsetX + (player.larguraHitbox / 2);
         if (!npc.jaConversou && npc.x !== -9999) {
-            let distancia = Math.abs(player.x - npc.x);
+            let distancia = Math.abs(centroPlayerX - npc.x);
             if (distancia < npc.distanciaInteracao) {
                 estadoAtual = "DIALOGO_NPC";
                 teclas["KeyA"] = false;
@@ -334,19 +348,23 @@ function atualizar() {
         camera.x = player.x - 150; 
         if (camera.x < 0) camera.x = 0;
 
-        // Ativa o pulo apenas se estiver firmemente no chão
+        // Pulo só funciona se estiver detectado no chão de forma estável
         if ((teclas["KeyW"] || teclas["Space"]) && player.noChao) {
             player.velY = player.pulo;
             player.noChao = false;
         }
 
-        // Aplica a gravidade constantemente
+        // Aplicação da gravidade na velocidade vertical
         player.velY += player.gravidade;
         player.y += player.velY;
 
-        // CORREÇÃO DA FLUTUAÇÃO: Garante o alinhamento perfeito com o chão
-        if (player.y + player.altura >= chaoY) {
-            player.y = chaoY - player.altura;
+        // --- SISTEMA ANTI-BUG DE FLUTUAÇÃO DE HITBOX ---
+        // A base da colisão calcula a posição exata de onde os pés do sprite tocam (y + offsetY + alturaHitbox)
+        let baseHitboxY = player.y + player.offsetY + player.alturaHitbox;
+
+        if (baseHitboxY >= chaoY) {
+            // Fixa os pés perfeitamente sobre a linha do chão
+            player.y = chaoY - player.alturaHitbox - player.offsetY;
             player.velY = 0;
             player.noChao = true;
         }
@@ -404,12 +422,12 @@ function desenhar() {
         ctx.fillRect(0, chaoY, canvas.width, 2);
 
         let displayX = Math.floor(player.x / 10); 
-        let displayY = Math.floor(((chaoY - player.altura - player.y) / (chaoY - player.altura)) * 100);
+        let displayY = Math.floor(((chaoY - player.alturaHitbox - (player.y + player.offsetY)) / chaoY) * 100);
 
         ctx.fillStyle = "rgba(0, 255, 204, 0.8)";
         ctx.font = "16px 'Courier New', monospace";
         ctx.textAlign = "left";
-        ctx.fillText(`COORD X: ${displayX}  COORD Y: ${displayY}`, 20, 30);
+        ctx.fillText(`COORD X: ${displayX}  COORD Y: ${Math.max(0, displayY)}`, 20, 30);
 
         // --- RENDERIZAÇÃO DO NPC 1 (Espírito Azul) ---
         let npcRelativoX = npc.x - camera.x;
@@ -424,16 +442,14 @@ function desenhar() {
             }
         }
 
-        // --- RENDERIZAÇÃO DO NPC 2 (Raposinha Reajustada para 70x70) ---
+        // --- RENDERIZAÇÃO DO NPC 2 (Raposinha Gigante 110x110) ---
         let npc2RelativoX = npc2.x - camera.x;
-        if (npc2RelativoX > -100 && npc2RelativoX < canvas.width + 100) {
+        if (npc2RelativoX > -120 && npc2RelativoX < canvas.width + 120) {
             if (imgNpc2Fox.complete && imgNpc2Fox.width > 0) {
                 ctx.drawImage(imgNpc2Fox, npc2RelativoX, npc2.y, npc2.largura, npc2.altura);
             } else {
                 ctx.fillStyle = "#55ff55";
                 ctx.fillRect(npc2RelativoX, npc2.y, npc2.largura, npc2.altura); 
-                ctx.fillStyle = "white";
-                ctx.fillRect(npc2RelativoX + 12, npc2.y + 18, 10, 10);
             }
         }
 
@@ -442,9 +458,10 @@ function desenhar() {
         
         ctx.save(); 
         if (player.direcao === "esquerda") {
-            ctx.translate(playerRelativoX + player.largura / 2, player.y + player.altura / 2);
+            // Espelha o desenho mantendo o eixo correto baseado na largura visual
+            ctx.translate(playerRelativoX + player.larguraVisual / 2, player.y + player.alturaVisual / 2);
             ctx.scale(-1, 1);
-            ctx.translate(-(playerRelativoX + player.largura / 2), -(player.y + player.altura / 2));
+            ctx.translate(-(playerRelativoX + player.larguraVisual / 2), -(player.y + player.alturaVisual / 2));
         }
 
         if (imgPlayerParado.complete && imgPlayerCorrendo.complete && imgPlayerParado.width > 0) {
@@ -454,7 +471,7 @@ function desenhar() {
                     player.frameAtual * player.spriteLargura, 0, 
                     player.spriteLargura, player.spriteAltura,   
                     playerRelativoX, player.y,                                   
-                    player.largura, player.altura                                
+                    player.larguraVisual, player.alturaVisual                                
                 );
             } else {
                 ctx.drawImage(
@@ -462,17 +479,26 @@ function desenhar() {
                     0, 0,
                     player.spriteLargura, player.spriteAltura,
                     playerRelativoX, player.y,
-                    player.largura, player.altura
+                    player.larguraVisual, player.alturaVisual
                 );
             }
         } else {
+            // Quadrado reserva caso imagem suma temporariamente
             ctx.fillStyle = "#00aaff";
-            ctx.fillRect(playerRelativoX, player.y, player.largura, player.altura);
-            ctx.fillStyle = "white";
-            let olhoX = player.direcao === "direita" ? playerRelativoX + 25 : playerRelativoX + 7;
-            ctx.fillRect(olhoX, player.y + 10, 8, 8);
+            ctx.fillRect(playerRelativoX, player.y, player.larguraVisual, player.alturaVisual);
         }
         ctx.restore(); 
+
+        // --- RENDERIZAÇÃO DA HITBOX REAL (VERDE) ---
+        // Desenha uma borda verde ao redor da área precisa do seu boneco para testar os pés e colisões
+        ctx.strokeStyle = "#00ff00";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(
+            playerRelativoX + player.offsetX, 
+            player.y + player.offsetY, 
+            player.larguraHitbox, 
+            player.alturaHitbox
+        );
 
         gerenciarChuva();
 
