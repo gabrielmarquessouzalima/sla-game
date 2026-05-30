@@ -22,16 +22,16 @@ imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png";
 const imgNpc2Fox = new Image();
 imgNpc2Fox.src = "fox.png.png"; 
 
-// --- Objeto do Player ---
+// --- Objeto do Player (AJUSTADO PARA NÃO FLUTUAR) ---
 const player = {
     x: 0, 
-    y: 268,           
+    y: 270, // Ajustado para começar direto no chão (350 - 80 de altura)          
     largura: 50,      
-    altura: 85,       
+    altura: 80,       
     velocidade: 6,
     velY: 0,
-    gravidade: 0.8,
-    pulo: -15,
+    gravidade: 1.2, // Aumentado (era 0.8) para o boneco cair mais rápido e ter peso
+    pulo: -12,      // Diminuído (era -15) para ele não subir tanto
     noChao: false,
     direcao: "direita",
     
@@ -74,12 +74,11 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- ALTERADO AQUI: Raposinha agora com tamanho 70x70 ---
 const npc2 = {
     x: 5000, 
-    y: 280, // Ajustado para 280 (350 do chão - 70 de altura)
-    largura: 100, 
-    altura: 100
+    y: 280, 
+    largura: 70, 
+    altura: 70
 };
 
 // --- Sistema de Câmera ---
@@ -421,7 +420,7 @@ function desenhar() {
             }
         }
 
-        // --- RENDERIZAÇÃO DO NPC 2 (Raposinha aumentada) ---
+        // --- RENDERIZAÇÃO DO NPC 2 (Raposinha) ---
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -100 && npc2RelativoX < canvas.width + 100) {
             if (imgNpc2Fox.complete && imgNpc2Fox.width > 0) {
