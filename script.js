@@ -84,7 +84,7 @@ const npc = {
 // --- RAPOSINHA SIMPLIFICADA (SEM HITBOX) ---
 const npc2 = {
     x: 5000, 
-    y: 295, // Posição Y direta. Ajuste aqui se precisar subir ou descer ela!
+    y: 280, // Posição Y direta. Ajuste aqui se precisar subir ou descer ela!
     largura: 110, 
     altura: 110
 };
