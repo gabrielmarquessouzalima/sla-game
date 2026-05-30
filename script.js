@@ -81,24 +81,13 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- RAPOSINHA COM SISTEMA DE HITBOX PRÓPRIO ---
+// --- RAPOSINHA SIMPLIFICADA (SEM HITBOX) ---
 const npc2 = {
     x: 5000, 
-    y: 0, // O script vai calcular o Y automaticamente abaixo para colar no chão
-    larguraVisual: 110, 
-    alturaVisual: 110,
-    
-    // Configuração do corpo real da raposa dentro da imagem gigante dela
-    larguraHitbox: 80,
-    alturaHitbox: 65,
-    offsetX: 15,
-    offsetY: 45 // Deslocamento vertical para jogar o desenho para baixo e colar as patas no chão!
+    y: 295, // Posição Y direta. Ajuste aqui se precisar subir ou descer ela!
+    largura: 110, 
+    altura: 110
 };
-
-// Função para colar os pés da raposa no chão perfeitamente baseado na hitbox dela
-function alinharRaposaNoChao() {
-    npc2.y = chaoY - npc2.alturaHitbox - npc2.offsetY;
-}
 
 const camera = { x: 0 };
 const chaoY = 350;
@@ -292,9 +281,6 @@ function gerenciarChuva() {
 }
 
 function atualizar() {
-    // Mantém a raposa sempre perfeitamente alinhada ao chão
-    alinharRaposaNoChao();
-
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
     }
@@ -420,26 +406,15 @@ function desenhar() {
             }
         }
 
-        // NPC 2 (Raposinha Gigante com nova Renderização)
+        // NPC 2 (Raposinha Gigante - Sem Hitbox)
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             if (imgNpc2Fox.complete && imgNpc2Fox.width > 0) {
-                ctx.drawImage(imgNpc2Fox, npc2RelativoX, npc2.y, npc2.larguraVisual, npc2.alturaVisual);
+                ctx.drawImage(imgNpc2Fox, npc2RelativoX, npc2.y, npc2.largura, npc2.altura);
             } else {
                 ctx.fillStyle = "#55ff55";
-                ctx.fillRect(npc2RelativoX, npc2.y, npc2.larguraVisual, npc2.alturaVisual); 
+                ctx.fillRect(npc2RelativoX, npc2.y, npc2.largura, npc2.altura); 
             }
-
-            // --- HITBOX DA RAPOSA (AZUL) ---
-            // Linha guia azul para monitorar as patinhas dela no chão
-            ctx.strokeStyle = "#00aaff";
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(
-                npc2RelativoX + npc2.offsetX, 
-                npc2.y + npc2.offsetY, 
-                npc2.larguraHitbox, 
-                npc2.alturaHitbox
-            );
         }
 
         // Renderização do Player
