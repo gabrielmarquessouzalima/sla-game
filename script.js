@@ -22,29 +22,27 @@ imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png";
 const imgNpc2Fox = new Image();
 imgNpc2Fox.src = "fox.png.png"; 
 
-// --- Objeto do Player com Hitbox Customizada ---
+// --- Objeto do Player com Hitbox Calibrada ---
 const player = {
-    // Posições do topo esquerdo do DESENHO da imagem
     x: 0, 
-    y: 270,           
+    y: 100, // Começa no ar para cair suavemente no chão e evitar travar na colisão inicial          
     larguraVisual: 50,      
     alturaVisual: 80,       
     
-    // DIMENSÕES REAIS DA HITBOX (Contornando o boneco dentro da sprite)
+    // Dimensões da Hitbox (contornando o personagem)
     larguraHitbox: 24,
     alturaHitbox: 64,
-    // Deslocamento (offset) do desenho em relação à hitbox
-    offsetX: 13, // Empurra o desenho 13px para a esquerda para centralizar o boneco na hitbox
-    offsetY: 2,  // Ajuste fino vertical para alinhar o pé na base
+    offsetX: 13, 
+    offsetY: 2,  
     
     velocidade: 6,
     velY: 0,
     gravidade: 1.0, 
     pulo: -14,      
-    noChao: true,
+    noChao: false,
     direcao: "direita",
     
-    // Configurações da folha de sprites
+    // Configurações de animação
     spriteLargura: 32,  
     spriteAltura: 32,   
     frameAtual: 0,      
@@ -52,7 +50,7 @@ const player = {
     estaAndando: false
 };
 
-// Ajuste dinâmico para pegar o tamanho exato das suas fotos
+// Ajuste dinâmico de tamanho das imagens
 imgPlayerParado.onload = function() {
     player.spriteAltura = imgPlayerParado.height;
     player.spriteLargura = imgPlayerParado.width; 
@@ -83,23 +81,19 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- RAPOSINHA AUMENTADA (110x110) E COM PÉS NO CHÃO ---
+// Raposinha Gigante 110x110
 const npc2 = {
     x: 5000, 
-    y: 240, // 350 (chão) - 110 (altura) = 240
+    y: 240, 
     largura: 110, 
     altura: 110
 };
 
-// --- Sistema de Câmera ---
-const camera = {
-    x: 0
-};
-
+const camera = { x: 0 };
 const chaoY = 350;
 const teclas = {};
 
-// --- Configurações do Parallax Cyberpunk/Neon ---
+// --- Configurações do Parallax ---
 const parallax = {
     camadas: [
         { x: 0, velocidade: 0.02, cor: "#090014", alturaBase: 200, larguraPredio: 110, espacamento: 140 }, 
@@ -108,14 +102,13 @@ const parallax = {
     ]
 };
 
-// --- Sistema de Chuva e Respingo ---
+// --- Sistema de Chuva ---
 const maxPingos = 100; 
 const chuva = [];
 const respingos = []; 
 
 for (let i = 0; i < maxPingos; i++) {
     let profundidade = Math.random(); 
-    
     chuva.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
@@ -135,7 +128,7 @@ function criarRespingo(x, y, fatorParallax) {
             velX: (Math.random() - 0.5) * 2,  
             velY: -Math.random() * 2 - 1,     
             vida: 8 + Math.random() * 8,
-            fatorParallax: factorParallax 
+            fatorParallax: fatorParallax 
         });
     }
 }
@@ -156,7 +149,7 @@ const dialogoInicial = {
     indiceAtual: 0
 };
 
-const caixaDialogo = { x: 50, y: 250, largura: 700, altura: 120, corFundo: "#000033", corBorda: "#00001a" };
+const caixaDialogo = { x: 50, y: 250, largura: 700, altura: 120 };
 
 window.addEventListener("keydown", (e) => {
     teclas[e.code] = true;
@@ -218,19 +211,10 @@ function desenharCenario() {
                     let colunaJanela = 0;
                     for (let wx = xPos + 15; wx < xPos + camada.larguraPredio - 15; wx += 20) {
                         colunaJanela++;
-
                         let sementeJanela = Math.abs(Math.sin(idPredioMundo * 7 + linhaJanela * 13 + colunaJanela * 31));
-
                         if (sementeJanela > 0.4) {
-                            let finalWx = wx;
-
-                            if (sementeJanela > 0.82) {
-                                ctx.fillStyle = "rgba(255, 230, 100, 0.8)"; 
-                            } else {
-                                ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; 
-                            }
-
-                            ctx.fillRect(finalWx, wy, 4, 6);
+                            ctx.fillStyle = sementeJanela > 0.82 ? "rgba(255, 230, 100, 0.8)" : "rgba(0, 0, 0, 0.6)"; 
+                            ctx.fillRect(wx, wy, 4, 6);
                         }
                     }
                 }
@@ -240,7 +224,6 @@ function desenharCenario() {
 }
 
 function gerenciarChuva() {
-    // Pega a hitbox real na tela para os respingos da chuva baterem certinho
     let hitboxRealX = player.x + player.offsetX - camera.x;
     let hitboxRealY = player.y + player.offsetY;
 
@@ -262,7 +245,6 @@ function gerenciarChuva() {
         }
 
         if (estadoAtual === "JOGANDO" && pingo.fatorParallax > 0.6) {
-            // Colisão da chuva diretamente com os limites da nova Hitbox
             if (pingoTelaX > hitboxRealX && 
                 pingoTelaX < hitboxRealX + player.larguraHitbox && 
                 pingo.y > hitboxRealY && 
@@ -282,24 +264,19 @@ function gerenciarChuva() {
 
     for (let i = respingos.length - 1; i >= 0; i--) {
         let r = respingos[i];
-        
         ctx.fillStyle = `rgba(174, 219, 255, 0.5)`;
         ctx.fillRect(r.x, r.y, 1.5, 1.5);
 
         if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC" || estadoAtual === "DIALOGO_INICIAL") {
             r.x += r.velX;
-            
             if (teclas["KeyD"] && estadoAtual === "JOGANDO") r.x -= player.velocidade * r.fatorParallax;
             if (teclas["KeyA"] && estadoAtual === "JOGANDO") r.x += player.velocidade * r.fatorParallax;
-
             r.y += r.velY;
             r.velY += 0.2; 
             r.vida--;
         }
 
-        if (r.vida <= 0) {
-            respingos.splice(i, 1);
-        }
+        if (r.vida <= 0) respingos.splice(i, 1);
     }
 }
 
@@ -333,7 +310,6 @@ function atualizar() {
             player.frameAtual = 0; 
         }
 
-        // Interação baseada no centro da hitbox real do player
         let centroPlayerX = player.x + player.offsetX + (player.larguraHitbox / 2);
         if (!npc.jaConversou && npc.x !== -9999) {
             let distancia = Math.abs(centroPlayerX - npc.x);
@@ -348,22 +324,17 @@ function atualizar() {
         camera.x = player.x - 150; 
         if (camera.x < 0) camera.x = 0;
 
-        // Pulo só funciona se estiver detectado no chão de forma estável
         if ((teclas["KeyW"] || teclas["Space"]) && player.noChao) {
             player.velY = player.pulo;
             player.noChao = false;
         }
 
-        // Aplicação da gravidade na velocidade vertical
         player.velY += player.gravidade;
         player.y += player.velY;
 
-        // --- SISTEMA ANTI-BUG DE FLUTUAÇÃO DE HITBOX ---
-        // A base da colisão calcula a posição exata de onde os pés do sprite tocam (y + offsetY + alturaHitbox)
+        // Verificação precisa usando a base da Hitbox
         let baseHitboxY = player.y + player.offsetY + player.alturaHitbox;
-
         if (baseHitboxY >= chaoY) {
-            // Fixa os pés perfeitamente sobre a linha do chão
             player.y = chaoY - player.alturaHitbox - player.offsetY;
             player.velY = 0;
             player.noChao = true;
@@ -376,7 +347,6 @@ function atualizar() {
 function desenharCaixaTexto(texto) {
     ctx.fillStyle = "rgba(0, 0, 26, 0.9)"; 
     ctx.fillRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
-    
     ctx.strokeStyle = "#ff0055"; 
     ctx.lineWidth = 2;
     ctx.strokeRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
@@ -397,7 +367,6 @@ function desenhar() {
     if (estadoAtual === "TELA_INICIAL") {
         ctx.fillStyle = "#050010";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
         ctx.fillStyle = "#00ffcc";
         ctx.font = "40px 'Courier New', monospace";
         ctx.textAlign = "center";
@@ -406,10 +375,8 @@ function desenhar() {
     else if (estadoAtual === "DIALOGO_INICIAL") {
         desenharCenario();
         gerenciarChuva(); 
-        
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
-        
         desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
     } 
     else if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
@@ -417,23 +384,22 @@ function desenhar() {
 
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY, canvas.width, canvas.height - chaoY);
-        
         ctx.fillStyle = "#ff00ffff";
         ctx.fillRect(0, chaoY, canvas.width, 2);
 
+        // CONTA SIMPLIFICADA E SEGURA CONTRA TRAVAMENTOS (Sem divisões perigosas)
         let displayX = Math.floor(player.x / 10); 
-        let displayY = Math.floor(((chaoY - player.alturaHitbox - (player.y + player.offsetY)) / chaoY) * 100);
+        let displayY = Math.floor((chaoY - (player.y + player.offsetY + player.alturaHitbox)));
 
         ctx.fillStyle = "rgba(0, 255, 204, 0.8)";
         ctx.font = "16px 'Courier New', monospace";
         ctx.textAlign = "left";
         ctx.fillText(`COORD X: ${displayX}  COORD Y: ${Math.max(0, displayY)}`, 20, 30);
 
-        // --- RENDERIZAÇÃO DO NPC 1 (Espírito Azul) ---
+        // NPC 1
         let npcRelativoX = npc.x - camera.x;
         if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
             let flutuarY = npc.y + Math.sin(npc.tempoFlutuar) * 8;
-
             if (imgNpcEspirito.complete && imgNpcEspirito.width > 0) {
                 ctx.drawImage(imgNpcEspirito, npcRelativoX, flutuarY, npc.largura, npc.altura);
             } else {
@@ -442,7 +408,7 @@ function desenhar() {
             }
         }
 
-        // --- RENDERIZAÇÃO DO NPC 2 (Raposinha Gigante 110x110) ---
+        // NPC 2 (Raposinha Gigante 110x110)
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -120 && npc2RelativoX < canvas.width + 120) {
             if (imgNpc2Fox.complete && imgNpc2Fox.width > 0) {
@@ -453,12 +419,11 @@ function desenhar() {
             }
         }
 
-        // --- Renderização do Player ---
+        // Renderização do Player
         let playerRelativoX = player.x - camera.x;
         
         ctx.save(); 
         if (player.direcao === "esquerda") {
-            // Espelha o desenho mantendo o eixo correto baseado na largura visual
             ctx.translate(playerRelativoX + player.larguraVisual / 2, player.y + player.alturaVisual / 2);
             ctx.scale(-1, 1);
             ctx.translate(-(playerRelativoX + player.larguraVisual / 2), -(player.y + player.alturaVisual / 2));
@@ -483,14 +448,12 @@ function desenhar() {
                 );
             }
         } else {
-            // Quadrado reserva caso imagem suma temporariamente
             ctx.fillStyle = "#00aaff";
             ctx.fillRect(playerRelativoX, player.y, player.larguraVisual, player.alturaVisual);
         }
         ctx.restore(); 
 
-        // --- RENDERIZAÇÃO DA HITBOX REAL (VERDE) ---
-        // Desenha uma borda verde ao redor da área precisa do seu boneco para testar os pés e colisões
+        // HITBOX VISUAL (VERDE) - Alinhada certinho com os pés do boneco
         ctx.strokeStyle = "#00ff00";
         ctx.lineWidth = 1.5;
         ctx.strokeRect(
@@ -508,5 +471,5 @@ function desenhar() {
     }
 }
 
-// Inicia o loop principal do jogo
+// Inicia o jogo
 atualizar();
