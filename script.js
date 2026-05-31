@@ -77,7 +77,7 @@ const cena450 = {
         "por favor me perdoe eu, eu nao queria..."
     ],
     timerPausaPos: 0,
-    tempoPausaPos: 120 
+    tempoPausaPos: 120 // 2 segundos de espera (120 frames)
 };
 
 const npc = {
@@ -107,7 +107,7 @@ const npc2 = {
     altura: 110,
     estado: "OLHANDO_DIREITA", // OLHANDO_DIREITA, VIRANDO_CABECA, OLHANDO_ESQUERDA
     timerAnimacao: 0,
-    tempoVirando: 60 
+    tempoVirando: 60 // 1 segundo executando a virada (60 frames)
 };
 
 const camera = { x: 0, y: 0 };
@@ -170,7 +170,7 @@ window.addEventListener("keydown", (e) => {
     if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo && (e.code === "Space" || e.code === "Enter")) {
         cena450.indiceAtual++;
         if (cena450.indiceAtual >= cena450.texto.length) {
-            estadoAtual = "ESPERA_POS_DIALOGO"; // Passo 1: Entra na espera de 2s
+            estadoAtual = "ESPERA_POS_DIALOGO"; // Terminou o diálogo? Entra em espera travada!
             cena450.timerPausaPos = 0;
             teclas["KeyD"] = false;
             teclas["KeyA"] = false;
@@ -296,13 +296,13 @@ function gerenciarChuva() {
     }
 }
 
-// --- LOOP PRINCIPAL (MÁQUINA DE ESTADOS REVISADA) ---
+// --- LOOP PRINCIPAL DO JOGO ---
 function atualizar() {
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
     }
 
-    // Gravidade constante e lisa
+    // Física e gravidade (rodando limpo sempre que fora do menu)
     if (estadoAtual !== "TELA_INICIAL") {
         player.velY += player.gravidade;
         player.y += player.velY;
@@ -315,32 +315,32 @@ function atualizar() {
         }
     }
 
-    // 1. ESPERA DE 2 SEGUNDOS DEPOIS DO DIÁLOGO
+    // CENA DE ESPERA DE 2 SEGUNDOS (Silêncio pós-diálogo)
     if (estadoAtual === "ESPERA_POS_DIALOGO") {
         cena450.timerPausaPos++;
-        player.estaAndando = false;
+        player.estaAndando = false; // Trava o player
 
         if (cena450.timerPausaPos >= cena450.tempoPausaPos) {
-            estadoAtual = "RAPOSA_VIRANDO"; // Passo 2: Vai para o estado de animação da raposa
+            estadoAtual = "RAPOSA_VIRANDO"; // Próximo passo automático: virar a cabeça
             npc2.estado = "VIRANDO_CABECA";
             npc2.timerAnimacao = 0;
         }
     }
 
-    // 2. EXECUTANDO A ANIMAÇÃO DA RAPOSA (JOGADOR SEGUE TRAVADO)
+    // EXECUTANDO A VIRADA DA RAPOSA (Player ainda travado)
     if (estadoAtual === "RAPOSA_VIRANDO") {
-        player.estaAndando = false;
+        player.estaAndando = false; // Garante que o player não anda durante a animação
         npc2.timerAnimacao++;
         
         if (npc2.timerAnimacao >= npc2.tempoVirando) {
-            npc2.estado = "OLHANDO_ESQUERDA"; // Trava o frame dela olhando para você
-            estadoAtual = "JOGANDO";          // Passo 3: Libera o controle pro jogador caminhar livremente
+            npc2.estado = "OLHANDO_ESQUERDA"; // Fixa na pose olhando para a esquerda
+            estadoAtual = "JOGANDO";          // Libera o controle total do boneco de volta!
             cena450.concluida = true;
             cena450.ativa = false;
         }
     }
 
-    // Movimentação Normal do Player
+    // Movimentação Livre
     if (estadoAtual === "JOGANDO") {
         if (player.x >= 4500 && !cena450.concluida) {
             estadoAtual = "CENA_450";
@@ -395,7 +395,7 @@ function atualizar() {
         }
     }
 
-    // Controle Cinematográfico das Barras e Câmera Subindo
+    // Efeito das Barras Cinematográficas Subindo
     if (estadoAtual === "CENA_450" || estadoAtual === "ESPERA_POS_DIALOGO" || estadoAtual === "RAPOSA_VIRANDO" || cena450.concluida) {
         if (estadoAtual === "CENA_450") cena450.timerEspera++; 
         if (cena450.alturaBarras < cena450.maxAlturaBarras) cena450.alturaBarras += cena450.velocidadeBarras; 
@@ -477,7 +477,7 @@ function desenhar() {
             }
         }
 
-        // --- RENDERIZAÇÃO DA RAPOSA DA CENA ---
+        // --- RENDERIZAÇÃO SEGUNDO A MÁQUINA DE ESTADOS ---
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             let npc2Y = npc2.y - camera.y;
