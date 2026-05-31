@@ -17,37 +17,32 @@ imgPlayerCorrendo.src = "IMG_20260525_102751.png";
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png"; 
 
-// SPRITES DA RAPOSA
+// --- NOVOS SPRITES DA RAPOSA (CORRIGIDO PARA SPRITESHEET) ---
 const imgFoxOlhandoDireita = new Image();
 imgFoxOlhandoDireita.src = "fox.png.png"; 
 
 const imgFoxVirandoCabeca = new Image();
-imgFoxVirandoCabeca.src = "fox_virando_a_cabeça.png.gif.gif"; 
+imgFoxVirandoCabeca.src = "fox_virando_spritesheet.png"; // Nova imagem combinada horizontalmente
 
 const imgFoxOlhandoEsquerda = new Image();
 imgFoxOlhandoEsquerda.src = "foxx.png.png"; 
 
-// --- Objeto do Player com Hitbox Calibrada ---
+// --- Objeto do Player ---
 const player = {
     x: 0, 
     y: 100, 
     larguraVisual: 50,      
     alturaVisual: 80,       
-    
-    // Dimensões da Hitbox do Player
     larguraHitbox: 24,
     alturaHitbox: 64,
     offsetX: 13, 
     offsetY: 2,  
-    
     velocidade: 4, 
     velY: 0,
     gravidade: 1.0, 
     pulo: -14,      
     noChao: false,
     direcao: "direita",
-    
-    // Configurações de animação
     spriteLargura: 32,  
     spriteAltura: 32,   
     frameAtual: 0,      
@@ -55,7 +50,6 @@ const player = {
     estaAndando: false
 };
 
-// Ajuste dinâmico de tamanho das imagens do player
 imgPlayerParado.onload = function() {
     player.spriteAltura = imgPlayerParado.height;
     player.spriteLargura = imgPlayerParado.width; 
@@ -66,7 +60,7 @@ imgPlayerCorrendo.onload = function() {
     player.spriteAltura = imgPlayerCorrendo.height;
 };
 
-// --- Configurações Avançadas da Cena Cinematográfica ---
+// --- Configurações da Cena Cinematográfica ---
 const cena450 = {
     ativa: false,
     concluida: false,
@@ -82,12 +76,10 @@ const cena450 = {
         "nao tenha medo, sei que cometi um erro m-mas...",
         "por favor me perdoe eu, eu nao queria..."
     ],
-    // Variáveis para controlar a pausa dramática de 2 segundos pós-diálogo
     timerPausaPos: 0,
-    tempoPausaPos: 120 // 120 frames = 2 segundos em 60fps
+    tempoPausaPos: 120 
 };
 
-// --- Configurações dos NPCs ---
 const npc = {
     x: 2500, 
     y: 180,          
@@ -107,22 +99,25 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- RAPOSINHA COM SISTEMA DE ANIMAÇÃO ---
+// --- RAPOSINHA CONTROLADA POR FRAME ---
 const npc2 = {
     x: 5000, 
     y: 272, 
     largura: 110, 
     altura: 110,
-    estado: "OLHANDO_DIREITA", // Estados: OLHANDO_DIREITA, VIRANDO_CABECA, OLHANDO_ESQUERDA
-    timerAnimacao: 0,
-    tempoVirando: 60 
+    estado: "OLHANDO_DIREITA", 
+    
+    // Configurações da Animação por Código
+    frameAtual: 0,
+    totalFrames: 4,       // Modifique aqui se o seu spritesheet tiver mais ou menos frames!
+    tempoPorFrame: 15,    // Quantos frames de jogo dura cada pedaço da animação (menor = mais rápido)
+    timerFrame: 0
 };
 
 const camera = { x: 0, y: 0 };
 const chaoY = 350;
 const teclas = {};
 
-// --- Configurações do Parallax ---
 const parallax = {
     camadas: [
         { x: 0, velocidade: 0.02, cor: "#090014", alturaBase: 200, larguraPredio: 110, espacamento: 140 }, 
@@ -131,7 +126,7 @@ const parallax = {
     ]
 };
 
-// --- Sistema de Chuva Normalizado ---
+// --- Sistema de Chuva ---
 const maxPingos = 100; 
 const chuva = [];
 const respingos = []; 
@@ -151,18 +146,10 @@ for (let i = 0; i < maxPingos; i++) {
 function criarRespingo(x, y, fatorParallax) {
     let quantidade = 2 + Math.floor(Math.random() * 2);
     for (let i = 0; i < quantidade; i++) {
-        respingos.push({
-            x: x,
-            y: y, 
-            velX: (Math.random() - 0.5) * 2,  
-            velY: -Math.random() * 2 - 1,     
-            vida: 8 + Math.random() * 8,
-            fatorParallax: fatorParallax
-        });
+        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: fatorParallax });
     }
 }
 
-// Diálogo Inicial
 const dialogoInicial = {
     texto: [
         "Desperte...",
@@ -180,17 +167,14 @@ const dialogoInicial = {
 
 const caixaDialogo = { x: 50, y: 250, largura: 700, altura: 120 };
 
-// --- CONTROLES E INPUTS ---
 window.addEventListener("keydown", (e) => {
     teclas[e.code] = true;
     
     if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo && (e.code === "Space" || e.code === "Enter")) {
         cena450.indiceAtual++;
         if (cena450.indiceAtual >= cena450.texto.length) {
-            // Em vez de voltar a jogar direto, entra no modo de ESPERA travado
             estadoAtual = "ESPERA_POS_DIALOGO"; 
             cena450.timerPausaPos = 0;
-            
             teclas["KeyD"] = false;
             teclas["KeyA"] = false;
             player.estaAndando = false;
@@ -199,9 +183,7 @@ window.addEventListener("keydown", (e) => {
     
     if (estadoAtual === "DIALOGO_INICIAL" && (e.code === "Space" || e.code === "Enter")) {
         dialogoInicial.indiceAtual++;
-        if (dialogoInicial.indiceAtual >= dialogoInicial.texto.length) {
-            estadoAtual = "JOGANDO"; 
-        }
+        if (dialogoInicial.indiceAtual >= dialogoInicial.texto.length) estadoAtual = "JOGANDO"; 
     }
     
     if (estadoAtual === "DIALOGO_NPC" && (e.code === "Space" || e.code === "Enter")) {
@@ -240,7 +222,6 @@ function desenharCenario() {
         for (let i = -1; i < (canvas.width / espacoTotal) + 2; i++) {
             let xPos = (i * espacoTotal) - scrollX;
             let idPredioMundo = Math.floor((camera.x * camada.velocidade) / espacoTotal) + i;
-            
             let h = camada.alturaBase + (Math.abs(Math.sin(idPredioMundo + indexCamada)) * 70);
             let topoY = chaoY - h - camera.y;
 
@@ -288,11 +269,7 @@ function gerenciarChuva() {
         }
 
         if ((estadoAtual === "JOGANDO" || estadoAtual === "ESPERA_POS_DIALOGO") && pingo.fatorParallax > 0.6) {
-            if (pingoTelaX > hitboxRealX && 
-                pingoTelaX < hitboxRealX + player.larguraHitbox && 
-                pingo.y > hitboxRealY && 
-                pingo.y < hitboxRealY + player.alturaHitbox) {
-                
+            if (pingoTelaX > hitboxRealX && pingoTelaX < hitboxRealX + player.larguraHitbox && pingo.y > hitboxRealY && pingo.y < hitboxRealY + player.alturaHitbox) {
                 criarRespingo(pingoTelaX, pingo.y, pingo.fatorParallax);
                 pingo.y = -20; 
                 return; 
@@ -318,41 +295,46 @@ function gerenciarChuva() {
             r.velY += 0.2; 
             r.vida--;
         }
-
         if (r.vida <= 0) respingos.splice(i, 1);
     }
 }
 
-// --- ENGINE E ATUALIZAÇÕES DOS COORDENADOS ---
 function atualizar() {
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
     }
 
-    // Gerencia os estados da raposa baseados no tempo e na pausa
+    // Lógica da pausa dramática pós-diálogo
     if (estadoAtual === "ESPERA_POS_DIALOGO") {
         cena450.timerPausaPos++;
-        player.estaAndando = false; // Trava movimento visual do player
+        player.estaAndando = false;
 
-        // Quando bater 2 segundos de silêncio, a raposa começa a virar
+        // Passou 2 segundos de silêncio absoluto: ativa a virada de cabeça por código
         if (cena450.timerPausaPos >= cena450.tempoPausaPos) {
-            estadoAtual = "JOGANDO"; // Devolve o controle para o jogador
+            estadoAtual = "JOGANDO"; 
             cena450.concluida = true;
             cena450.ativa = false;
             
-            npc2.estado = "VIRANDO_CABECA"; // Começa a animação
-            npc2.timerAnimacao = 0;
+            npc2.estado = "VIRANDO_CABECA";
+            npc2.frameAtual = 0;
+            npc2.timerFrame = 0;
         }
     }
 
+    // LÓGICA DE CORTE DO SPRITESHEET DA RAPOSA
     if (npc2.estado === "VIRANDO_CABECA") {
-        npc2.timerAnimacao++;
-        if (npc2.timerAnimacao >= npc2.tempoVirando) {
-            npc2.estado = "OLHANDO_ESQUERDA"; // Trava na posição final fixa olhando o player
+        npc2.timerFrame++;
+        if (npc2.timerFrame >= npc2.tempoPorFrame) {
+            npc2.timerFrame = 0;
+            npc2.frameAtual++;
+            
+            // Quando passar de todos os frames do corte horizontal, fixa na pose final olhando esquerda
+            if (npc2.frameAtual >= npc2.totalFrames) {
+                npc2.estado = "OLHANDO_ESQUERDA";
+            }
         }
     }
 
-    // Gravidade funciona mesmo se o jogador estiver parado na animação
     if (estadoAtual === "JOGANDO" || estadoAtual === "ESPERA_POS_DIALOGO" || estadoAtual === "CENA_450") {
         player.velY += player.gravidade;
         player.y += player.velY;
@@ -419,18 +401,10 @@ function atualizar() {
         }
     }
 
-    // MANTER CENA FECHADA
     if (estadoAtual === "CENA_450" || estadoAtual === "ESPERA_POS_DIALOGO" || cena450.concluida) {
-        if (estadoAtual === "CENA_450") {
-            cena450.timerEspera++; 
-        }
-        
-        if (cena450.alturaBarras < cena450.maxAlturaBarras) {
-            cena450.alturaBarras += cena450.velocidadeBarras; 
-        }
-        if (camera.y < 90) {
-            camera.y += (cena450.velocidadeBarras * 0.65); 
-        }
+        if (estadoAtual === "CENA_450") cena450.timerEspera++; 
+        if (cena450.alturaBarras < cena450.maxAlturaBarras) cena450.alturaBarras += cena450.velocidadeBarras; 
+        if (camera.y < 90) camera.y += (cena450.velocidadeBarras * 0.65); 
     } else {
         if (cena450.alturaBarras > 0) cena450.alturaBarras -= 4;
         if (camera.y > 0) camera.y -= 3;
@@ -446,12 +420,10 @@ function desenharCaixaTexto(texto) {
     ctx.strokeStyle = "#ff0055"; 
     ctx.lineWidth = 2;
     ctx.strokeRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
-    
     ctx.fillStyle = "white";
     ctx.font = "20px 'Courier New', monospace";
     ctx.textAlign = "left";
     ctx.fillText(texto, caixaDialogo.x + 20, caixaDialogo.y + 55);
-    
     ctx.font = "12px 'Courier New', monospace";
     ctx.fillStyle = "rgba(0, 255, 204, 0.7)"; 
     ctx.fillText("[Espaço / Enter] para continuar", caixaDialogo.x + 20, caixaDialogo.y + 100);
@@ -460,11 +432,9 @@ function desenharCaixaTexto(texto) {
 function desenharCaixaPensamento(texto) {
     ctx.fillStyle = "rgba(75, 0, 130, 0.9)"; 
     ctx.fillRect(caixaDialogo.x, 20, caixaDialogo.largura, 80); 
-    
     ctx.strokeStyle = "#ff0000"; 
     ctx.lineWidth = 3;
     ctx.strokeRect(caixaDialogo.x, 20, caixaDialogo.largura, 80);
-    
     ctx.fillStyle = "white";
     ctx.font = "18px 'Courier New', monospace";
     ctx.textAlign = "center";
@@ -491,13 +461,11 @@ function desenhar() {
     else {
         desenharCenario();
 
-        // Linha do Chão
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY - camera.y, canvas.width, (canvas.height - chaoY) + camera.y);
         ctx.fillStyle = "#ff00ffff";
         ctx.fillRect(0, chaoY - camera.y, canvas.width, 2);
 
-        // UI de Coordenadas
         let displayX = Math.floor(player.x / 10); 
         let displayY = Math.floor((chaoY - (player.y + player.offsetY + player.alturaHitbox)));
         ctx.fillStyle = "rgba(0, 255, 204, 0.8)";
@@ -517,23 +485,31 @@ function desenhar() {
             }
         }
 
-        // NPC 2 (Raposinha)
+        // --- RENDERIZAÇÃO DA RAPOSA ADAPTADA ---
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             let npc2Y = npc2.y - camera.y;
             
-            let imagemAtivaDaFox = imgFoxOlhandoDireita; 
             if (npc2.estado === "VIRANDO_CABECA") {
-                imagemAtivaDaFox = imgFoxVirandoCabeca;
-            } else if (npc2.estado === "OLHANDO_ESQUERDA") {
-                imagemAtivaDaFox = imgFoxOlhandoEsquerda;
-            }
+                if (imgFoxVirandoCabeca.complete && imgFoxVirandoCabeca.width > 0) {
+                    // Calcula a largura real de apenas um frame dividindo o tamanho total da imagem pelo número de frames
+                    let frameLarguraOriginal = imgFoxVirandoCabeca.width / npc2.totalFrames;
+                    let frameAlturaOriginal = imgFoxVirandoCabeca.height;
 
-            if (imagemAtivaDaFox.complete && imagemAtivaDaFox.width > 0) {
-                ctx.drawImage(imagemAtivaDaFox, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
+                    ctx.drawImage(
+                        imgFoxVirandoCabeca,
+                        npc2.frameAtual * frameLarguraOriginal, 0,  // Onde corta no spritesheet X, Y
+                        frameLarguraOriginal, frameAlturaOriginal,  // Tamanho do corte
+                        npc2RelativoX, npc2Y,                        // Onde desenha na tela
+                        npc2.largura, npc2.altura                   // Tamanho que vai aparecer
+                    );
+                }
             } else {
-                ctx.fillStyle = npc2.estado === "OLHANDO_ESQUERDA" ? "#ff5555" : "#55ff55";
-                ctx.fillRect(npc2RelativoX, npc2Y, npc2.largura, npc2.altura); 
+                // Estados estáticos normais
+                let imagemAtivaDaFox = npc2.estado === "OLHANDO_ESQUERDA" ? imgFoxOlhandoEsquerda : imgFoxOlhandoDireita;
+                if (imagemAtivaDaFox.complete && imagemAtivaDaFox.width > 0) {
+                    ctx.drawImage(imagemAtivaDaFox, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
+                }
             }
         }
 
@@ -550,21 +526,9 @@ function desenhar() {
 
         if (imgPlayerParado.complete && imgPlayerCorrendo.complete && imgPlayerParado.width > 0) {
             if (player.estaAndando) {
-                ctx.drawImage(
-                    imgPlayerCorrendo,
-                    player.frameAtual * player.spriteLargura, 0, 
-                    player.spriteLargura, player.spriteAltura,   
-                    playerRelativoX, playerY,                                   
-                    player.larguraVisual, player.alturaVisual                                
-                );
+                ctx.drawImage(imgPlayerCorrendo, player.frameAtual * player.spriteLargura, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             } else {
-                ctx.drawImage(
-                    imgPlayerParado,
-                    0, 0,
-                    player.spriteLargura, player.spriteAltura,
-                    playerRelativoX, playerY,
-                    player.larguraVisual, player.alturaVisual
-                );
+                ctx.drawImage(imgPlayerParado, 0, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             }
         } else {
             ctx.fillStyle = "#00aaff";
@@ -572,21 +536,15 @@ function desenhar() {
         }
         ctx.restore(); 
 
-        // HITBOX DO PLAYER (VERDE)
         ctx.strokeStyle = "#00ff00";
         ctx.lineWidth = 1.5;
         ctx.strokeRect(playerRelativoX + player.offsetX, playerY + player.offsetY, player.larguraHitbox, player.alturaHitbox);
 
         gerenciarChuva();
 
-        if (estadoAtual === "DIALOGO_INICIAL") {
-            desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
-        }
-        if (estadoAtual === "DIALOGO_NPC") {
-            desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
-        }
+        if (estadoAtual === "DIALOGO_INICIAL") desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
+        if (estadoAtual === "DIALOGO_NPC") desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
 
-        // --- CAMADA DA CENA CINEMATOGRÁFICA ---
         desenharBarrasCinematicas();
         
         if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo) {
