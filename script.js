@@ -17,8 +17,15 @@ imgPlayerCorrendo.src = "IMG_20260525_102751.png";
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png"; 
 
-const imgNpc2Fox = new Image();
-imgNpc2Fox.src = "fox.png.png"; 
+// NOVOS SPRITES DA RAPOSA
+const imgFoxOlhandoDireita = new Image();
+imgFoxOlhandoDireita.src = "fox.png.png"; // Imagem original dela padrão
+
+const imgFoxVirandoCabeca = new Image();
+imgFoxVirandoCabeca.src = "fox_virando_a_cabeça.png.gif.gif"; // Animação dela virando
+
+const imgFoxOlhandoEsquerda = new Image();
+imgFoxOlhandoEsquerda.src = "foxx.png.png"; // Posição final parada
 
 // --- Objeto do Player com Hitbox Calibrada ---
 const player = {
@@ -97,12 +104,15 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- RAPOSINHA PERFEITA NO SEU COORDENADO 272 ---
+// --- RAPOSINHA COM SISTEMA DE ANIMAÇÃO NO DIÁLOGO ---
 const npc2 = {
     x: 5000, 
     y: 272, 
     largura: 110, 
-    altura: 110
+    altura: 110,
+    estado: "OLHANDO_DIREITA", // Estados: OLHANDO_DIREITA, VIRANDO_CABECA, OLHANDO_ESQUERDA
+    timerAnimacao: 0,
+    tempoVirando: 60 // Tempo em frames (1 segundo) que ela passa rodando o gif de virar a cabeça
 };
 
 const camera = { x: 0, y: 0 };
@@ -177,6 +187,11 @@ window.addEventListener("keydown", (e) => {
             estadoAtual = "JOGANDO"; 
             cena450.concluida = true;
             cena450.ativa = false;
+            
+            // Ativa a virada de cabeça da raposa assim que o diálogo termina
+            npc2.estado = "VIRANDO_CABECA";
+            npc2.timerAnimacao = 0;
+
             teclas["KeyD"] = false;
             teclas["KeyA"] = false;
         }
@@ -251,7 +266,6 @@ function desenharCenario() {
     });
 }
 
-// CHUVA CORRIGIDA: Totalmente independente da subida da camera.y
 function gerenciarChuva() {
     let hitboxRealX = player.x + player.offsetX - camera.x;
     let hitboxRealY = player.y + player.offsetY - camera.y; 
@@ -260,7 +274,6 @@ function gerenciarChuva() {
         let pingoTelaX = (pingo.x - (camera.x * pingo.fatorParallax)) % canvas.width;
         if (pingoTelaX < 0) pingoTelaX += canvas.width; 
 
-        // Movimento padrão de queda na tela limpa
         ctx.strokeStyle = `rgba(174, 219, 255, ${pingo.opacidade})`;
         ctx.lineWidth = pingo.tamanho > 5 ? 1.5 : 1; 
         
@@ -274,7 +287,6 @@ function gerenciarChuva() {
             pingo.x -= 0.5 * pingo.fatorParallax; 
         }
 
-        // Colisão com o player (compensando a subida visual dele)
         if (estadoAtual === "JOGANDO" && pingo.fatorParallax > 0.6) {
             if (pingoTelaX > hitboxRealX && 
                 pingoTelaX < hitboxRealX + player.larguraHitbox && 
@@ -287,7 +299,6 @@ function gerenciarChuva() {
             }
         }
 
-        // Colisão com o chão dinâmico que subiu
         if (pingo.y > chaoY - camera.y) {
             criarRespingo(pingoTelaX, chaoY - camera.y, pingo.fatorParallax);
             pingo.y = -20;
@@ -316,6 +327,14 @@ function gerenciarChuva() {
 function atualizar() {
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
+    }
+
+    // Gerencia o tempo da animação da raposa virando a cabeça
+    if (npc2.estado === "VIRANDO_CABECA") {
+        npc2.timerAnimacao++;
+        if (npc2.timerAnimacao >= npc2.tempoVirando) {
+            npc2.estado = "OLHANDO_ESQUERDA"; // Trava na posição final fixa
+        }
     }
 
     if (estadoAtual === "JOGANDO") {
@@ -479,14 +498,23 @@ function desenhar() {
             }
         }
 
-        // NPC 2 (Raposinha Gigante)
+        // NPC 2 (Raposinha Dinâmica com seus 3 estados de imagem)
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             let npc2Y = npc2.y - camera.y;
-            if (imgNpc2Fox.complete && imgNpc2Fox.width > 0) {
-                ctx.drawImage(imgNpc2Fox, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
+            
+            let imagemAtivaDaFox = imgFoxOlhandoDireita; // Padrão inicial
+            if (npc2.estado === "VIRANDO_CABECA") {
+                imagemAtivaDaFox = imgFoxVirandoCabeca;
+            } else if (npc2.estado === "OLHANDO_ESQUERDA") {
+                imagemAtivaDaFox = imgFoxOlhandoEsquerda;
+            }
+
+            if (imagemAtivaDaFox.complete && imagemAtivaDaFox.width > 0) {
+                ctx.drawImage(imagemAtivaDaFox, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
             } else {
-                ctx.fillStyle = "#55ff55";
+                // Fallback visual caso falte a imagem
+                ctx.fillStyle = npc2.estado === "OLHANDO_ESQUERDA" ? "#ff5555" : "#55ff55";
                 ctx.fillRect(npc2RelativoX, npc2Y, npc2.largura, npc2.altura); 
             }
         }
@@ -531,7 +559,6 @@ function desenhar() {
         ctx.lineWidth = 1.5;
         ctx.strokeRect(playerRelativoX + player.offsetX, playerY + player.offsetY, player.larguraHitbox, player.alturaHitbox);
 
-        // Chuva renderizada de forma limpa na frente de tudo
         gerenciarChuva();
 
         if (estadoAtual === "DIALOGO_INICIAL") {
