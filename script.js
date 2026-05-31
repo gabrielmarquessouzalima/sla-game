@@ -22,7 +22,7 @@ const imgFoxOlhandoDireita = new Image();
 imgFoxOlhandoDireita.src = "fox.png.png"; 
 
 const imgFoxVirandoCabeca = new Image();
-imgFoxVirandoCabeca.src = "fox_virando_a_cabeça.png.gif.gif"; // Voltando ao seu arquivo padrão para não sumir
+imgFoxVirandoCabeca.src = "fox_virando_a_cabeça.png.gif.gif"; 
 
 const imgFoxOlhandoEsquerda = new Image();
 imgFoxOlhandoEsquerda.src = "foxx.png.png"; 
@@ -77,7 +77,7 @@ const cena450 = {
         "por favor me perdoe eu, eu nao queria..."
     ],
     timerPausaPos: 0,
-    tempoPausaPos: 120 // 2 segundos de trava
+    tempoPausaPos: 120 
 };
 
 const npc = {
@@ -107,7 +107,7 @@ const npc2 = {
     altura: 110,
     estado: "OLHANDO_DIREITA", // OLHANDO_DIREITA, VIRANDO_CABECA, OLHANDO_ESQUERDA
     timerAnimacao: 0,
-    tempoVirando: 60 // 1 segundo rodando a animação de virar
+    tempoVirando: 60 
 };
 
 const camera = { x: 0, y: 0 };
@@ -142,7 +142,7 @@ for (let i = 0; i < maxPingos; i++) {
 function criarRespingo(x, y, fatorParallax) {
     let quantidade = 2 + Math.floor(Math.random() * 2);
     for (let i = 0; i < quantidade; i++) {
-        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: factorParallax });
+        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: fatorParallax });
     }
 }
 
@@ -170,7 +170,7 @@ window.addEventListener("keydown", (e) => {
     if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo && (e.code === "Space" || e.code === "Enter")) {
         cena450.indiceAtual++;
         if (cena450.indiceAtual >= cena450.texto.length) {
-            estadoAtual = "ESPERA_POS_DIALOGO"; // Entra nos 2 segundos de trava
+            estadoAtual = "ESPERA_POS_DIALOGO"; // Passo 1: Entra na espera de 2s
             cena450.timerPausaPos = 0;
             teclas["KeyD"] = false;
             teclas["KeyA"] = false;
@@ -265,7 +265,7 @@ function gerenciarChuva() {
             pingo.x -= 0.5 * pingo.fatorParallax; 
         }
 
-        if ((estadoAtual === "JOGANDO" || estadoAtual === "ESPERA_POS_DIALOGO") && pingo.fatorParallax > 0.6) {
+        if ((estadoAtual === "JOGANDO" || estadoAtual === "ESPERA_POS_DIALOGO" || estadoAtual === "RAPOSA_VIRANDO") && pingo.fatorParallax > 0.6) {
             if (pingoTelaX > hitboxRealX && pingoTelaX < hitboxRealX + player.larguraHitbox && pingo.y > hitboxRealY && pingo.y < hitboxRealY + player.alturaHitbox) {
                 criarRespingo(pingoTelaX, pingo.y, pingo.fatorParallax);
                 pingo.y = -20; 
@@ -296,13 +296,13 @@ function gerenciarChuva() {
     }
 }
 
-// --- LOOP PRINCIPAL (CORRIGIDO SEM FORMATO LENTO) ---
+// --- LOOP PRINCIPAL (MÁQUINA DE ESTADOS REVISADA) ---
 function atualizar() {
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
     }
 
-    // Aplica gravidade ao player sempre de forma lisa
+    // Gravidade constante e lisa
     if (estadoAtual !== "TELA_INICIAL") {
         player.velY += player.gravidade;
         player.y += player.velY;
@@ -315,29 +315,32 @@ function atualizar() {
         }
     }
 
-    // Pausa dramática ativa (O player não anda)
+    // 1. ESPERA DE 2 SEGUNDOS DEPOIS DO DIÁLOGO
     if (estadoAtual === "ESPERA_POS_DIALOGO") {
         cena450.timerPausaPos++;
         player.estaAndando = false;
 
         if (cena450.timerPausaPos >= cena450.tempoPausaPos) {
+            estadoAtual = "RAPOSA_VIRANDO"; // Passo 2: Vai para o estado de animação da raposa
             npc2.estado = "VIRANDO_CABECA";
             npc2.timerAnimacao = 0;
-            estadoAtual = "JOGANDO"; 
+        }
+    }
+
+    // 2. EXECUTANDO A ANIMAÇÃO DA RAPOSA (JOGADOR SEGUE TRAVADO)
+    if (estadoAtual === "RAPOSA_VIRANDO") {
+        player.estaAndando = false;
+        npc2.timerAnimacao++;
+        
+        if (npc2.timerAnimacao >= npc2.tempoVirando) {
+            npc2.estado = "OLHANDO_ESQUERDA"; // Trava o frame dela olhando para você
+            estadoAtual = "JOGANDO";          // Passo 3: Libera o controle pro jogador caminhar livremente
             cena450.concluida = true;
             cena450.ativa = false;
         }
     }
 
-    // Conta o tempo da animação de virar a cabeça da raposa
-    if (npc2.estado === "VIRANDO_CABECA") {
-        npc2.timerAnimacao++;
-        if (npc2.timerAnimacao >= npc2.tempoVirando) {
-            npc2.estado = "OLHANDO_ESQUERDA"; 
-        }
-    }
-
-    // Movimentação do Player livre
+    // Movimentação Normal do Player
     if (estadoAtual === "JOGANDO") {
         if (player.x >= 4500 && !cena450.concluida) {
             estadoAtual = "CENA_450";
@@ -392,8 +395,8 @@ function atualizar() {
         }
     }
 
-    // Câmera e Barras Cinematográficas
-    if (estadoAtual === "CENA_450" || estadoAtual === "ESPERA_POS_DIALOGO" || cena450.concluida) {
+    // Controle Cinematográfico das Barras e Câmera Subindo
+    if (estadoAtual === "CENA_450" || estadoAtual === "ESPERA_POS_DIALOGO" || estadoAtual === "RAPOSA_VIRANDO" || cena450.concluida) {
         if (estadoAtual === "CENA_450") cena450.timerEspera++; 
         if (cena450.alturaBarras < cena450.maxAlturaBarras) cena450.alturaBarras += cena450.velocidadeBarras; 
         if (camera.y < 90) camera.y += (cena450.velocidadeBarras * 0.65); 
@@ -474,7 +477,7 @@ function desenhar() {
             }
         }
 
-        // --- RENDERIZAÇÃO DA RAPOSA (SEGURO CONTRA FICAR INVISÍVEL) ---
+        // --- RENDERIZAÇÃO DA RAPOSA DA CENA ---
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             let npc2Y = npc2.y - camera.y;
@@ -486,7 +489,6 @@ function desenhar() {
                 imagemAtivaDaFox = imgFoxOlhandoEsquerda;
             }
 
-            // Se a imagem carregou certinho, desenha. Se der erro, põe um bloco vermelho para você saber onde ela tá!
             if (imagemAtivaDaFox.complete && imagemAtivaDaFox.width > 0) {
                 ctx.drawImage(imagemAtivaDaFox, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
             } else {
