@@ -17,7 +17,7 @@ imgPlayerCorrendo.src = "IMG_20260525_102751.png";
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png"; 
 
-// Base da raposa (Imagens estáticas e seguras)
+// Imagens da Raposa (Apenas PNGs estáticos para segurança total)
 const imgFoxOlhandoDireita = new Image();
 imgFoxOlhandoDireita.src = "fox.png.png"; 
 
@@ -96,7 +96,7 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- RAPOSINHA (Animação controlada por código) ---
+// --- RAPOSINHA (Lógica simplificada anti-bug) ---
 const npc2 = {
     x: 5000, 
     y: 272, 
@@ -104,8 +104,7 @@ const npc2 = {
     altura: 110,
     estado: "OLHANDO_DIREITA", // OLHANDO_DIREITA, VIRANDO_CABECA, OLHANDO_ESQUERDA
     timerAnimacao: 0,
-    tempoVirando: 60,
-    fatorViro: 0 // Controla a posição matemática dos olhos e focinho (0 = direita, 1 = esquerda)
+    tempoVirando: 60 
 };
 
 const camera = { x: 0, y: 0 };
@@ -140,7 +139,7 @@ for (let i = 0; i < maxPingos; i++) {
 function criarRespingo(x, y, fatorParallax) {
     let quantidade = 2 + Math.floor(Math.random() * 2);
     for (let i = 0; i < quantidade; i++) {
-        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: factorParallax });
+        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: fatorParallax });
     }
 }
 
@@ -324,18 +323,14 @@ function atualizar() {
         }
     }
 
-    // 2. EXECUTANDO A VIRADA POR CÓDIGO (Suave e sem travar)
+    // 2. TRANSIÇÃO SEGURA DA ANIMAÇÃO (Chama a virada de cabeça frame a frame)
     if (estadoAtual === "RAPOSA_VIRANDO") {
         player.estaAndando = false; 
         npc2.timerAnimacao++;
-        
-        // Transiciona o fator matemático de 0 (olhando direita) até 1 (olhando esquerda)
-        npc2.fatorViro = npc2.timerAnimacao / npc2.tempoVirando;
 
         if (npc2.timerAnimacao >= npc2.tempoVirando) {
-            npc2.fatorViro = 1;
             npc2.estado = "OLHANDO_ESQUERDA"; 
-            estadoAtual = "JOGANDO";          // Devolve o controle pro jogador caminhar livremente
+            estadoAtual = "JOGANDO";          // Libera o player para andar
             cena450.concluida = true;
             cena450.ativa = false;
         }
@@ -477,7 +472,7 @@ function desenhar() {
             }
         }
 
-        // --- SISTEMA DE ANIMAÇÃO REAL POR CÓDIGO DA RAPOSA ---
+        // --- RENDERIZAÇÃO ESTÁTICA SEGURA DA RAPOSA ---
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             let npc2Y = npc2.y - camera.y;
@@ -491,19 +486,15 @@ function desenhar() {
                     ctx.drawImage(imgFoxOlhandoEsquerda, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
                 } 
                 else if (npc2.estado === "VIRANDO_CABECA") {
-                    // MÁGICA: Renderiza a base estática e reconstrói a cabeça se movendo dinamicamente por cima!
-                    ctx.drawImage(imgFoxOlhandoDireita, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
-                    
-                    // Recorta e move os pixels pretos dos olhos e focinho conforme a transição avança
-                    let moverX = npc2.fatorViro * -14; // Move os traços faciais suavemente para a esquerda
-                    
-                    ctx.fillStyle = "#000000";
-                    // Desenha os novos olhos virando em tempo real
-                    ctx.fillRect(npc2RelativoX + 46 + moverX, npc2Y + 45, 6, 6);
-                    ctx.fillRect(npc2RelativoX + 58 + moverX, npc2Y + 45, 6, 6);
+                    // Efeito de interpolação retrô: alterna os frames das duas imagens criadas para dar a ilusão de movimento rápido sem quebrar o loop do canvas
+                    if (Math.floor(npc2.timerAnimacao / 8) % 2 === 0) {
+                        ctx.drawImage(imgFoxOlhandoDireita, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
+                    } else {
+                        ctx.drawImage(imgFoxOlhandoEsquerda, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
+                    }
                 }
             } else {
-                ctx.fillStyle = "red";
+                ctx.fillStyle = "purple"; // Fallback visual seguro caso falte carregar algo
                 ctx.fillRect(npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
             }
         }
