@@ -323,14 +323,14 @@ function atualizar() {
         }
     }
 
-    // 2. TRANSIÇÃO SEGURA DA ANIMAÇÃO (Chama a virada de cabeça frame a frame)
+    // 2. TRANSIÇÃO DA ANIMAÇÃO (Chama a virada de cabeça frame a frame)
     if (estadoAtual === "RAPOSA_VIRANDO") {
         player.estaAndando = false; 
         npc2.timerAnimacao++;
 
         if (npc2.timerAnimacao >= npc2.tempoVirando) {
             npc2.estado = "OLHANDO_ESQUERDA"; 
-            estadoAtual = "JOGANDO";          // Libera o player para andar
+            estadoAtual = "JOGANDO";          
             cena450.concluida = true;
             cena450.ativa = false;
         }
@@ -472,7 +472,7 @@ function desenhar() {
             }
         }
 
-        // --- RENDERIZAÇÃO ESTÁTICA SEGURA DA RAPOSA ---
+        // --- RENDERIZAÇÃO DA RAPOSA ---
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             let npc2Y = npc2.y - camera.y;
@@ -486,7 +486,7 @@ function desenhar() {
                     ctx.drawImage(imgFoxOlhandoEsquerda, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
                 } 
                 else if (npc2.estado === "VIRANDO_CABECA") {
-                    // Efeito de interpolação retrô: alterna os frames das duas imagens criadas para dar a ilusão de movimento rápido sem quebrar o loop do canvas
+                    // Alterna os frames rapidamente para dar o efeito de movimento retrô
                     if (Math.floor(npc2.timerAnimacao / 8) % 2 === 0) {
                         ctx.drawImage(imgFoxOlhandoDireita, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
                     } else {
@@ -494,7 +494,7 @@ function desenhar() {
                     }
                 }
             } else {
-                ctx.fillStyle = "purple"; // Fallback visual seguro caso falte carregar algo
+                ctx.fillStyle = "purple"; 
                 ctx.fillRect(npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
             }
         }
