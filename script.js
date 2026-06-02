@@ -17,12 +17,9 @@ imgPlayerCorrendo.src = "IMG_20260525_102751.png";
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png"; 
 
-// Sprites da Raposa
+// Base da raposa (Imagens estáticas e seguras)
 const imgFoxOlhandoDireita = new Image();
 imgFoxOlhandoDireita.src = "fox.png.png"; 
-
-const imgFoxVirandoCabeca = new Image();
-imgFoxVirandoCabeca.src = "fox_virando_a_cabeça.png.gif.gif"; 
 
 const imgFoxOlhandoEsquerda = new Image();
 imgFoxOlhandoEsquerda.src = "foxx.png.png"; 
@@ -77,7 +74,7 @@ const cena450 = {
         "por favor me perdoe eu, eu nao queria..."
     ],
     timerPausaPos: 0,
-    tempoPausaPos: 120 // 2 segundos de espera (120 frames)
+    tempoPausaPos: 120 
 };
 
 const npc = {
@@ -99,7 +96,7 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- RAPOSINHA ---
+// --- RAPOSINHA (Animação controlada por código) ---
 const npc2 = {
     x: 5000, 
     y: 272, 
@@ -107,7 +104,8 @@ const npc2 = {
     altura: 110,
     estado: "OLHANDO_DIREITA", // OLHANDO_DIREITA, VIRANDO_CABECA, OLHANDO_ESQUERDA
     timerAnimacao: 0,
-    tempoVirando: 60 // 1 segundo executando a virada (60 frames)
+    tempoVirando: 60,
+    fatorViro: 0 // Controla a posição matemática dos olhos e focinho (0 = direita, 1 = esquerda)
 };
 
 const camera = { x: 0, y: 0 };
@@ -142,7 +140,7 @@ for (let i = 0; i < maxPingos; i++) {
 function criarRespingo(x, y, fatorParallax) {
     let quantidade = 2 + Math.floor(Math.random() * 2);
     for (let i = 0; i < quantidade; i++) {
-        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: fatorParallax });
+        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: factorParallax });
     }
 }
 
@@ -170,7 +168,7 @@ window.addEventListener("keydown", (e) => {
     if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo && (e.code === "Space" || e.code === "Enter")) {
         cena450.indiceAtual++;
         if (cena450.indiceAtual >= cena450.texto.length) {
-            estadoAtual = "ESPERA_POS_DIALOGO"; // Terminou o diálogo? Entra em espera travada!
+            estadoAtual = "ESPERA_POS_DIALOGO"; 
             cena450.timerPausaPos = 0;
             teclas["KeyD"] = false;
             teclas["KeyA"] = false;
@@ -302,7 +300,6 @@ function atualizar() {
         npc.tempoFlutuar += 0.05;
     }
 
-    // Física e gravidade (rodando limpo sempre que fora do menu)
     if (estadoAtual !== "TELA_INICIAL") {
         player.velY += player.gravidade;
         player.y += player.velY;
@@ -315,32 +312,36 @@ function atualizar() {
         }
     }
 
-    // CENA DE ESPERA DE 2 SEGUNDOS (Silêncio pós-diálogo)
+    // 1. ESPERA DE 2 SEGUNDOS DEPOIS DO DIÁLOGO
     if (estadoAtual === "ESPERA_POS_DIALOGO") {
         cena450.timerPausaPos++;
-        player.estaAndando = false; // Trava o player
+        player.estaAndando = false;
 
         if (cena450.timerPausaPos >= cena450.tempoPausaPos) {
-            estadoAtual = "RAPOSA_VIRANDO"; // Próximo passo automático: virar a cabeça
+            estadoAtual = "RAPOSA_VIRANDO"; 
             npc2.estado = "VIRANDO_CABECA";
             npc2.timerAnimacao = 0;
         }
     }
 
-    // EXECUTANDO A VIRADA DA RAPOSA (Player ainda travado)
+    // 2. EXECUTANDO A VIRADA POR CÓDIGO (Suave e sem travar)
     if (estadoAtual === "RAPOSA_VIRANDO") {
-        player.estaAndando = false; // Garante que o player não anda durante a animação
+        player.estaAndando = false; 
         npc2.timerAnimacao++;
         
+        // Transiciona o fator matemático de 0 (olhando direita) até 1 (olhando esquerda)
+        npc2.fatorViro = npc2.timerAnimacao / npc2.tempoVirando;
+
         if (npc2.timerAnimacao >= npc2.tempoVirando) {
-            npc2.estado = "OLHANDO_ESQUERDA"; // Fixa na pose olhando para a esquerda
-            estadoAtual = "JOGANDO";          // Libera o controle total do boneco de volta!
+            npc2.fatorViro = 1;
+            npc2.estado = "OLHANDO_ESQUERDA"; 
+            estadoAtual = "JOGANDO";          // Devolve o controle pro jogador caminhar livremente
             cena450.concluida = true;
             cena450.ativa = false;
         }
     }
 
-    // Movimentação Livre
+    // Movimentação Normal do Player
     if (estadoAtual === "JOGANDO") {
         if (player.x >= 4500 && !cena450.concluida) {
             estadoAtual = "CENA_450";
@@ -395,7 +396,6 @@ function atualizar() {
         }
     }
 
-    // Efeito das Barras Cinematográficas Subindo
     if (estadoAtual === "CENA_450" || estadoAtual === "ESPERA_POS_DIALOGO" || estadoAtual === "RAPOSA_VIRANDO" || cena450.concluida) {
         if (estadoAtual === "CENA_450") cena450.timerEspera++; 
         if (cena450.alturaBarras < cena450.maxAlturaBarras) cena450.alturaBarras += cena450.velocidadeBarras; 
@@ -477,20 +477,31 @@ function desenhar() {
             }
         }
 
-        // --- RENDERIZAÇÃO SEGUNDO A MÁQUINA DE ESTADOS ---
+        // --- SISTEMA DE ANIMAÇÃO REAL POR CÓDIGO DA RAPOSA ---
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             let npc2Y = npc2.y - camera.y;
-            
-            let imagemAtivaDaFox = imgFoxOlhandoDireita; 
-            if (npc2.estado === "VIRANDO_CABECA") {
-                imagemAtivaDaFox = imgFoxVirandoCabeca;
-            } else if (npc2.estado === "OLHANDO_ESQUERDA") {
-                imagemAtivaDaFox = imgFoxOlhandoEsquerda;
-            }
 
-            if (imagemAtivaDaFox.complete && imagemAtivaDaFox.width > 0) {
-                ctx.drawImage(imagemAtivaDaFox, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
+            if (imgFoxOlhandoDireita.complete && imgFoxOlhandoEsquerda.complete && imgFoxOlhandoDireita.width > 0) {
+                
+                if (npc2.estado === "OLHANDO_DIREITA") {
+                    ctx.drawImage(imgFoxOlhandoDireita, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
+                } 
+                else if (npc2.estado === "OLHANDO_ESQUERDA") {
+                    ctx.drawImage(imgFoxOlhandoEsquerda, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
+                } 
+                else if (npc2.estado === "VIRANDO_CABECA") {
+                    // MÁGICA: Renderiza a base estática e reconstrói a cabeça se movendo dinamicamente por cima!
+                    ctx.drawImage(imgFoxOlhandoDireita, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
+                    
+                    // Recorta e move os pixels pretos dos olhos e focinho conforme a transição avança
+                    let moverX = npc2.fatorViro * -14; // Move os traços faciais suavemente para a esquerda
+                    
+                    ctx.fillStyle = "#000000";
+                    // Desenha os novos olhos virando em tempo real
+                    ctx.fillRect(npc2RelativoX + 46 + moverX, npc2Y + 45, 6, 6);
+                    ctx.fillRect(npc2RelativoX + 58 + moverX, npc2Y + 45, 6, 6);
+                }
             } else {
                 ctx.fillStyle = "red";
                 ctx.fillRect(npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
