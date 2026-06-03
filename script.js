@@ -17,12 +17,22 @@ imgPlayerCorrendo.src = "IMG_20260525_102751.png";
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png"; 
 
-// Imagens da Raposa (Apenas PNGs estáticos para segurança total)
-const imgFoxOlhandoDireita = new Image();
-imgFoxOlhandoDireita.src = "fox.png.png"; 
+// --- Configuração Segura da Animação da Raposa ---
+const nomesArquivosFox = [
+    "Untitled 05-25-2026 03-13-21 (1).png",
+    "Untitled 05-25-2026 03-13-21 (2).png",
+    "Untitled 05-25-2026 03-13-21 (3).png",
+    "Untitled 05-25-2026 03-13-21 (4).png",
+    "Untitled 05-25-2026 03-13-21 (5).png",
+    "Untitled 05-25-2026 03-13-21 (6).png"
+];
 
-const imgFoxOlhandoEsquerda = new Image();
-imgFoxOlhandoEsquerda.src = "foxx.png.png"; 
+const imgFoxFrames = [];
+nomesArquivosFox.forEach((src) => {
+    const img = new Image();
+    img.src = src;
+    imgFoxFrames.push(img);
+});
 
 // --- Objeto do Player ---
 const player = {
@@ -96,14 +106,16 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- RAPOSINHA (Lógica simplificada anti-bug) ---
+// --- RAPOSINHA (Lógica por Frames Estáticos) ---
 const npc2 = {
     x: 5000, 
     y: 272, 
     largura: 110, 
     altura: 110,
-    estado: "OLHANDO_DIREITA", // OLHANDO_DIREITA, VIRANDO_CABECA, OLHANDO_ESQUERDA
+    estado: "OLHANDO_DIREITA", // OLHANDO_DIREITA, ANIMANDO, OLHANDO_ESQUERDA
+    frameAnimacao: 0,
     timerAnimacao: 0,
+    tempoPorFrame: 10, // Controla a velocidade dos movimentos da raposa (10 frames de atualização do jogo por mudança)
     tempoVirando: 60 
 };
 
@@ -311,28 +323,36 @@ function atualizar() {
         }
     }
 
-    // 1. ESPERA DE 2 SEGUNDOS DEPOIS DO DIÁLOGO
+    // 1. ESPERA DE 2 SEGUNDOS DEPOIS DO DIÁLOGO DA CUTSCENE
     if (estadoAtual === "ESPERA_POS_DIALOGO") {
         cena450.timerPausaPos++;
         player.estaAndando = false;
 
         if (cena450.timerPausaPos >= cena450.tempoPausaPos) {
             estadoAtual = "RAPOSA_VIRANDO"; 
-            npc2.estado = "VIRANDO_CABECA";
+            npc2.estado = "ANIMANDO";
+            npc2.frameAnimacao = 0;
             npc2.timerAnimacao = 0;
         }
     }
 
-    // 2. TRANSIÇÃO DA ANIMAÇÃO (Chama a virada de cabeça frame a frame)
+    // 2. TRANSIÇÃO DA ANIMAÇÃO USANDO O ARRAY DE SPRITES INDIVIDUAIS
     if (estadoAtual === "RAPOSA_VIRANDO") {
         player.estaAndando = false; 
         npc2.timerAnimacao++;
 
-        if (npc2.timerAnimacao >= npc2.tempoVirando) {
-            npc2.estado = "OLHANDO_ESQUERDA"; 
-            estadoAtual = "JOGANDO";          
-            cena450.concluida = true;
-            cena450.ativa = false;
+        // Avança o frame baseado na taxa configurada de tempoPorFrame
+        if (npc2.timerAnimacao >= npc2.tempoPorFrame) {
+            npc2.timerAnimacao = 0;
+            if (npc2.frameAnimacao < imgFoxFrames.length - 1) {
+                npc2.frameAnimacao++;
+            } else {
+                // Fim da animação, fixa o último frame (olhando totalmente para a esquerda)
+                npc2.estado = "OLHANDO_ESQUERDA"; 
+                estadoAtual = "JOGANDO";          // Libera o controle do jogador
+                cena450.concluida = true;
+                cena450.ativa = false;
+            }
         }
     }
 
@@ -472,30 +492,30 @@ function desenhar() {
             }
         }
 
-        // --- RENDERIZAÇÃO DA RAPOSA ---
+        // --- RENDERIZAÇÃO DA RAPOSA POR SEQUÊNCIA ---
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             let npc2Y = npc2.y - camera.y;
 
-            if (imgFoxOlhandoDireita.complete && imgFoxOlhandoEsquerda.complete && imgFoxOlhandoDireita.width > 0) {
-                
-                if (npc2.estado === "OLHANDO_DIREITA") {
-                    ctx.drawImage(imgFoxOlhandoDireita, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
-                } 
-                else if (npc2.estado === "OLHANDO_ESQUERDA") {
-                    ctx.drawImage(imgFoxOlhandoEsquerda, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
-                } 
-                else if (npc2.estado === "VIRANDO_CABECA") {
-                    // Alterna os frames rapidamente para dar o efeito de movimento retrô
-                    if (Math.floor(npc2.timerAnimacao / 8) % 2 === 0) {
-                        ctx.drawImage(imgFoxOlhandoDireita, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
-                    } else {
-                        ctx.drawImage(imgFoxOlhandoEsquerda, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
-                    }
+            if (npc2.estado === "OLHANDO_DIREITA") {
+                // Desenha fixo o frame 0 (A raposa olhando para trás/direita)
+                if (imgFoxFrames[0].complete && imgFoxFrames[0].width > 0) {
+                    ctx.drawImage(imgFoxFrames[0], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
                 }
-            } else {
-                ctx.fillStyle = "purple"; 
-                ctx.fillRect(npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
+            } 
+            else if (npc2.estado === "OLHANDO_ESQUERDA") {
+                // Desenha fixo o frame final (Virada inteira para a esquerda)
+                let ultimoFrame = imgFoxFrames.length - 1;
+                if (imgFoxFrames[ultimoFrame].complete && imgFoxFrames[ultimoFrame].width > 0) {
+                    ctx.drawImage(imgFoxFrames[ultimoFrame], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
+                }
+            } 
+            else if (npc2.estado === "ANIMANDO") {
+                // Pega dinamicamente o frame atual calculado no laço lógico
+                let frameAlvo = imgFoxFrames[npc2.frameAnimacao];
+                if (frameAlvo && frameAlvo.complete && frameAlvo.width > 0) {
+                    ctx.drawImage(frameAlvo, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
+                }
             }
         }
 
