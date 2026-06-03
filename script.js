@@ -14,6 +14,18 @@ imgPlayerParado.src = "IMG_20260525_102813.png";
 const imgPlayerCorrendo = new Image();
 imgPlayerCorrendo.src = "IMG_20260525_102751.png"; 
 
+// Novas imagens da corrida com Shift (Efeito Ping-Pong)
+const imgCorrida1 = new Image(); imgCorrida1.src = "1000111011.png";
+const imgCorrida2 = new Image(); imgCorrida2.src = "1000111012.png";
+const imgCorrida3 = new Image(); imgCorrida3.src = "1000111013.png";
+
+const imgPlayerCorrendoShift = [
+    imgCorrida1, // Frame 1
+    imgCorrida2, // Frame 2
+    imgCorrida3, // Frame 3
+    imgCorrida2  // Volta para o Frame 2 (Ping-Pong)
+];
+
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png"; 
 
@@ -38,13 +50,15 @@ nomesArquivosFox.forEach((src) => {
 const player = {
     x: 0, 
     y: 100, 
-    larguraVisual: 50,      
+    larguraVisual: 50,     
     alturaVisual: 80,       
     larguraHitbox: 24,
     alturaHitbox: 64,
     offsetX: 13, 
     offsetY: 2,  
-    velocidade: 4, 
+    velocidadeBase: 4, 
+    velocidadeCorrida: 7, // Nova velocidade ao correr
+    velocidadeAtual: 4,
     velY: 0,
     gravidade: 1.0, 
     pulo: -14,      
@@ -54,7 +68,8 @@ const player = {
     spriteAltura: 32,   
     frameAtual: 0,      
     tempoAnimacao: 0,   
-    estaAndando: false
+    estaAndando: false,
+    estaCorrendoShift: false // Novo estado para controlar o tipo de animação
 };
 
 imgPlayerParado.onload = function() {
@@ -89,7 +104,7 @@ const cena450 = {
 
 const npc = {
     x: 2500, 
-    y: 180,          
+    y: 180,           
     largura: 60,     
     altura: 80,      
     tempoFlutuar: 0, 
@@ -112,10 +127,10 @@ const npc2 = {
     y: 272, 
     largura: 110, 
     altura: 110,
-    estado: "OLHANDO_DIREITA", // OLHANDO_DIREITA, ANIMANDO, OLHANDO_ESQUERDA
+    estado: "OLHANDO_DIREITA", 
     frameAnimacao: 0,
     timerAnimacao: 0,
-    tempoPorFrame: 10, // Controla a velocidade dos movimentos da raposa (10 frames de atualização do jogo por mudança)
+    tempoPorFrame: 10, 
     tempoVirando: 60 
 };
 
@@ -184,6 +199,7 @@ window.addEventListener("keydown", (e) => {
             teclas["KeyD"] = false;
             teclas["KeyA"] = false;
             player.estaAndando = false;
+            player.estaCorrendoShift = false;
         }
     }
     
@@ -295,8 +311,8 @@ function gerenciarChuva() {
 
         if (estadoAtual !== "TELA_INICIAL") {
             r.x += r.velX;
-            if (teclas["KeyD"] && estadoAtual === "JOGANDO") r.x -= player.velocidade * r.fatorParallax;
-            if (teclas["KeyA"] && estadoAtual === "JOGANDO") r.x += player.velocidade * r.fatorParallax;
+            if (teclas["KeyD"] && estadoAtual === "JOGANDO") r.x -= player.velocidadeAtual * r.fatorParallax;
+            if (teclas["KeyA"] && estadoAtual === "JOGANDO") r.x += player.velocidadeAtual * r.fatorParallax;
             r.y += r.velY;
             r.velY += 0.2; 
             r.vida--;
@@ -327,6 +343,7 @@ function atualizar() {
     if (estadoAtual === "ESPERA_POS_DIALOGO") {
         cena450.timerPausaPos++;
         player.estaAndando = false;
+        player.estaCorrendoShift = false;
 
         if (cena450.timerPausaPos >= cena450.tempoPausaPos) {
             estadoAtual = "RAPOSA_VIRANDO"; 
@@ -339,17 +356,16 @@ function atualizar() {
     // 2. TRANSIÇÃO DA ANIMAÇÃO USANDO O ARRAY DE SPRITES INDIVIDUAIS
     if (estadoAtual === "RAPOSA_VIRANDO") {
         player.estaAndando = false; 
+        player.estaCorrendoShift = false;
         npc2.timerAnimacao++;
 
-        // Avança o frame baseado na taxa configurada de tempoPorFrame
         if (npc2.timerAnimacao >= npc2.tempoPorFrame) {
             npc2.timerAnimacao = 0;
             if (npc2.frameAnimacao < imgFoxFrames.length - 1) {
                 npc2.frameAnimacao++;
             } else {
-                // Fim da animação, fixa o último frame (olhando totalmente para a esquerda)
                 npc2.estado = "OLHANDO_ESQUERDA"; 
-                estadoAtual = "JOGANDO";          // Libera o controle do jogador
+                estadoAtual = "JOGANDO";          
                 cena450.concluida = true;
                 cena450.ativa = false;
             }
@@ -364,27 +380,46 @@ function atualizar() {
             cena450.timerEspera = 0; 
             teclas["KeyD"] = false; 
             teclas["KeyA"] = false;
+            teclas["ShiftLeft"] = false;
             player.estaAndando = false;
+            player.estaCorrendoShift = false;
         }
 
         player.estaAndando = false;
+        player.estaCorrendoShift = false;
+
+        // Verifica se está segurando o Shift para correr
+        if (teclas["ShiftLeft"]) {
+            player.velocidadeAtual = player.velocidadeCorrida;
+        } else {
+            player.velocidadeAtual = player.velocidadeBase;
+        }
 
         if (teclas["KeyA"]) {
-            player.x -= player.velocidade;
+            player.x -= player.velocidadeAtual;
             player.direcao = "esquerda";
-            player.estaAndando = true;
+            if (teclas["ShiftLeft"]) player.estaCorrendoShift = true; else player.estaAndando = true;
             if (player.x < 0) player.x = 0;
         }
         if (teclas["KeyD"]) {
-            player.x += player.velocidade;
+            player.x += player.velocidadeAtual;
             player.direcao = "direita";
-            player.estaAndando = true;
+            if (teclas["ShiftLeft"]) player.estaCorrendoShift = true; else player.estaAndando = true;
         }
 
-        if (player.estaAndando && player.noChao) {
+        // Sistema de troca de frames adaptável
+        if (player.noChao && (player.estaAndando || player.estaCorrendoShift)) {
             player.tempoAnimacao++;
-            if (player.tempoAnimacao >= 10) { 
-                player.frameAtual = player.frameAtual === 0 ? 1 : 0; 
+            
+            // Se estiver correndo com o Shift, a animação muda de frame mais rápido (6 frames em vez de 10)
+            let limiteTempo = player.estaCorrendoShift ? 6 : 10;
+
+            if (player.tempoAnimacao >= limiteTempo) { 
+                if (player.estaCorrendoShift) {
+                    player.frameAtual = (player.frameAtual + 1) % imgPlayerCorrendoShift.length;
+                } else {
+                    player.frameAtual = player.frameAtual === 0 ? 1 : 0; 
+                }
                 player.tempoAnimacao = 0;
             }
         } else {
@@ -398,7 +433,9 @@ function atualizar() {
                 estadoAtual = "DIALOGO_NPC";
                 teclas["KeyA"] = false;
                 teclas["KeyD"] = false;
+                teclas["ShiftLeft"] = false;
                 player.estaAndando = false;
+                player.estaCorrendoShift = false;
             }
         }
 
@@ -498,20 +535,17 @@ function desenhar() {
             let npc2Y = npc2.y - camera.y;
 
             if (npc2.estado === "OLHANDO_DIREITA") {
-                // Desenha fixo o frame 0 (A raposa olhando para trás/direita)
                 if (imgFoxFrames[0].complete && imgFoxFrames[0].width > 0) {
                     ctx.drawImage(imgFoxFrames[0], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
                 }
             } 
             else if (npc2.estado === "OLHANDO_ESQUERDA") {
-                // Desenha fixo o frame final (Virada inteira para a esquerda)
                 let ultimoFrame = imgFoxFrames.length - 1;
                 if (imgFoxFrames[ultimoFrame].complete && imgFoxFrames[ultimoFrame].width > 0) {
                     ctx.drawImage(imgFoxFrames[ultimoFrame], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
                 }
             } 
             else if (npc2.estado === "ANIMANDO") {
-                // Pega dinamicamente o frame atual calculado no laço lógico
                 let frameAlvo = imgFoxFrames[npc2.frameAnimacao];
                 if (frameAlvo && frameAlvo.complete && frameAlvo.width > 0) {
                     ctx.drawImage(frameAlvo, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
@@ -530,10 +564,19 @@ function desenhar() {
             ctx.translate(-(playerRelativoX + player.larguraVisual / 2), -(playerY + player.alturaVisual / 2));
         }
 
+        // Lógica de Renderização de Sprites do Player
         if (imgPlayerParado.complete && imgPlayerCorrendo.complete && imgPlayerParado.width > 0) {
-            if (player.estaAndando) {
+            if (player.estaCorrendoShift) {
+                // Desenha a partir do novo array de frames individuais
+                let frameAlvoCorrida = imgPlayerCorrendoShift[player.frameAtual];
+                if (frameAlvoCorrida && frameAlvoCorrida.complete) {
+                    ctx.drawImage(frameAlvoCorrida, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                }
+            } else if (player.estaAndando) {
+                // Mantém o sprite sheet antigo de andar/trote convencional
                 ctx.drawImage(imgPlayerCorrendo, player.frameAtual * player.spriteLargura, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             } else {
+                // Sprite parado
                 ctx.drawImage(imgPlayerParado, 0, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             }
         } else {
