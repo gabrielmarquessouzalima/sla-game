@@ -14,12 +14,12 @@ imgPlayerParado.src = "IMG_20260525_102813.png";
 const imgPlayerCorrendo = new Image();
 imgPlayerCorrendo.src = "IMG_20260525_102751.png"; 
 
-// Carrega as novas imagens transparentes do jogador correndo
+// Novas imagens transparentes do jogador correndo
 const imgCorrida1 = new Image(); imgCorrida1.src = "Untitled 06-03-2026 07-50-05.png";
 const imgCorrida2 = new Image(); imgCorrida2.src = "Untitled 06-03-2026 07-50-05 (1).png";
 const imgCorrida3 = new Image(); imgCorrida3.src = "Untitled 06-03-2026 07-50-05 (2).png";
 
-// Array de corrida com o efeito Ping-Pong configurado direto nos frames
+// Array de corrida (Efeito Ping-Pong)
 const imgPlayerCorrendoShift = [imgCorrida1, imgCorrida2, imgCorrida3, imgCorrida2];
 
 const imgNpcEspirito = new Image();
@@ -46,11 +46,11 @@ nomesArquivosFox.forEach((src) => {
 const player = {
     x: 0, 
     y: 100, 
-    larguraVisual: 80,     // Ajustado para manter a proporção da nova Pixel Art
+    larguraVisual: 80,     
     alturaVisual: 80,       
     larguraHitbox: 24,
     alturaHitbox: 64,
-    offsetX: 28,           // Centraliza a hitbox no corpo do novo sprite
+    offsetX: 28,           
     offsetY: 8,  
     velocidadeBase: 4, 
     velocidadeCorrida: 7, 
@@ -549,10 +549,12 @@ function desenhar() {
         }
 
         if (imgPlayerParado.complete && imgPlayerCorrendo.complete && imgPlayerParado.width > 0) {
-            if (player.estaCorrendoShift) {
+            // AJUSTE DE SEGURANÇA: Só tenta desenhar a corrida se TODAS as imagens do array já carregaram na memória
+            let corridaPronta = imgCorrida1.complete && imgCorrida2.complete && imgCorrida3.complete;
+
+            if (player.estaCorrendoShift && corridaPronta) {
                 let frameAlvoCorrida = imgPlayerCorrendoShift[player.frameAtual];
-                if (frameAlvoCorrida && frameAlvoCorrida.complete) {
-                    // Desenha o sprite de corrida inteiro já transparente
+                if (frameAlvoCorrida) {
                     ctx.drawImage(frameAlvoCorrida, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
                 }
             } else if (player.estaAndando) {
@@ -566,7 +568,6 @@ function desenhar() {
         }
         ctx.restore(); 
 
-        // Linha verde opcional de depuração da Hitbox (pode remover se quiser ocultar a caixa verde)
         ctx.strokeStyle = "#00ff00";
         ctx.lineWidth = 1.5;
         ctx.strokeRect(playerRelativoX + player.offsetX, playerY + player.offsetY, player.larguraHitbox, player.alturaHitbox);
