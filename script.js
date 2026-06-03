@@ -19,7 +19,7 @@ const imgCorrida1 = new Image(); imgCorrida1.src = "Untitled 06-03-2026 07-50-05
 const imgCorrida2 = new Image(); imgCorrida2.src = "Untitled 06-03-2026 07-50-05 (1).png";
 const imgCorrida3 = new Image(); imgCorrida3.src = "Untitled 06-03-2026 07-50-05 (2).png";
 
-// Array de corrida (Efeito Ping-Pong)
+// Array de corrida estruturado para o efeito Ping-Pong automático (1 -> 2 -> 3 -> 2)
 const imgPlayerCorrendoShift = [imgCorrida1, imgCorrida2, imgCorrida3, imgCorrida2];
 
 const imgNpcEspirito = new Image();
@@ -78,7 +78,7 @@ imgPlayerCorrendo.onload = function() {
     player.spriteAltura = imgPlayerCorrendo.height;
 };
 
-// --- Configurações da Cena Cinematográfica ---
+// --- Configurações da Cena Cinematográfica (Coordenada 4500) ---
 const cena450 = {
     ativa: false,
     concluida: false,
@@ -161,7 +161,7 @@ for (let i = 0; i < maxPingos; i++) {
 function criarRespingo(x, y, fatorParallax) {
     let quantidade = 2 + Math.floor(Math.random() * 2);
     for (let i = 0; i < quantidade; i++) {
-        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: factorParallax });
+        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: fatorParallax });
     }
 }
 
@@ -359,7 +359,7 @@ function atualizar() {
                 npc2.estado = "OLHANDO_ESQUERDA"; 
                 estadoAtual = "JOGANDO";          
                 cena450.concluida = true;
-                cena450.active = false;
+                cena450.ativa = false;
             }
         }
     }
@@ -520,13 +520,13 @@ function desenhar() {
             let npc2Y = npc2.y - camera.y;
 
             if (npc2.estado === "OLHANDO_DIREITA") {
-                if (imgFoxFrames[0].complete && imgFoxFrames[0].width > 0) {
+                if (imgFoxFrames[0] && imgFoxFrames[0].complete && imgFoxFrames[0].width > 0) {
                     ctx.drawImage(imgFoxFrames[0], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
                 }
             } 
             else if (npc2.estado === "OLHANDO_ESQUERDA") {
                 let ultimoFrame = imgFoxFrames.length - 1;
-                if (imgFoxFrames[ultimoFrame].complete && imgFoxFrames[ultimoFrame].width > 0) {
+                if (imgFoxFrames[ultimoFrame] && imgFoxFrames[ultimoFrame].complete && imgFoxFrames[ultimoFrame].width > 0) {
                     ctx.drawImage(imgFoxFrames[ultimoFrame], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
                 }
             } 
@@ -548,23 +548,35 @@ function desenhar() {
             ctx.translate(-(playerRelativoX + player.larguraVisual / 2), -(playerY + player.alturaVisual / 2));
         }
 
-        if (imgPlayerParado.complete && imgPlayerCorrendo.complete && imgPlayerParado.width > 0) {
-            // AJUSTE DE SEGURANÇA: Só tenta desenhar a corrida se TODAS as imagens do array já carregaram na memória
-            let corridaPronta = imgCorrida1.complete && imgCorrida2.complete && imgCorrida3.complete;
+        // Sistema Robusto de Desenho do Player
+        let paradoPronto = imgPlayerParado.complete && imgPlayerParado.width > 0;
+        let andandoPronto = imgPlayerCorrendo.complete && imgPlayerCorrendo.width > 0;
+        let corridaPronta = imgCorrida1.complete && imgCorrida2.complete && imgCorrida3.complete;
 
-            if (player.estaCorrendoShift && corridaPronta) {
+        if (player.estaCorrendoShift) {
+            if (corridaPronta) {
                 let frameAlvoCorrida = imgPlayerCorrendoShift[player.frameAtual];
                 if (frameAlvoCorrida) {
                     ctx.drawImage(frameAlvoCorrida, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
                 }
-            } else if (player.estaAndando) {
+            } else {
+                ctx.fillStyle = "#00ffcc";
+                ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+            }
+        } else if (player.estaAndando) {
+            if (andandoPronto) {
                 ctx.drawImage(imgPlayerCorrendo, player.frameAtual * player.spriteLargura, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             } else {
-                ctx.drawImage(imgPlayerParado, 0, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                ctx.fillStyle = "#00aaff";
+                ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             }
         } else {
-            ctx.fillStyle = "#00aaff";
-            ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+            if (paradoPronto) {
+                ctx.drawImage(imgPlayerParado, 0, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+            } else {
+                ctx.fillStyle = "#0055ff";
+                ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+            }
         }
         ctx.restore(); 
 
