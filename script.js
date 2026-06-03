@@ -14,22 +14,18 @@ imgPlayerParado.src = "IMG_20260525_102813.png";
 const imgPlayerCorrendo = new Image();
 imgPlayerCorrendo.src = "IMG_20260525_102751.png"; 
 
-// Novas imagens da corrida com Shift (Efeito Ping-Pong)
-const imgCorrida1 = new Image(); imgCorrida1.src = "1000111011.png";
-const imgCorrida2 = new Image(); imgCorrida2.src = "1000111012.png";
-const imgCorrida3 = new Image(); imgCorrida3.src = "1000111013.png";
+// Carrega as novas imagens transparentes do jogador correndo
+const imgCorrida1 = new Image(); imgCorrida1.src = "Untitled 06-03-2026 07-50-05.png";
+const imgCorrida2 = new Image(); imgCorrida2.src = "Untitled 06-03-2026 07-50-05 (1).png";
+const imgCorrida3 = new Image(); imgCorrida3.src = "Untitled 06-03-2026 07-50-05 (2).png";
 
-const imgPlayerCorrendoShift = [
-    imgCorrida1, // Frame 1
-    imgCorrida2, // Frame 2
-    imgCorrida3, // Frame 3
-    imgCorrida2  // Volta para o Frame 2 (Ping-Pong)
-];
+// Array de corrida com o efeito Ping-Pong configurado direto nos frames
+const imgPlayerCorrendoShift = [imgCorrida1, imgCorrida2, imgCorrida3, imgCorrida2];
 
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png"; 
 
-// --- Configuração Segura da Animação da Raposa ---
+// --- Configuração da Animação da Raposa ---
 const nomesArquivosFox = [
     "Untitled 05-25-2026 03-13-21 (1).png",
     "Untitled 05-25-2026 03-13-21 (2).png",
@@ -50,14 +46,14 @@ nomesArquivosFox.forEach((src) => {
 const player = {
     x: 0, 
     y: 100, 
-    larguraVisual: 50,     
+    larguraVisual: 80,     // Ajustado para manter a proporção da nova Pixel Art
     alturaVisual: 80,       
     larguraHitbox: 24,
     alturaHitbox: 64,
-    offsetX: 13, 
-    offsetY: 2,  
+    offsetX: 28,           // Centraliza a hitbox no corpo do novo sprite
+    offsetY: 8,  
     velocidadeBase: 4, 
-    velocidadeCorrida: 7, // Nova velocidade ao correr
+    velocidadeCorrida: 7, 
     velocidadeAtual: 4,
     velY: 0,
     gravidade: 1.0, 
@@ -69,7 +65,7 @@ const player = {
     frameAtual: 0,      
     tempoAnimacao: 0,   
     estaAndando: false,
-    estaCorrendoShift: false // Novo estado para controlar o tipo de animação
+    estaCorrendoShift: false 
 };
 
 imgPlayerParado.onload = function() {
@@ -121,9 +117,8 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- RAPOSINHA (Lógica por Frames Estáticos) ---
 const npc2 = {
-    x: 5000, 
+    x: 4500, 
     y: 272, 
     largura: 110, 
     altura: 110,
@@ -166,7 +161,7 @@ for (let i = 0; i < maxPingos; i++) {
 function criarRespingo(x, y, fatorParallax) {
     let quantidade = 2 + Math.floor(Math.random() * 2);
     for (let i = 0; i < quantidade; i++) {
-        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: fatorParallax });
+        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: factorParallax });
     }
 }
 
@@ -225,7 +220,7 @@ btnStart.addEventListener("click", () => {
     btnStart.style.display = "none"; 
 });
 
-function desenharCenario() {
+function desenhoCenario() {
     ctx.fillStyle = "#020005";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -321,7 +316,6 @@ function gerenciarChuva() {
     }
 }
 
-// --- LOOP PRINCIPAL DO JOGO ---
 function atualizar() {
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
@@ -339,7 +333,6 @@ function atualizar() {
         }
     }
 
-    // 1. ESPERA DE 2 SEGUNDOS DEPOIS DO DIÁLOGO DA CUTSCENE
     if (estadoAtual === "ESPERA_POS_DIALOGO") {
         cena450.timerPausaPos++;
         player.estaAndando = false;
@@ -353,7 +346,6 @@ function atualizar() {
         }
     }
 
-    // 2. TRANSIÇÃO DA ANIMAÇÃO USANDO O ARRAY DE SPRITES INDIVIDUAIS
     if (estadoAtual === "RAPOSA_VIRANDO") {
         player.estaAndando = false; 
         player.estaCorrendoShift = false;
@@ -367,12 +359,11 @@ function atualizar() {
                 npc2.estado = "OLHANDO_ESQUERDA"; 
                 estadoAtual = "JOGANDO";          
                 cena450.concluida = true;
-                cena450.ativa = false;
+                cena450.active = false;
             }
         }
     }
 
-    // Movimentação Normal do Player
     if (estadoAtual === "JOGANDO") {
         if (player.x >= 4500 && !cena450.concluida) {
             estadoAtual = "CENA_450";
@@ -388,7 +379,6 @@ function atualizar() {
         player.estaAndando = false;
         player.estaCorrendoShift = false;
 
-        // Verifica se está segurando o Shift para correr
         if (teclas["ShiftLeft"]) {
             player.velocidadeAtual = player.velocidadeCorrida;
         } else {
@@ -407,11 +397,8 @@ function atualizar() {
             if (teclas["ShiftLeft"]) player.estaCorrendoShift = true; else player.estaAndando = true;
         }
 
-        // Sistema de troca de frames adaptável
         if (player.noChao && (player.estaAndando || player.estaCorrendoShift)) {
             player.tempoAnimacao++;
-            
-            // Se estiver correndo com o Shift, a animação muda de frame mais rápido (6 frames em vez de 10)
             let limiteTempo = player.estaCorrendoShift ? 6 : 10;
 
             if (player.tempoAnimacao >= limiteTempo) { 
@@ -506,7 +493,7 @@ function desenhar() {
         ctx.fillText("CIDADE INFINITA", canvas.width / 2, 150);
     } 
     else {
-        desenharCenario();
+        desenhoCenario();
 
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY - camera.y, canvas.width, (canvas.height - chaoY) + camera.y);
@@ -520,7 +507,6 @@ function desenhar() {
         ctx.textAlign = "left";
         ctx.fillText(`COORD X: ${displayX}  COORD Y: ${Math.max(0, displayY)}`, 20, 30);
 
-        // NPC 1 (Espírito)
         let npcRelativoX = npc.x - camera.x;
         if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
             let flutuarY = npc.y + Math.sin(npc.tempoFlutuar) * 8 - camera.y;
@@ -529,7 +515,6 @@ function desenhar() {
             }
         }
 
-        // --- RENDERIZAÇÃO DA RAPOSA POR SEQUÊNCIA ---
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             let npc2Y = npc2.y - camera.y;
@@ -553,7 +538,6 @@ function desenhar() {
             }
         }
 
-        // Renderização do Player
         let playerRelativoX = player.x - camera.x;
         let playerY = player.y - camera.y;
         
@@ -564,19 +548,16 @@ function desenhar() {
             ctx.translate(-(playerRelativoX + player.larguraVisual / 2), -(playerY + player.alturaVisual / 2));
         }
 
-        // Lógica de Renderização de Sprites do Player
         if (imgPlayerParado.complete && imgPlayerCorrendo.complete && imgPlayerParado.width > 0) {
             if (player.estaCorrendoShift) {
-                // Desenha a partir do novo array de frames individuais
                 let frameAlvoCorrida = imgPlayerCorrendoShift[player.frameAtual];
                 if (frameAlvoCorrida && frameAlvoCorrida.complete) {
+                    // Desenha o sprite de corrida inteiro já transparente
                     ctx.drawImage(frameAlvoCorrida, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
                 }
             } else if (player.estaAndando) {
-                // Mantém o sprite sheet antigo de andar/trote convencional
                 ctx.drawImage(imgPlayerCorrendo, player.frameAtual * player.spriteLargura, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             } else {
-                // Sprite parado
                 ctx.drawImage(imgPlayerParado, 0, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             }
         } else {
@@ -585,6 +566,7 @@ function desenhar() {
         }
         ctx.restore(); 
 
+        // Linha verde opcional de depuração da Hitbox (pode remover se quiser ocultar a caixa verde)
         ctx.strokeStyle = "#00ff00";
         ctx.lineWidth = 1.5;
         ctx.strokeRect(playerRelativoX + player.offsetX, playerY + player.offsetY, player.larguraHitbox, player.alturaHitbox);
@@ -602,5 +584,4 @@ function desenhar() {
     }
 }
 
-// Inicia o jogo
 atualizar();
