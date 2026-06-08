@@ -112,10 +112,10 @@ const npc2 = {
     y: 272, 
     largura: 110, 
     altura: 110,
-    estado: "OLHANDO_DIREITA", // OLHANDO_DIREITA, ANIMANDO, OLHANDO_ESQUERDA
+    estado: "OLHANDO_DIREITA",
     frameAnimacao: 0,
     timerAnimacao: 0,
-    tempoPorFrame: 10, // Controla a velocidade dos movimentos da raposa (10 frames de atualização do jogo por mudança)
+    tempoPorFrame: 10,
     tempoVirando: 60 
 };
 
@@ -209,45 +209,169 @@ btnStart.addEventListener("click", () => {
     btnStart.style.display = "none"; 
 });
 
+// --- CENÁRIO COM LUA CRESCENTE E DETALHES CIBERPUNK ---
 function desenharCenario() {
-    ctx.fillStyle = "#020005";
+    // Fundo com gradiente noturno
+    const gradFundo = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradFundo.addColorStop(0, "#020008");
+    gradFundo.addColorStop(0.5, "#08001a");
+    gradFundo.addColorStop(1, "#030010");
+    ctx.fillStyle = gradFundo;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-    for(let i = 0; i < 30; i++) {
-        let x = ((i * 137) - (camera.x * 0.01)) % canvas.width;
+    // --- LUA CRESCENTE ---
+    const luaX = canvas.width - 120 - (camera.x * 0.005) % 30;
+    const luaY = 60;
+    const luaR = 38;
+
+    // Halo suave ao redor da lua
+    const haloGrad = ctx.createRadialGradient(luaX, luaY, luaR * 0.8, luaX, luaY, luaR * 2.5);
+    haloGrad.addColorStop(0, "rgba(200, 220, 255, 0.08)");
+    haloGrad.addColorStop(1, "rgba(200, 220, 255, 0)");
+    ctx.fillStyle = haloGrad;
+    ctx.beginPath();
+    ctx.arc(luaX, luaY, luaR * 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Corpo da lua + crescente via clipping
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(luaX, luaY, luaR, 0, Math.PI * 2);
+    ctx.clip();
+
+    ctx.fillStyle = "#d8e8ff";
+    ctx.beginPath();
+    ctx.arc(luaX, luaY, luaR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Variação sutil de brilho na superfície
+    const luaGrad = ctx.createRadialGradient(luaX - 10, luaY - 10, 0, luaX, luaY, luaR);
+    luaGrad.addColorStop(0, "rgba(255,255,255,0.5)");
+    luaGrad.addColorStop(0.6, "rgba(200,215,255,0.1)");
+    luaGrad.addColorStop(1, "rgba(140,160,220,0.3)");
+    ctx.fillStyle = luaGrad;
+    ctx.beginPath();
+    ctx.arc(luaX, luaY, luaR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // "Mordida" que cria o crescente
+    ctx.fillStyle = "#020008";
+    ctx.beginPath();
+    ctx.arc(luaX + luaR * 0.6, luaY - luaR * 0.1, luaR * 0.88, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+
+    // --- ESTRELAS COM TWINKLE ---
+    const tempoAgora = Date.now() * 0.001;
+    for (let i = 0; i < 60; i++) {
+        let x = ((i * 137.5) - (camera.x * 0.008)) % canvas.width;
         if (x < 0) x += canvas.width;
-        let y = ((i * 243) % 150) - camera.y * 0.5; 
-        ctx.fillRect(x, y, 1, 1);
+        let y = (i * 97) % 160;
+        let brilho = 0.3 + 0.4 * Math.abs(Math.sin(tempoAgora * 0.8 + i * 2.3));
+        let tamanho = i % 5 === 0 ? 1.5 : 1;
+        ctx.fillStyle = `rgba(220, 230, 255, ${brilho})`;
+        ctx.fillRect(x, y, tamanho, tamanho);
     }
 
-    parallax.camadas.forEach((camada, indexCamada) => {
-        let espacoTotal = camada.espacamento;
-        let scrollX = (camera.x * camada.velocidade) % espacoTotal;
+    // --- NEBLINA URBANA NO HORIZONTE ---
+    const neblinaGrad = ctx.createLinearGradient(0, chaoY - 120 - camera.y, 0, chaoY - camera.y);
+    neblinaGrad.addColorStop(0, "rgba(80, 0, 160, 0)");
+    neblinaGrad.addColorStop(0.5, "rgba(120, 0, 200, 0.04)");
+    neblinaGrad.addColorStop(1, "rgba(180, 20, 255, 0.12)");
+    ctx.fillStyle = neblinaGrad;
+    ctx.fillRect(0, chaoY - 120 - camera.y, canvas.width, 120);
 
-        for (let i = -1; i < (canvas.width / espacoTotal) + 2; i++) {
-            let xPos = (i * espacoTotal) - scrollX;
-            let idPredioMundo = Math.floor((camera.x * camada.velocidade) / espacoTotal) + i;
-            let h = camada.alturaBase + (Math.abs(Math.sin(idPredioMundo + indexCamada)) * 70);
+    // --- PRÉDIOS COM DETALHES CIBERPUNK ---
+    const camadasCiberpunk = [
+        { velocidade: 0.02, cor: "#090014", altBase: 200, largura: 110, espaco: 140, corNeon: null },
+        { velocidade: 0.06, cor: "#120024", altBase: 140, largura: 85,  espaco: 110, corNeon: "rgba(255,0,100,0.7)" },
+        { velocidade: 0.15, cor: "#1b003a", altBase: 90,  largura: 65,  espaco: 95,  corNeon: "rgba(0,200,255,0.8)" }
+    ];
+
+    camadasCiberpunk.forEach((camada, idx) => {
+        let espaco = camada.espaco;
+        let scrollX = (camera.x * camada.velocidade) % espaco;
+
+        for (let i = -1; i < (canvas.width / espaco) + 2; i++) {
+            let xPos = (i * espaco) - scrollX;
+            let idPredio = Math.floor((camera.x * camada.velocidade) / espaco) + i;
+            let h = camada.altBase + (Math.abs(Math.sin(idPredio + idx)) * 70);
             let topoY = chaoY - h - camera.y;
 
+            // Corpo do prédio
             ctx.fillStyle = camada.cor;
-            ctx.fillRect(xPos, topoY, camada.larguraPredio, h);
+            ctx.fillRect(xPos, topoY, camada.largura, h);
 
-            if (indexCamada > 0) {
-                let texturadajaneLa = 0;
+            if (idx > 0) {
+                // Janelas (amarelas, azuis e apagadas)
+                let linhaJanela = 0;
                 for (let wy = topoY + 20; wy < (chaoY - camera.y) - 20; wy += 25) {
-                    texturadajaneLa++;
-                    let colunaJanela = 0;
-                    for (let wx = xPos + 15; wx < xPos + camada.larguraPredio - 15; wx += 20) {
-                        colunaJanela++;
-                        let sementeJanela = Math.abs(Math.sin(idPredioMundo * 7 + texturadajaneLa * 13 + colunaJanela * 31));
-                        if (sementeJanela > 0.4) {
-                            ctx.fillStyle = sementeJanela > 0.82 ? "rgba(255, 230, 100, 0.8)" : "rgba(0, 0, 0, 0.6)"; 
+                    linhaJanela++;
+                    let colJanela = 0;
+                    for (let wx = xPos + 12; wx < xPos + camada.largura - 12; wx += 20) {
+                        colJanela++;
+                        let semente = Math.abs(Math.sin(idPredio * 7 + linhaJanela * 13 + colJanela * 31));
+                        if (semente > 0.4) {
+                            let cor;
+                            if (semente > 0.82) {
+                                cor = "rgba(255, 230, 100, 0.85)";
+                            } else if (semente > 0.65) {
+                                cor = "rgba(0, 200, 255, 0.5)";
+                            } else {
+                                cor = "rgba(0, 0, 0, 0.6)";
+                            }
+                            ctx.fillStyle = cor;
                             ctx.fillRect(wx, wy, 4, 6);
                         }
                     }
                 }
+
+                // Antena no topo
+                if (Math.abs(Math.sin(idPredio * 5.1)) > 0.5) {
+                    let antX = xPos + camada.largura / 2;
+                    ctx.strokeStyle = "rgba(180,180,200,0.5)";
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(antX, topoY);
+                    ctx.lineTo(antX, topoY - 18);
+                    ctx.stroke();
+
+                    // Luz vermelha piscando na antena
+                    let pisca = Math.sin(Date.now() * 0.002 + idPredio) > 0.3;
+                    if (pisca) {
+                        ctx.fillStyle = "rgba(255, 50, 50, 0.9)";
+                        ctx.beginPath();
+                        ctx.arc(antX, topoY - 20, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Letreiro de neon horizontal no topo
+                if (camada.corNeon && Math.abs(Math.sin(idPredio * 3.7)) > 0.65) {
+                    ctx.strokeStyle = camada.corNeon;
+                    ctx.lineWidth = 2;
+                    ctx.shadowColor = camada.corNeon;
+                    ctx.shadowBlur = 6;
+                    ctx.beginPath();
+                    ctx.moveTo(xPos + 8, topoY + 8);
+                    ctx.lineTo(xPos + camada.largura - 8, topoY + 8);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Plataforma/terraço no topo
+                if (Math.abs(Math.cos(idPredio * 2.9)) > 0.6) {
+                    ctx.fillStyle = "rgba(255,255,255,0.06)";
+                    ctx.fillRect(xPos - 4, topoY - 4, camada.largura + 8, 5);
+                }
+            }
+
+            // Reflexo de neon no chão (camada frontal)
+            if (idx === 2 && camada.corNeon) {
+                let refAlpha = 0.04 + 0.03 * Math.abs(Math.sin(idPredio * 3.7));
+                ctx.fillStyle = camada.corNeon.replace("0.8", `${refAlpha}`);
+                ctx.fillRect(xPos, chaoY - camera.y, camada.largura, 4);
             }
         }
     });
@@ -323,7 +447,6 @@ function atualizar() {
         }
     }
 
-    // 1. ESPERA DE 2 SEGUNDOS DEPOIS DO DIÁLOGO DA CUTSCENE
     if (estadoAtual === "ESPERA_POS_DIALOGO") {
         cena450.timerPausaPos++;
         player.estaAndando = false;
@@ -336,27 +459,23 @@ function atualizar() {
         }
     }
 
-    // 2. TRANSIÇÃO DA ANIMAÇÃO USANDO O ARRAY DE SPRITES INDIVIDUAIS
     if (estadoAtual === "RAPOSA_VIRANDO") {
         player.estaAndando = false; 
         npc2.timerAnimacao++;
 
-        // Avança o frame baseado na taxa configurada de tempoPorFrame
         if (npc2.timerAnimacao >= npc2.tempoPorFrame) {
             npc2.timerAnimacao = 0;
             if (npc2.frameAnimacao < imgFoxFrames.length - 1) {
                 npc2.frameAnimacao++;
             } else {
-                // Fim da animação, fixa o último frame (olhando totalmente para a esquerda)
                 npc2.estado = "OLHANDO_ESQUERDA"; 
-                estadoAtual = "JOGANDO";          // Libera o controle do jogador
+                estadoAtual = "JOGANDO";
                 cena450.concluida = true;
                 cena450.ativa = false;
             }
         }
     }
 
-    // Movimentação Normal do Player
     if (estadoAtual === "JOGANDO") {
         if (player.x >= 4500 && !cena450.concluida) {
             estadoAtual = "CENA_450";
@@ -498,20 +617,17 @@ function desenhar() {
             let npc2Y = npc2.y - camera.y;
 
             if (npc2.estado === "OLHANDO_DIREITA") {
-                // Desenha fixo o frame 0 (A raposa olhando para trás/direita)
                 if (imgFoxFrames[0].complete && imgFoxFrames[0].width > 0) {
                     ctx.drawImage(imgFoxFrames[0], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
                 }
             } 
             else if (npc2.estado === "OLHANDO_ESQUERDA") {
-                // Desenha fixo o frame final (Virada inteira para a esquerda)
                 let ultimoFrame = imgFoxFrames.length - 1;
                 if (imgFoxFrames[ultimoFrame].complete && imgFoxFrames[ultimoFrame].width > 0) {
                     ctx.drawImage(imgFoxFrames[ultimoFrame], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
                 }
             } 
             else if (npc2.estado === "ANIMANDO") {
-                // Pega dinamicamente o frame atual calculado no laço lógico
                 let frameAlvo = imgFoxFrames[npc2.frameAnimacao];
                 if (frameAlvo && frameAlvo.complete && frameAlvo.width > 0) {
                     ctx.drawImage(frameAlvo, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
