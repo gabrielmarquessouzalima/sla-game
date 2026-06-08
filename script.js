@@ -19,7 +19,7 @@ const imgCorrida1 = new Image(); imgCorrida1.src = "Untitled 06-03-2026 07-50-05
 const imgCorrida2 = new Image(); imgCorrida2.src = "Untitled 06-03-2026 07-50-05 (1).png";
 const imgCorrida3 = new Image(); imgCorrida3.src = "Untitled 06-03-2026 07-50-05 (2).png";
 
-// Array de corrida estruturado para o efeito Ping-Pong automático (1 -> 2 -> 3 -> 2)
+// Array de corrida em formato Ping-Pong (1 -> 2 -> 3 -> 2)
 const imgPlayerCorrendoShift = [imgCorrida1, imgCorrida2, imgCorrida3, imgCorrida2];
 
 const imgNpcEspirito = new Image();
@@ -43,6 +43,7 @@ nomesArquivosFox.forEach((src) => {
 });
 
 // --- Objeto do Player ---
+// Valores de tamanho fixados manualmente para evitar bugs de leitura de arquivo
 const player = {
     x: 0, 
     y: 100, 
@@ -60,22 +61,12 @@ const player = {
     pulo: -14,      
     noChao: false,
     direcao: "direita",
-    spriteLargura: 32,  
+    spriteLargura: 32,  // Definido tamanho padrão fixo
     spriteAltura: 32,   
     frameAtual: 0,      
     tempoAnimacao: 0,   
     estaAndando: false,
     estaCorrendoShift: false 
-};
-
-imgPlayerParado.onload = function() {
-    player.spriteAltura = imgPlayerParado.height;
-    player.spriteLargura = imgPlayerParado.width; 
-};
-
-imgPlayerCorrendo.onload = function() {
-    player.spriteLargura = imgPlayerCorrendo.width / 2;
-    player.spriteAltura = imgPlayerCorrendo.height;
 };
 
 // --- Configurações da Cena Cinematográfica (Coordenada 4500) ---
@@ -548,31 +539,26 @@ function desenhar() {
             ctx.translate(-(playerRelativoX + player.larguraVisual / 2), -(playerY + player.alturaVisual / 2));
         }
 
-        // Sistema Robusto de Desenho do Player
-        let paradoPronto = imgPlayerParado.complete && imgPlayerParado.width > 0;
-        let andandoPronto = imgPlayerCorrendo.complete && imgPlayerCorrendo.width > 0;
-        let corridaPronta = imgCorrida1.complete && imgCorrida2.complete && imgCorrida3.complete;
-
+        // Renderização manual sem divisões dinâmicas que causam quebras de loop
         if (player.estaCorrendoShift) {
-            if (corridaPronta) {
-                let frameAlvoCorrida = imgPlayerCorrendoShift[player.frameAtual];
-                if (frameAlvoCorrida) {
-                    ctx.drawImage(frameAlvoCorrida, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
-                }
+            let frameAlvoCorrida = imgPlayerCorrendoShift[player.frameAtual];
+            if (frameAlvoCorrida && frameAlvoCorrida.complete && frameAlvoCorrida.width > 0) {
+                ctx.drawImage(frameAlvoCorrida, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             } else {
                 ctx.fillStyle = "#00ffcc";
                 ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             }
         } else if (player.estaAndando) {
-            if (andandoPronto) {
-                ctx.drawImage(imgPlayerCorrendo, player.frameAtual * player.spriteLargura, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+            if (imgPlayerCorrendo.complete && imgPlayerCorrendo.width > 0) {
+                // Desenha usando proporções fixas e seguras de corte (32x32 padrão)
+                ctx.drawImage(imgPlayerCorrendo, player.frameAtual * 32, 0, 32, 32, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             } else {
                 ctx.fillStyle = "#00aaff";
                 ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             }
         } else {
-            if (paradoPronto) {
-                ctx.drawImage(imgPlayerParado, 0, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+            if (imgPlayerParado.complete && imgPlayerParado.width > 0) {
+                ctx.drawImage(imgPlayerParado, 0, 0, 32, 32, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             } else {
                 ctx.fillStyle = "#0055ff";
                 ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
