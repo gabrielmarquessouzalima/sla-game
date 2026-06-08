@@ -19,7 +19,7 @@ const imgCorrida1 = new Image(); imgCorrida1.src = "Untitled 06-03-2026 07-50-05
 const imgCorrida2 = new Image(); imgCorrida2.src = "Untitled 06-03-2026 07-50-05 (1).png";
 const imgCorrida3 = new Image(); imgCorrida3.src = "Untitled 06-03-2026 07-50-05 (2).png";
 
-// Array de corrida em formato Ping-Pong (1 -> 2 -> 3 -> 2)
+// Array de corrida (Efeito Ping-Pong: 1 -> 2 -> 3 -> 2)
 const imgPlayerCorrendoShift = [imgCorrida1, imgCorrida2, imgCorrida3, imgCorrida2];
 
 const imgNpcEspirito = new Image();
@@ -43,7 +43,6 @@ nomesArquivosFox.forEach((src) => {
 });
 
 // --- Objeto do Player ---
-// Valores de tamanho fixados manualmente para evitar bugs de leitura de arquivo
 const player = {
     x: 0, 
     y: 100, 
@@ -61,7 +60,7 @@ const player = {
     pulo: -14,      
     noChao: false,
     direcao: "direita",
-    spriteLargura: 32,  // Definido tamanho padrão fixo
+    spriteLargura: 32,  
     spriteAltura: 32,   
     frameAtual: 0,      
     tempoAnimacao: 0,   
@@ -69,7 +68,17 @@ const player = {
     estaCorrendoShift: false 
 };
 
-// --- Configurações da Cena Cinematográfica (Coordenada 4500) ---
+imgPlayerParado.onload = function() {
+    player.spriteAltura = imgPlayerParado.height;
+    player.spriteLargura = imgPlayerParado.width; 
+};
+
+imgPlayerCorrendo.onload = function() {
+    player.spriteLargura = imgPlayerCorrendo.width / 2;
+    player.spriteAltura = imgPlayerCorrendo.height;
+};
+
+// --- Configurações da Cena Cinematográfica (Coordenada 450 original) ---
 const cena450 = {
     ativa: false,
     concluida: false,
@@ -109,7 +118,7 @@ const npc = {
 };
 
 const npc2 = {
-    x: 4500, 
+    x: 450, // Voltou para a posição 450 original do seu mapa
     y: 272, 
     largura: 110, 
     altura: 110,
@@ -149,10 +158,10 @@ for (let i = 0; i < maxPingos; i++) {
     });
 }
 
-function criarRespingo(x, y, fatorParallax) {
+function criarRespingo(x, y, factorParallax) {
     let quantidade = 2 + Math.floor(Math.random() * 2);
     for (let i = 0; i < quantidade; i++) {
-        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: fatorParallax });
+        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: factorParallax });
     }
 }
 
@@ -356,7 +365,8 @@ function atualizar() {
     }
 
     if (estadoAtual === "JOGANDO") {
-        if (player.x >= 4500 && !cena450.concluida) {
+        // Ativação da cena original em x = 450
+        if (player.x >= 450 && !cena450.concluida) {
             estadoAtual = "CENA_450";
             cena450.ativa = true;
             cena450.timerEspera = 0; 
@@ -511,13 +521,13 @@ function desenhar() {
             let npc2Y = npc2.y - camera.y;
 
             if (npc2.estado === "OLHANDO_DIREITA") {
-                if (imgFoxFrames[0] && imgFoxFrames[0].complete && imgFoxFrames[0].width > 0) {
+                if (imgFoxFrames[0].complete && imgFoxFrames[0].width > 0) {
                     ctx.drawImage(imgFoxFrames[0], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
                 }
             } 
             else if (npc2.estado === "OLHANDO_ESQUERDA") {
                 let ultimoFrame = imgFoxFrames.length - 1;
-                if (imgFoxFrames[ultimoFrame] && imgFoxFrames[ultimoFrame].complete && imgFoxFrames[ultimoFrame].width > 0) {
+                if (imgFoxFrames[ultimoFrame].complete && imgFoxFrames[ultimoFrame].width > 0) {
                     ctx.drawImage(imgFoxFrames[ultimoFrame], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
                 }
             } 
@@ -539,29 +549,19 @@ function desenhar() {
             ctx.translate(-(playerRelativoX + player.larguraVisual / 2), -(playerY + player.alturaVisual / 2));
         }
 
-        // Renderização manual sem divisões dinâmicas que causam quebras de loop
-        if (player.estaCorrendoShift) {
-            let frameAlvoCorrida = imgPlayerCorrendoShift[player.frameAtual];
-            if (frameAlvoCorrida && frameAlvoCorrida.complete && frameAlvoCorrida.width > 0) {
-                ctx.drawImage(frameAlvoCorrida, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+        if (imgPlayerParado.complete && imgPlayerCorrendo.complete && imgPlayerParado.width > 0) {
+            let corridaPronta = imgCorrida1.complete && imgCorrida2.complete && imgCorrida3.complete;
+
+            // Mantém rigorosamente o tamanho visual original (80x80) para qualquer animação
+            if (player.estaCorrendoShift && corridaPronta) {
+                let frameAlvoCorrida = imgPlayerCorrendoShift[player.frameAtual];
+                if (frameAlvoCorrida) {
+                    ctx.drawImage(frameAlvoCorrida, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                }
+            } else if (player.estaAndando) {
+                ctx.drawImage(imgPlayerCorrendo, player.frameAtual * player.spriteLargura, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             } else {
-                ctx.fillStyle = "#00ffcc";
-                ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
-            }
-        } else if (player.estaAndando) {
-            if (imgPlayerCorrendo.complete && imgPlayerCorrendo.width > 0) {
-                // Desenha usando proporções fixas e seguras de corte (32x32 padrão)
-                ctx.drawImage(imgPlayerCorrendo, player.frameAtual * 32, 0, 32, 32, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
-            } else {
-                ctx.fillStyle = "#00aaff";
-                ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
-            }
-        } else {
-            if (imgPlayerParado.complete && imgPlayerParado.width > 0) {
-                ctx.drawImage(imgPlayerParado, 0, 0, 32, 32, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
-            } else {
-                ctx.fillStyle = "#0055ff";
-                ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                ctx.drawImage(imgPlayerParado, 0, 0, imgPlayerParado.width, imgPlayerParado.height, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             }
         }
         ctx.restore(); 
