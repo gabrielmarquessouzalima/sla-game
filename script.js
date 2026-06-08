@@ -14,18 +14,10 @@ imgPlayerParado.src = "IMG_20260525_102813.png";
 const imgPlayerCorrendo = new Image();
 imgPlayerCorrendo.src = "IMG_20260525_102751.png"; 
 
-// Novas imagens transparentes do jogador correndo
-const imgCorrida1 = new Image(); imgCorrida1.src = "Untitled 06-03-2026 07-50-05.png";
-const imgCorrida2 = new Image(); imgCorrida2.src = "Untitled 06-03-2026 07-50-05 (1).png";
-const imgCorrida3 = new Image(); imgCorrida3.src = "Untitled 06-03-2026 07-50-05 (2).png";
-
-// Array de corrida (Efeito Ping-Pong: 1 -> 2 -> 3 -> 2)
-const imgPlayerCorrendoShift = [imgCorrida1, imgCorrida2, imgCorrida3, imgCorrida2];
-
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png"; 
 
-// --- Configuração da Animação da Raposa ---
+// --- Configuração Segura da Animação da Raposa ---
 const nomesArquivosFox = [
     "Untitled 05-25-2026 03-13-21 (1).png",
     "Untitled 05-25-2026 03-13-21 (2).png",
@@ -46,15 +38,13 @@ nomesArquivosFox.forEach((src) => {
 const player = {
     x: 0, 
     y: 100, 
-    larguraVisual: 80,     
+    larguraVisual: 50,      
     alturaVisual: 80,       
     larguraHitbox: 24,
     alturaHitbox: 64,
-    offsetX: 28,           
-    offsetY: 8,  
-    velocidadeBase: 4, 
-    velocidadeCorrida: 7, 
-    velocidadeAtual: 4,
+    offsetX: 13, 
+    offsetY: 2,  
+    velocidade: 4, 
     velY: 0,
     gravidade: 1.0, 
     pulo: -14,      
@@ -64,8 +54,7 @@ const player = {
     spriteAltura: 32,   
     frameAtual: 0,      
     tempoAnimacao: 0,   
-    estaAndando: false,
-    estaCorrendoShift: false 
+    estaAndando: false
 };
 
 imgPlayerParado.onload = function() {
@@ -78,7 +67,7 @@ imgPlayerCorrendo.onload = function() {
     player.spriteAltura = imgPlayerCorrendo.height;
 };
 
-// --- Configurações da Cena Cinematográfica (Coordenada 450 original) ---
+// --- Configurações da Cena Cinematográfica ---
 const cena450 = {
     ativa: false,
     concluida: false,
@@ -100,7 +89,7 @@ const cena450 = {
 
 const npc = {
     x: 2500, 
-    y: 180,           
+    y: 180,          
     largura: 60,     
     altura: 80,      
     tempoFlutuar: 0, 
@@ -117,15 +106,16 @@ const npc = {
     distanciaInteracao: 80 
 };
 
+// --- RAPOSINHA (Lógica por Frames Estáticos) ---
 const npc2 = {
-    x: 450, // Voltou para a posição 450 original do seu mapa
+    x: 5000, 
     y: 272, 
     largura: 110, 
     altura: 110,
-    estado: "OLHANDO_DIREITA", 
+    estado: "OLHANDO_DIREITA", // OLHANDO_DIREITA, ANIMANDO, OLHANDO_ESQUERDA
     frameAnimacao: 0,
     timerAnimacao: 0,
-    tempoPorFrame: 10, 
+    tempoPorFrame: 10, // Controla a velocidade dos movimentos da raposa (10 frames de atualização do jogo por mudança)
     tempoVirando: 60 
 };
 
@@ -158,10 +148,10 @@ for (let i = 0; i < maxPingos; i++) {
     });
 }
 
-function criarRespingo(x, y, factorParallax) {
+function criarRespingo(x, y, fatorParallax) {
     let quantidade = 2 + Math.floor(Math.random() * 2);
     for (let i = 0; i < quantidade; i++) {
-        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: factorParallax });
+        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: fatorParallax });
     }
 }
 
@@ -194,7 +184,6 @@ window.addEventListener("keydown", (e) => {
             teclas["KeyD"] = false;
             teclas["KeyA"] = false;
             player.estaAndando = false;
-            player.estaCorrendoShift = false;
         }
     }
     
@@ -220,7 +209,7 @@ btnStart.addEventListener("click", () => {
     btnStart.style.display = "none"; 
 });
 
-function desenhoCenario() {
+function desenharCenario() {
     ctx.fillStyle = "#020005";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -306,8 +295,8 @@ function gerenciarChuva() {
 
         if (estadoAtual !== "TELA_INICIAL") {
             r.x += r.velX;
-            if (teclas["KeyD"] && estadoAtual === "JOGANDO") r.x -= player.velocidadeAtual * r.fatorParallax;
-            if (teclas["KeyA"] && estadoAtual === "JOGANDO") r.x += player.velocidadeAtual * r.fatorParallax;
+            if (teclas["KeyD"] && estadoAtual === "JOGANDO") r.x -= player.velocidade * r.fatorParallax;
+            if (teclas["KeyA"] && estadoAtual === "JOGANDO") r.x += player.velocidade * r.fatorParallax;
             r.y += r.velY;
             r.velY += 0.2; 
             r.vida--;
@@ -316,6 +305,7 @@ function gerenciarChuva() {
     }
 }
 
+// --- LOOP PRINCIPAL DO JOGO ---
 function atualizar() {
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
@@ -333,10 +323,10 @@ function atualizar() {
         }
     }
 
+    // 1. ESPERA DE 2 SEGUNDOS DEPOIS DO DIÁLOGO DA CUTSCENE
     if (estadoAtual === "ESPERA_POS_DIALOGO") {
         cena450.timerPausaPos++;
         player.estaAndando = false;
-        player.estaCorrendoShift = false;
 
         if (cena450.timerPausaPos >= cena450.tempoPausaPos) {
             estadoAtual = "RAPOSA_VIRANDO"; 
@@ -346,68 +336,55 @@ function atualizar() {
         }
     }
 
+    // 2. TRANSIÇÃO DA ANIMAÇÃO USANDO O ARRAY DE SPRITES INDIVIDUAIS
     if (estadoAtual === "RAPOSA_VIRANDO") {
         player.estaAndando = false; 
-        player.estaCorrendoShift = false;
         npc2.timerAnimacao++;
 
+        // Avança o frame baseado na taxa configurada de tempoPorFrame
         if (npc2.timerAnimacao >= npc2.tempoPorFrame) {
             npc2.timerAnimacao = 0;
             if (npc2.frameAnimacao < imgFoxFrames.length - 1) {
                 npc2.frameAnimacao++;
             } else {
+                // Fim da animação, fixa o último frame (olhando totalmente para a esquerda)
                 npc2.estado = "OLHANDO_ESQUERDA"; 
-                estadoAtual = "JOGANDO";          
+                estadoAtual = "JOGANDO";          // Libera o controle do jogador
                 cena450.concluida = true;
                 cena450.ativa = false;
             }
         }
     }
 
+    // Movimentação Normal do Player
     if (estadoAtual === "JOGANDO") {
-        // Ativação da cena original em x = 450
-        if (player.x >= 450 && !cena450.concluida) {
+        if (player.x >= 4500 && !cena450.concluida) {
             estadoAtual = "CENA_450";
             cena450.ativa = true;
             cena450.timerEspera = 0; 
             teclas["KeyD"] = false; 
             teclas["KeyA"] = false;
-            teclas["ShiftLeft"] = false;
             player.estaAndando = false;
-            player.estaCorrendoShift = false;
         }
 
         player.estaAndando = false;
-        player.estaCorrendoShift = false;
-
-        if (teclas["ShiftLeft"]) {
-            player.velocidadeAtual = player.velocidadeCorrida;
-        } else {
-            player.velocidadeAtual = player.velocidadeBase;
-        }
 
         if (teclas["KeyA"]) {
-            player.x -= player.velocidadeAtual;
+            player.x -= player.velocidade;
             player.direcao = "esquerda";
-            if (teclas["ShiftLeft"]) player.estaCorrendoShift = true; else player.estaAndando = true;
+            player.estaAndando = true;
             if (player.x < 0) player.x = 0;
         }
         if (teclas["KeyD"]) {
-            player.x += player.velocidadeAtual;
+            player.x += player.velocidade;
             player.direcao = "direita";
-            if (teclas["ShiftLeft"]) player.estaCorrendoShift = true; else player.estaAndando = true;
+            player.estaAndando = true;
         }
 
-        if (player.noChao && (player.estaAndando || player.estaCorrendoShift)) {
+        if (player.estaAndando && player.noChao) {
             player.tempoAnimacao++;
-            let limiteTempo = player.estaCorrendoShift ? 6 : 10;
-
-            if (player.tempoAnimacao >= limiteTempo) { 
-                if (player.estaCorrendoShift) {
-                    player.frameAtual = (player.frameAtual + 1) % imgPlayerCorrendoShift.length;
-                } else {
-                    player.frameAtual = player.frameAtual === 0 ? 1 : 0; 
-                }
+            if (player.tempoAnimacao >= 10) { 
+                player.frameAtual = player.frameAtual === 0 ? 1 : 0; 
                 player.tempoAnimacao = 0;
             }
         } else {
@@ -421,9 +398,7 @@ function atualizar() {
                 estadoAtual = "DIALOGO_NPC";
                 teclas["KeyA"] = false;
                 teclas["KeyD"] = false;
-                teclas["ShiftLeft"] = false;
                 player.estaAndando = false;
-                player.estaCorrendoShift = false;
             }
         }
 
@@ -494,7 +469,7 @@ function desenhar() {
         ctx.fillText("CIDADE INFINITA", canvas.width / 2, 150);
     } 
     else {
-        desenhoCenario();
+        desenharCenario();
 
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY - camera.y, canvas.width, (canvas.height - chaoY) + camera.y);
@@ -508,6 +483,7 @@ function desenhar() {
         ctx.textAlign = "left";
         ctx.fillText(`COORD X: ${displayX}  COORD Y: ${Math.max(0, displayY)}`, 20, 30);
 
+        // NPC 1 (Espírito)
         let npcRelativoX = npc.x - camera.x;
         if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
             let flutuarY = npc.y + Math.sin(npc.tempoFlutuar) * 8 - camera.y;
@@ -516,22 +492,26 @@ function desenhar() {
             }
         }
 
+        // --- RENDERIZAÇÃO DA RAPOSA POR SEQUÊNCIA ---
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             let npc2Y = npc2.y - camera.y;
 
             if (npc2.estado === "OLHANDO_DIREITA") {
+                // Desenha fixo o frame 0 (A raposa olhando para trás/direita)
                 if (imgFoxFrames[0].complete && imgFoxFrames[0].width > 0) {
                     ctx.drawImage(imgFoxFrames[0], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
                 }
             } 
             else if (npc2.estado === "OLHANDO_ESQUERDA") {
+                // Desenha fixo o frame final (Virada inteira para a esquerda)
                 let ultimoFrame = imgFoxFrames.length - 1;
                 if (imgFoxFrames[ultimoFrame].complete && imgFoxFrames[ultimoFrame].width > 0) {
                     ctx.drawImage(imgFoxFrames[ultimoFrame], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
                 }
             } 
             else if (npc2.estado === "ANIMANDO") {
+                // Pega dinamicamente o frame atual calculado no laço lógico
                 let frameAlvo = imgFoxFrames[npc2.frameAnimacao];
                 if (frameAlvo && frameAlvo.complete && frameAlvo.width > 0) {
                     ctx.drawImage(frameAlvo, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
@@ -539,6 +519,7 @@ function desenhar() {
             }
         }
 
+        // Renderização do Player
         let playerRelativoX = player.x - camera.x;
         let playerY = player.y - camera.y;
         
@@ -550,19 +531,14 @@ function desenhar() {
         }
 
         if (imgPlayerParado.complete && imgPlayerCorrendo.complete && imgPlayerParado.width > 0) {
-            let corridaPronta = imgCorrida1.complete && imgCorrida2.complete && imgCorrida3.complete;
-
-            // Mantém rigorosamente o tamanho visual original (80x80) para qualquer animação
-            if (player.estaCorrendoShift && corridaPronta) {
-                let frameAlvoCorrida = imgPlayerCorrendoShift[player.frameAtual];
-                if (frameAlvoCorrida) {
-                    ctx.drawImage(frameAlvoCorrida, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
-                }
-            } else if (player.estaAndando) {
+            if (player.estaAndando) {
                 ctx.drawImage(imgPlayerCorrendo, player.frameAtual * player.spriteLargura, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             } else {
-                ctx.drawImage(imgPlayerParado, 0, 0, imgPlayerParado.width, imgPlayerParado.height, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                ctx.drawImage(imgPlayerParado, 0, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             }
+        } else {
+            ctx.fillStyle = "#00aaff";
+            ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
         }
         ctx.restore(); 
 
@@ -583,4 +559,5 @@ function desenhar() {
     }
 }
 
+// Inicia o jogo
 atualizar();
