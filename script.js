@@ -5,19 +5,22 @@ const btnStart = document.getElementById("btnStart");
 canvas.width = 800;
 canvas.height = 400;
 
-let estadoAtual = "TELA_INICIAL"; 
+// Desativa suavização para visual pixel art
+ctx.imageSmoothingEnabled = false;
+
+let estadoAtual = "TELA_INICIAL";
 
 // --- Carregamento de Sprites ---
 const imgPlayerParado = new Image();
-imgPlayerParado.src = "IMG_20260525_102813.png"; 
+imgPlayerParado.src = "IMG_20260525_102813.png";
 
 const imgPlayerCorrendo = new Image();
-imgPlayerCorrendo.src = "IMG_20260525_102751.png"; 
+imgPlayerCorrendo.src = "IMG_20260525_102751.png";
 
 const imgNpcEspirito = new Image();
-imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png"; 
+imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png";
 
-// --- Configuração Segura da Animação da Raposa ---
+// --- Raposa ---
 const nomesArquivosFox = [
     "Untitled 05-25-2026 03-13-21 (1).png",
     "Untitled 05-25-2026 03-13-21 (2).png",
@@ -26,7 +29,6 @@ const nomesArquivosFox = [
     "Untitled 05-25-2026 03-13-21 (5).png",
     "Untitled 05-25-2026 03-13-21 (6).png"
 ];
-
 const imgFoxFrames = [];
 nomesArquivosFox.forEach((src) => {
     const img = new Image();
@@ -34,65 +36,47 @@ nomesArquivosFox.forEach((src) => {
     imgFoxFrames.push(img);
 });
 
-// --- Objeto do Player ---
+// --- Player ---
 const player = {
-    x: 0, 
-    y: 100, 
-    larguraVisual: 50,      
-    alturaVisual: 80,       
-    larguraHitbox: 24,
-    alturaHitbox: 64,
-    offsetX: 13, 
-    offsetY: 2,  
-    velocidade: 4, 
-    velY: 0,
-    gravidade: 1.0, 
-    pulo: -14,      
-    noChao: false,
-    direcao: "direita",
-    spriteLargura: 32,  
-    spriteAltura: 32,   
-    frameAtual: 0,      
-    tempoAnimacao: 0,   
+    x: 0, y: 100,
+    larguraVisual: 50, alturaVisual: 80,
+    larguraHitbox: 24, alturaHitbox: 64,
+    offsetX: 13, offsetY: 2,
+    velocidade: 4, velY: 0,
+    gravidade: 1.0, pulo: -14,
+    noChao: false, direcao: "direita",
+    spriteLargura: 32, spriteAltura: 32,
+    frameAtual: 0, tempoAnimacao: 0,
     estaAndando: false
 };
 
 imgPlayerParado.onload = function() {
     player.spriteAltura = imgPlayerParado.height;
-    player.spriteLargura = imgPlayerParado.width; 
+    player.spriteLargura = imgPlayerParado.width;
 };
-
 imgPlayerCorrendo.onload = function() {
     player.spriteLargura = imgPlayerCorrendo.width / 2;
     player.spriteAltura = imgPlayerCorrendo.height;
 };
 
-// --- Configurações da Cena Cinematográfica ---
+// --- Cena cinematográfica ---
 const cena450 = {
-    ativa: false,
-    concluida: false,
-    alturaBarras: 0,
-    maxAlturaBarras: 140, 
-    velocidadeBarras: 1.5, 
-    timerEspera: 0,
-    tempoParaDialogo: 120, 
-    indiceAtual: 0,
+    ativa: false, concluida: false,
+    alturaBarras: 0, maxAlturaBarras: 140,
+    velocidadeBarras: 1.5, timerEspera: 0,
+    tempoParaDialogo: 120, indiceAtual: 0,
     texto: [
         "hey sou eu...",
         "vc se lembra de mim?",
         "nao tenha medo, sei que cometi um erro m-mas...",
         "por favor me perdoe eu, eu nao queria..."
     ],
-    timerPausaPos: 0,
-    tempoPausaPos: 120 
+    timerPausaPos: 0, tempoPausaPos: 120
 };
 
 const npc = {
-    x: 2500, 
-    y: 180,          
-    largura: 60,     
-    altura: 80,      
-    tempoFlutuar: 0, 
+    x: 2500, y: 180, largura: 60, altura: 80,
+    tempoFlutuar: 0,
     dialogo: [
         "Hum?",
         "O que você está fazendo aqui?",
@@ -101,54 +85,46 @@ const npc = {
         "não isso não esta certo!",
         "desperte! você tem que acordar!"
     ],
-    indiceAtual: 0,
-    jaConversou: false,
-    distanciaInteracao: 80 
+    indiceAtual: 0, jaConversou: false, distanciaInteracao: 80
 };
 
-// --- RAPOSINHA ---
 const npc2 = {
-    x: 5000, 
-    y: 272, 
-    largura: 110, 
-    altura: 110,
+    x: 5000, y: 272, largura: 110, altura: 110,
     estado: "OLHANDO_DIREITA",
-    frameAnimacao: 0,
-    timerAnimacao: 0,
-    tempoPorFrame: 10,
-    tempoVirando: 60 
+    frameAnimacao: 0, timerAnimacao: 0,
+    tempoPorFrame: 10, tempoVirando: 60
 };
 
 const camera = { x: 0, y: 0 };
 const chaoY = 350;
 const teclas = {};
 
-// --- Sistema de Chuva ---
-const maxPingos = 100; 
+// --- Chuva ---
+const maxPingos = 100;
 const chuva = [];
-const respingos = []; 
+const respingos = [];
 
 for (let i = 0; i < maxPingos; i++) {
-    let profundidade = Math.random(); 
+    let p = Math.random();
     chuva.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        velocidade: 6 + (profundidade * 8), 
-        tamanho: 2 + (profundidade * 7),
-        fatorParallax: 0.1 + (profundidade * 0.9),
-        opacidade: 0.15 + (profundidade * 0.35)
+        velocidade: 6 + p * 8,
+        tamanho: 2 + p * 7,
+        fatorParallax: 0.1 + p * 0.9,
+        opacidade: 0.15 + p * 0.35
     });
 }
 
 function criarRespingo(x, y, fatorParallax) {
-    let quantidade = 2 + Math.floor(Math.random() * 2);
-    for (let i = 0; i < quantidade; i++) {
+    let q = 2 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < q; i++) {
         respingos.push({
-            x: x, y: y,
+            x, y,
             velX: (Math.random() - 0.5) * 2,
             velY: -Math.random() * 2 - 1,
             vida: 8 + Math.random() * 8,
-            fatorParallax: fatorParallax
+            fatorParallax
         });
     }
 }
@@ -173,67 +149,154 @@ const caixaDialogo = { x: 50, y: 250, largura: 700, altura: 120 };
 // --- INPUTS ---
 window.addEventListener("keydown", (e) => {
     teclas[e.code] = true;
-    
     if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo && (e.code === "Space" || e.code === "Enter")) {
         cena450.indiceAtual++;
         if (cena450.indiceAtual >= cena450.texto.length) {
-            estadoAtual = "ESPERA_POS_DIALOGO"; 
+            estadoAtual = "ESPERA_POS_DIALOGO";
             cena450.timerPausaPos = 0;
             teclas["KeyD"] = false;
             teclas["KeyA"] = false;
             player.estaAndando = false;
         }
     }
-    
     if (estadoAtual === "DIALOGO_INICIAL" && (e.code === "Space" || e.code === "Enter")) {
         dialogoInicial.indiceAtual++;
-        if (dialogoInicial.indiceAtual >= dialogoInicial.texto.length) estadoAtual = "JOGANDO"; 
+        if (dialogoInicial.indiceAtual >= dialogoInicial.texto.length) estadoAtual = "JOGANDO";
     }
-    
     if (estadoAtual === "DIALOGO_NPC" && (e.code === "Space" || e.code === "Enter")) {
         npc.indiceAtual++;
         if (npc.indiceAtual >= npc.dialogo.length) {
             estadoAtual = "JOGANDO";
-            npc.jaConversou = true; 
-            npc.x = -9999; 
+            npc.jaConversou = true;
+            npc.x = -9999;
         }
     }
 });
-
 window.addEventListener("keyup", (e) => teclas[e.code] = false);
-
 btnStart.addEventListener("click", () => {
     estadoAtual = "DIALOGO_INICIAL";
-    btnStart.style.display = "none"; 
+    btnStart.style.display = "none";
 });
 
-// --- CENÁRIO COMPLETO ---
+// =============================================
+// FUNÇÃO AUXILIAR — desenha pixel "gordo" (bloco)
+// =============================================
+function px(x, y, tamanho, cor) {
+    ctx.fillStyle = cor;
+    ctx.fillRect(Math.floor(x), Math.floor(y), tamanho, tamanho);
+}
+
+// =============================================
+// LUA CRESCENTE — desenhada pixel a pixel num offscreen canvas
+// =============================================
+const luaCanvas = document.createElement("canvas");
+luaCanvas.width = 100;
+luaCanvas.height = 100;
+const luaCtx = luaCanvas.getContext("2d");
+luaCtx.imageSmoothingEnabled = false;
+
+function gerarLua() {
+    luaCtx.clearRect(0, 0, 100, 100);
+    const cx = 50, cy = 50, r = 38;
+    // Desenha pixel a pixel para garantir visual pixelado e crescente correto
+    for (let y = 0; y < 100; y++) {
+        for (let x = 0; x < 100; x++) {
+            const dx = x - cx, dy = y - cy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            // Dentro do disco principal
+            if (dist <= r) {
+                // Verifica se está FORA do disco que cria a mordida (crescente)
+                const dx2 = x - (cx + 20), dy2 = y - (cy - 3);
+                const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+                if (dist2 > r * 0.87) {
+                    // Borda da lua (1-2px) mais escura
+                    if (dist > r - 2) {
+                        luaCtx.fillStyle = "#8aaee0";
+                    } else if (dist < r * 0.4 && dx < -5) {
+                        // Parte brilhante interna (canto superior esquerdo)
+                        luaCtx.fillStyle = "#eef4ff";
+                    } else {
+                        // Corpo principal com variação sutil
+                        let tom = Math.floor(200 + (r - dist) * 1.2);
+                        tom = Math.min(tom, 230);
+                        luaCtx.fillStyle = `rgb(${tom}, ${tom + 10}, 255)`;
+                    }
+                    luaCtx.fillRect(x, y, 1, 1);
+                }
+            }
+        }
+    }
+
+    // Crateras pixeladas pequenas
+    const crateras = [
+        { x: 38, y: 44, r: 3 },
+        { x: 28, y: 56, r: 2 },
+        { x: 44, y: 62, r: 2 },
+        { x: 33, y: 36, r: 2 },
+    ];
+    crateras.forEach(c => {
+        for (let y = c.y - c.r; y <= c.y + c.r; y++) {
+            for (let x = c.x - c.r; x <= c.x + c.r; x++) {
+                const dx = x - c.x, dy = y - c.y;
+                if (dx * dx + dy * dy <= c.r * c.r) {
+                    // Verifica se ainda está dentro da lua crescente
+                    const dlx = x - 50, dly = y - 50;
+                    const dlx2 = x - 70, dly2 = y - 47;
+                    if (Math.sqrt(dlx*dlx+dly*dly) <= 38 && Math.sqrt(dlx2*dlx2+dly2*dly2) > 33) {
+                        luaCtx.fillStyle = "rgba(100, 130, 200, 0.5)";
+                        luaCtx.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+        }
+    });
+}
+gerarLua();
+
+// =============================================
+// CENÁRIO PRINCIPAL
+// =============================================
 function desenharCenario() {
-
-    // 1. FUNDO DO CÉU
-    ctx.fillStyle = "#04000f";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Nebulosa roxa distante
-    const nebRoxa = ctx.createRadialGradient(200 - camera.x * 0.003, 80, 10, 200 - camera.x * 0.003, 80, 180);
-    nebRoxa.addColorStop(0, "rgba(80, 0, 120, 0.18)");
-    nebRoxa.addColorStop(0.5, "rgba(50, 0, 90, 0.08)");
-    nebRoxa.addColorStop(1, "rgba(0, 0, 0, 0)");
-    ctx.fillStyle = nebRoxa;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Nebulosa azul central
-    const nebAzul = ctx.createRadialGradient(500 - camera.x * 0.004, 60, 5, 500 - camera.x * 0.004, 60, 140);
-    nebAzul.addColorStop(0, "rgba(0, 40, 120, 0.2)");
-    nebAzul.addColorStop(0.5, "rgba(0, 20, 80, 0.08)");
-    nebAzul.addColorStop(1, "rgba(0, 0, 0, 0)");
-    ctx.fillStyle = nebAzul;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // 2. ESTRELAS (desenhadas ANTES da lua)
     const tempoAgora = Date.now() * 0.001;
 
-    // Estrelas distantes
+    // --- CÉU ---
+    // Gradiente vertical do céu em blocos de pixel (dithering manual)
+    const coresCeu = [
+        "#03000c", "#04000f", "#050011", "#060014",
+        "#070016", "#080018", "#07001a", "#06001c"
+    ];
+    const alturaFaixa = Math.floor(chaoY / coresCeu.length);
+    coresCeu.forEach((cor, i) => {
+        ctx.fillStyle = cor;
+        ctx.fillRect(0, i * alturaFaixa, canvas.width, alturaFaixa + 1);
+    });
+
+    // Nebulosa roxa — blocos de 2px para parecer pixelada
+    for (let y = 0; y < 160; y += 2) {
+        for (let x = 0; x < canvas.width; x += 2) {
+            let nx = x + camera.x * 0.003;
+            let distNeb = Math.sqrt(Math.pow(nx - 180, 2) + Math.pow(y - 70, 2));
+            if (distNeb < 130) {
+                let alpha = (1 - distNeb / 130) * 0.13;
+                if (alpha > 0.02) {
+                    ctx.fillStyle = `rgba(90, 0, 140, ${alpha.toFixed(2)})`;
+                    ctx.fillRect(x, y, 2, 2);
+                }
+            }
+            // Nebulosa azul
+            let nx2 = x + camera.x * 0.004;
+            let distNeb2 = Math.sqrt(Math.pow(nx2 - 580, 2) + Math.pow(y - 50, 2));
+            if (distNeb2 < 110) {
+                let alpha2 = (1 - distNeb2 / 110) * 0.15;
+                if (alpha2 > 0.02) {
+                    ctx.fillStyle = `rgba(0, 50, 160, ${alpha2.toFixed(2)})`;
+                    ctx.fillRect(x, y, 2, 2);
+                }
+            }
+        }
+    }
+
+    // --- ESTRELAS DISTANTES (1x1 px) ---
     const estrelasDist = [
         {x:15,y:12},{x:47,y:8},{x:93,y:22},{x:134,y:5},{x:178,y:18},
         {x:221,y:10},{x:265,y:28},{x:312,y:7},{x:358,y:15},{x:401,y:3},
@@ -241,31 +304,35 @@ function desenharCenario() {
         {x:663,y:30},{x:701,y:9},{x:741,y:22},{x:777,y:4},{x:55,y:35},
         {x:110,y:42},{x:190,y:38},{x:280,y:44},{x:370,y:33},{x:460,y:40},
         {x:550,y:36},{x:640,y:43},{x:730,y:31},{x:25,y:50},{x:330,y:55},
+        {x:75,y:65},{x:160,y:70},{x:250,y:58},{x:410,y:68},{x:500,y:72},
+        {x:590,y:60},{x:680,y:75},{x:760,y:63},{x:350,y:78},{x:450,y:82},
     ];
     estrelasDist.forEach((s, i) => {
-        let sx = (s.x - camera.x * 0.006) % canvas.width;
+        let sx = (s.x - camera.x * 0.005) % canvas.width;
         if (sx < 0) sx += canvas.width;
-        let brilho = 0.35 + 0.25 * Math.abs(Math.sin(tempoAgora * 0.5 + i * 1.7));
-        ctx.fillStyle = `rgba(200, 210, 255, ${brilho})`;
+        let brilho = 0.3 + 0.3 * Math.abs(Math.sin(tempoAgora * 0.4 + i * 1.7));
+        ctx.fillStyle = `rgba(190, 210, 255, ${brilho.toFixed(2)})`;
         ctx.fillRect(Math.floor(sx), s.y, 1, 1);
     });
 
-    // Estrelas médias com twinkle
+    // --- ESTRELAS MÉDIAS (1x1 com cruzinha ocasional) ---
     const estrelasMed = [
         {x:30,y:20},{x:80,y:14},{x:150,y:30},{x:230,y:8},{x:310,y:25},
         {x:390,y:12},{x:470,y:35},{x:560,y:18},{x:650,y:28},{x:745,y:10},
         {x:60,y:45},{x:200,y:50},{x:340,y:42},{x:480,y:48},{x:600,y:38},
         {x:720,y:55},{x:120,y:60},{x:260,y:65},{x:420,y:58},{x:580,y:62},
+        {x:100,y:75},{x:300,y:80},{x:500,y:85},{x:700,y:70},{x:170,y:88},
     ];
     estrelasMed.forEach((s, i) => {
-        let sx = (s.x - camera.x * 0.01) % canvas.width;
+        let sx = (s.x - camera.x * 0.009) % canvas.width;
         if (sx < 0) sx += canvas.width;
-        let brilho = 0.5 + 0.4 * Math.abs(Math.sin(tempoAgora * 0.7 + i * 2.3));
-        let cor = i % 3 === 0 ? `rgba(160, 190, 255, ${brilho})` : `rgba(220, 230, 255, ${brilho})`;
+        let brilho = 0.45 + 0.45 * Math.abs(Math.sin(tempoAgora * 0.6 + i * 2.3));
+        let cor = i % 3 === 0 ? `rgba(150, 180, 255, ${brilho.toFixed(2)})` : `rgba(215, 228, 255, ${brilho.toFixed(2)})`;
         ctx.fillStyle = cor;
         ctx.fillRect(Math.floor(sx), s.y, 1, 1);
-        if (i % 5 === 0 && brilho > 0.75) {
-            ctx.fillStyle = `rgba(200, 220, 255, ${brilho * 0.4})`;
+        // Cruzinha pixel art quando brilhante
+        if (i % 4 === 0 && brilho > 0.7) {
+            ctx.fillStyle = `rgba(200, 220, 255, ${(brilho * 0.35).toFixed(2)})`;
             ctx.fillRect(Math.floor(sx) - 1, s.y, 1, 1);
             ctx.fillRect(Math.floor(sx) + 1, s.y, 1, 1);
             ctx.fillRect(Math.floor(sx), s.y - 1, 1, 1);
@@ -273,224 +340,291 @@ function desenharCenario() {
         }
     });
 
-    // Estrelas grandes com cruzinha pixel art
+    // --- ESTRELAS GRANDES (2x2 com cruzinha 1px) ---
     const estrelasGrandes = [
-        {x:100,y:18},{x:300,y:10},{x:520,y:22},{x:700,y:8},{x:420,y:45},
+        {x:100,y:18},{x:300,y:10},{x:520,y:22},{x:700,y:8},
+        {x:420,y:45},{x:180,y:35},{x:600,y:40},
     ];
     estrelasGrandes.forEach((s, i) => {
-        let sx = (s.x - camera.x * 0.012) % canvas.width;
+        let sx = (s.x - camera.x * 0.011) % canvas.width;
         if (sx < 0) sx += canvas.width;
-        let brilho = 0.6 + 0.4 * Math.abs(Math.sin(tempoAgora * 0.9 + i * 3.1));
-        ctx.fillStyle = `rgba(230, 240, 255, ${brilho})`;
+        let brilho = 0.55 + 0.45 * Math.abs(Math.sin(tempoAgora * 0.8 + i * 3.1));
+        // Núcleo 2x2
+        ctx.fillStyle = `rgba(235, 245, 255, ${brilho.toFixed(2)})`;
         ctx.fillRect(Math.floor(sx), s.y, 2, 2);
-        ctx.fillStyle = `rgba(180, 210, 255, ${brilho * 0.5})`;
+        // Braços da cruz
+        ctx.fillStyle = `rgba(170, 205, 255, ${(brilho * 0.45).toFixed(2)})`;
         ctx.fillRect(Math.floor(sx) - 1, s.y,     1, 2);
         ctx.fillRect(Math.floor(sx) + 2, s.y,     1, 2);
         ctx.fillRect(Math.floor(sx),     s.y - 1, 2, 1);
         ctx.fillRect(Math.floor(sx),     s.y + 2, 2, 1);
+        // Pontas mais longas quando muito brilhante
+        if (brilho > 0.85) {
+            ctx.fillStyle = `rgba(140, 180, 255, ${(brilho * 0.2).toFixed(2)})`;
+            ctx.fillRect(Math.floor(sx) - 2, s.y,     1, 2);
+            ctx.fillRect(Math.floor(sx) + 3, s.y,     1, 2);
+            ctx.fillRect(Math.floor(sx),     s.y - 2, 2, 1);
+            ctx.fillRect(Math.floor(sx),     s.y + 3, 2, 1);
+        }
     });
 
-    // Poeira estelar azulada
-    for (let i = 0; i < 40; i++) {
-        let sx = ((i * 197 + 43) - camera.x * 0.007) % canvas.width;
+    // --- POEIRA ESTELAR azulada (1x1, semi-transparente) ---
+    for (let i = 0; i < 50; i++) {
+        let sx = ((i * 197 + 43) - camera.x * 0.006) % canvas.width;
         if (sx < 0) sx += canvas.width;
-        let sy = (i * 83 + 17) % 140;
-        let brilho = 0.1 + 0.15 * Math.abs(Math.sin(i * 4.7));
-        ctx.fillStyle = `rgba(100, 140, 255, ${brilho})`;
+        let sy = (i * 83 + 17) % 130;
+        let b = 0.08 + 0.1 * Math.abs(Math.sin(i * 4.7));
+        ctx.fillStyle = `rgba(80, 120, 255, ${b.toFixed(2)})`;
         ctx.fillRect(Math.floor(sx), sy, 1, 1);
     }
 
-    // 3. LUA CRESCENTE (por cima das estrelas)
-    const luaBaseX = canvas.width - 130;
-    const luaBaseY = 55;
-    const luaR = 36;
-    const luaX = luaBaseX - (camera.x * 0.004) % 8;
+    // --- LUA CRESCENTE (offscreen canvas pixel a pixel) ---
+    const luaX = Math.floor(canvas.width - 140 - (camera.x * 0.003) % 6);
+    const luaY = 28;
 
-    // Halo
-    const haloGrad = ctx.createRadialGradient(luaX, luaBaseY, luaR * 0.9, luaX, luaBaseY, luaR * 3);
-    haloGrad.addColorStop(0, "rgba(180, 210, 255, 0.06)");
-    haloGrad.addColorStop(0.5, "rgba(140, 180, 255, 0.03)");
-    haloGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
-    ctx.fillStyle = haloGrad;
-    ctx.beginPath();
-    ctx.arc(luaX, luaBaseY, luaR * 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.save();
-    ctx.fillStyle = "rgba(160, 190, 255, 0.06)";
-    ctx.beginPath();
-    ctx.arc(luaX, luaBaseY, luaR + 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Disco principal
-    ctx.fillStyle = "#c8dcf8";
-    ctx.beginPath();
-    ctx.arc(luaX, luaBaseY, luaR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Gradiente de brilho
-    const luaGrad = ctx.createRadialGradient(luaX - 8, luaBaseY - 10, 2, luaX, luaBaseY, luaR);
-    luaGrad.addColorStop(0, "rgba(255, 255, 255, 0.45)");
-    luaGrad.addColorStop(0.5, "rgba(200, 220, 255, 0.1)");
-    luaGrad.addColorStop(1, "rgba(100, 140, 220, 0.2)");
-    ctx.fillStyle = luaGrad;
-    ctx.beginPath();
-    ctx.arc(luaX, luaBaseY, luaR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Mordida do crescente
-    ctx.fillStyle = "#04000f";
-    ctx.beginPath();
-    ctx.arc(luaX + luaR * 0.58, luaBaseY - luaR * 0.08, luaR * 0.87, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-
-    // 4. NEBLINA DO HORIZONTE
-    const nebHorizonte = ctx.createLinearGradient(0, chaoY - 100 - camera.y, 0, chaoY - camera.y);
-    nebHorizonte.addColorStop(0, "rgba(30, 0, 60, 0)");
-    nebHorizonte.addColorStop(0.6, "rgba(60, 0, 100, 0.05)");
-    nebHorizonte.addColorStop(1, "rgba(100, 0, 140, 0.15)");
-    ctx.fillStyle = nebHorizonte;
-    ctx.fillRect(0, chaoY - 100 - camera.y, canvas.width, 100);
-
-    // 5. PRÉDIOS TRASEIROS
-    {
-        const vel = 0.02, cor = "#080012", altBase = 200, larg = 110, espaco = 140;
-        let scrollX = (camera.x * vel) % espaco;
-        for (let i = -1; i < (canvas.width / espaco) + 2; i++) {
-            let xPos = (i * espaco) - scrollX;
-            let id = Math.floor((camera.x * vel) / espaco) + i;
-            let h = altBase + (Math.abs(Math.sin(id * 1.3)) * 65);
-            let topoY = chaoY - h - camera.y;
-            ctx.fillStyle = cor;
-            ctx.fillRect(Math.floor(xPos), Math.floor(topoY), larg, h + 1);
+    // Halo em blocos de 2px
+    for (let y = luaY - 30; y <= luaY + 90; y += 2) {
+        for (let x = luaX - 30; x <= luaX + 110; x += 2) {
+            let dx = x - (luaX + 50), dy = y - (luaY + 50);
+            let dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 80 && dist > 42) {
+                let alpha = (1 - (dist - 42) / 38) * 0.055;
+                if (alpha > 0.005) {
+                    ctx.fillStyle = `rgba(160, 200, 255, ${alpha.toFixed(3)})`;
+                    ctx.fillRect(x, y, 2, 2);
+                }
+            }
         }
     }
 
-    // 6. PRÉDIOS DO MEIO (com luzes rosas)
+    // Lua em si (do offscreen canvas)
+    ctx.drawImage(luaCanvas, luaX, luaY, 100, 100);
+
+    // --- NEBLINA DO HORIZONTE em faixas pixeladas ---
+    const chaoTela = chaoY - camera.y;
+    for (let y = chaoTela - 80; y < chaoTela; y += 2) {
+        let progresso = (y - (chaoTela - 80)) / 80;
+        let alpha = progresso * progresso * 0.18;
+        ctx.fillStyle = `rgba(100, 0, 160, ${alpha.toFixed(3)})`;
+        ctx.fillRect(0, Math.floor(y), canvas.width, 2);
+    }
+
+    // =============================================
+    // PRÉDIOS TRASEIROS — silhueta pura, sem detalhes
+    // =============================================
     {
-        const vel = 0.06, cor = "#110020", altBase = 140, larg = 85, espaco = 110;
+        const vel = 0.02, altBase = 200, larg = 112, espaco = 140;
         let scrollX = (camera.x * vel) % espaco;
         for (let i = -1; i < (canvas.width / espaco) + 2; i++) {
-            let xPos = (i * espaco) - scrollX;
+            let xPos = Math.floor((i * espaco) - scrollX);
             let id = Math.floor((camera.x * vel) / espaco) + i;
-            let h = altBase + (Math.abs(Math.sin(id * 1.7 + 1)) * 65);
-            let topoY = chaoY - h - camera.y;
-            let chaoTela = chaoY - camera.y;
+            // Altura determinística com "degraus" pixelados
+            let hBase = altBase + Math.floor(Math.abs(Math.sin(id * 1.3)) * 64 / 8) * 8;
+            let topoY = Math.floor(chaoY - hBase - camera.y);
 
-            ctx.fillStyle = cor;
-            ctx.fillRect(Math.floor(xPos), Math.floor(topoY), larg, h + 1);
+            // Silhueta principal
+            ctx.fillStyle = "#07000f";
+            ctx.fillRect(xPos, topoY, larg, hBase + 1);
 
-            // Janelas
-            let lj = 0;
-            for (let wy = topoY + 18; wy < chaoTela - 18; wy += 22) {
-                lj++;
-                let cj = 0;
+            // Degrau no topo (2px) para visual de parapeito pixelado
+            ctx.fillStyle = "#09001a";
+            ctx.fillRect(xPos - 1, topoY, larg + 2, 2);
+
+            // Janelas muito sutis e pequenas (só 1x2 px)
+            for (let wy = topoY + 16; wy < chaoTela - 16; wy += 20) {
                 for (let wx = xPos + 10; wx < xPos + larg - 10; wx += 18) {
-                    cj++;
-                    let s = Math.abs(Math.sin(id * 7 + lj * 13 + cj * 31));
-                    if (s > 0.42) {
-                        ctx.fillStyle = s > 0.80
-                            ? "rgba(255, 220, 90, 0.75)"
-                            : s > 0.62
-                                ? "rgba(140, 200, 255, 0.5)"
-                                : "rgba(0, 0, 0, 0.5)";
-                        ctx.fillRect(Math.floor(wx), Math.floor(wy), 3, 5);
+                    let s = Math.abs(Math.sin(id * 5 + (wy / 20) * 11 + (wx / 18) * 7));
+                    if (s > 0.72) {
+                        ctx.fillStyle = "rgba(80, 60, 120, 0.35)";
+                        ctx.fillRect(wx, wy, 2, 3);
                     }
                 }
-            }
-
-            // Antena esparsa (~30% dos prédios)
-            if (Math.abs(Math.sin(id * 5.1 + 2)) > 0.72) {
-                let antX = Math.floor(xPos + larg / 2);
-                ctx.fillStyle = "rgba(160, 150, 180, 0.4)";
-                ctx.fillRect(antX, Math.floor(topoY) - 14, 1, 14);
-                let pisca = Math.sin(tempoAgora * 2.1 + id) > 0.2;
-                if (pisca) {
-                    ctx.fillStyle = "rgba(255, 80, 80, 0.85)";
-                    ctx.fillRect(antX, Math.floor(topoY) - 15, 1, 1);
-                }
-            }
-
-            // Luz rosa/lilás vindo de baixo
-            let intensidade = 0.5 + 0.5 * Math.abs(Math.sin(id * 3.3));
-            if (intensidade > 0.6) {
-                let luzGrad = ctx.createLinearGradient(xPos + larg / 2, chaoTela - 40, xPos + larg / 2, chaoTela);
-                luzGrad.addColorStop(0, "rgba(200, 50, 150, 0)");
-                luzGrad.addColorStop(1, `rgba(220, 60, 180, ${0.08 + intensidade * 0.06})`);
-                ctx.fillStyle = luzGrad;
-                ctx.fillRect(Math.floor(xPos - 6), Math.floor(chaoTela - 40), larg + 12, 40);
-
-                ctx.fillStyle = `rgba(230, 80, 180, ${0.04 + intensidade * 0.04})`;
-                ctx.fillRect(Math.floor(xPos), Math.floor(chaoTela - 8), larg, 8);
             }
         }
     }
 
-    // 7. PRÉDIOS DA FRENTE
+    // =============================================
+    // PRÉDIOS DO MEIO — janelas + luzes rosas embaixo
+    // =============================================
     {
-        const vel = 0.15, cor = "#1a0035", altBase = 90, larg = 65, espaco = 95;
+        const vel = 0.06, altBase = 140, larg = 86, espaco = 110;
         let scrollX = (camera.x * vel) % espaco;
         for (let i = -1; i < (canvas.width / espaco) + 2; i++) {
-            let xPos = (i * espaco) - scrollX;
+            let xPos = Math.floor((i * espaco) - scrollX);
             let id = Math.floor((camera.x * vel) / espaco) + i;
-            let h = altBase + (Math.abs(Math.sin(id * 2.1 + 0.5)) * 65);
-            let topoY = chaoY - h - camera.y;
-            let chaoTela = chaoY - camera.y;
+            let hBase = altBase + Math.floor(Math.abs(Math.sin(id * 1.7 + 1)) * 64 / 8) * 8;
+            let topoY = Math.floor(chaoY - hBase - camera.y);
 
-            ctx.fillStyle = cor;
-            ctx.fillRect(Math.floor(xPos), Math.floor(topoY), larg, h + 1);
+            ctx.fillStyle = "#0f001e";
+            ctx.fillRect(xPos, topoY, larg, hBase + 1);
 
-            // Janelas
-            let lj = 0;
-            for (let wy = topoY + 14; wy < chaoTela - 14; wy += 20) {
-                lj++;
-                let cj = 0;
+            // Parapeito pixelado no topo
+            ctx.fillStyle = "#1a0030";
+            ctx.fillRect(xPos - 1, topoY - 2, larg + 2, 3);
+            ctx.fillStyle = "#140026";
+            ctx.fillRect(xPos, topoY - 4, larg, 2);
+
+            // Antena esparsa — só ~25% dos prédios, 1px de largura
+            if (Math.abs(Math.sin(id * 5.1 + 2)) > 0.76) {
+                let antX = Math.floor(xPos + larg / 2);
+                // Haste em pixels individuais
+                for (let ay = topoY - 18; ay < topoY - 2; ay += 2) {
+                    ctx.fillStyle = "rgba(150, 140, 170, 0.45)";
+                    ctx.fillRect(antX, ay, 1, 1);
+                }
+                // Luz piscando (1x1 px, vermelha)
+                let pisca = Math.sin(tempoAgora * 2.2 + id) > 0.15;
+                if (pisca) {
+                    ctx.fillStyle = "#ff4040";
+                    ctx.fillRect(antX, topoY - 19, 1, 1);
+                }
+            }
+
+            // Janelas pixeladas (2x3 px)
+            for (let wy = topoY + 16; wy < chaoTela - 14; wy += 20) {
                 for (let wx = xPos + 8; wx < xPos + larg - 8; wx += 16) {
-                    cj++;
-                    let s = Math.abs(Math.sin(id * 11 + lj * 17 + cj * 23));
-                    if (s > 0.5) {
-                        ctx.fillStyle = s > 0.78
-                            ? "rgba(255, 210, 70, 0.7)"
-                            : "rgba(0, 0, 0, 0.5)";
-                        ctx.fillRect(Math.floor(wx), Math.floor(wy), 3, 4);
+                    let s = Math.abs(Math.sin(id * 7 + (wy / 20) * 13 + (wx / 16) * 31));
+                    if (s > 0.40) {
+                        if (s > 0.80) {
+                            ctx.fillStyle = "#ffd84a";  // Amarelo quente
+                        } else if (s > 0.62) {
+                            ctx.fillStyle = "rgba(120, 190, 255, 0.6)"; // Azul frio
+                        } else {
+                            ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+                        }
+                        ctx.fillRect(wx, wy, 2, 3);
                     }
                 }
             }
 
-            // Parapeito no topo
-            ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
-            ctx.fillRect(Math.floor(xPos) - 1, Math.floor(topoY) - 2, larg + 2, 2);
+            // LUZ ROSA — faixas horizontais pixeladas crescendo de baixo
+            let intensidade = 0.5 + 0.5 * Math.abs(Math.sin(id * 3.3));
+            if (intensidade > 0.55) {
+                // Faixas de 2px, alpha crescente de baixo pra cima
+                for (let ly = chaoTela - 48; ly < chaoTela; ly += 2) {
+                    let progresso = (ly - (chaoTela - 48)) / 48;
+                    let alpha = progresso * progresso * (0.10 + intensidade * 0.07);
+                    ctx.fillStyle = `rgba(220, 55, 170, ${alpha.toFixed(3)})`;
+                    ctx.fillRect(xPos - 4, Math.floor(ly), larg + 8, 2);
+                }
+                // Faixa base de reflexo na fachada (2px no rodapé)
+                ctx.fillStyle = `rgba(230, 70, 180, ${(0.06 + intensidade * 0.05).toFixed(3)})`;
+                ctx.fillRect(xPos, Math.floor(chaoTela) - 6, larg, 3);
+            }
         }
     }
+
+    // =============================================
+    // PRÉDIOS DA FRENTE — mais escuros, sem luzes rosas
+    // =============================================
+    {
+        const vel = 0.15, altBase = 90, larg = 66, espaco = 96;
+        let scrollX = (camera.x * vel) % espaco;
+        for (let i = -1; i < (canvas.width / espaco) + 2; i++) {
+            let xPos = Math.floor((i * espaco) - scrollX);
+            let id = Math.floor((camera.x * vel) / espaco) + i;
+            let hBase = altBase + Math.floor(Math.abs(Math.sin(id * 2.1 + 0.5)) * 56 / 8) * 8;
+            let topoY = Math.floor(chaoY - hBase - camera.y);
+
+            ctx.fillStyle = "#160030";
+            ctx.fillRect(xPos, topoY, larg, hBase + 1);
+
+            // Borda esquerda e direita levemente mais clara (1px) — profundidade
+            ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
+            ctx.fillRect(xPos, topoY, 1, hBase);
+            ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+            ctx.fillRect(xPos + larg - 1, topoY, 1, hBase);
+
+            // Parapeito (3 faixas de 1px)
+            ctx.fillStyle = "#220040";
+            ctx.fillRect(xPos - 1, topoY - 1, larg + 2, 1);
+            ctx.fillStyle = "#1c0036";
+            ctx.fillRect(xPos, topoY - 2, larg, 1);
+
+            // Janelas 2x3
+            for (let wy = topoY + 12; wy < chaoTela - 12; wy += 18) {
+                for (let wx = xPos + 7; wx < xPos + larg - 7; wx += 14) {
+                    let s = Math.abs(Math.sin(id * 11 + (wy / 18) * 17 + (wx / 14) * 23));
+                    if (s > 0.50) {
+                        ctx.fillStyle = s > 0.78
+                            ? "rgba(255, 205, 60, 0.7)"
+                            : "rgba(0, 0, 0, 0.5)";
+                        ctx.fillRect(wx, wy, 2, 3);
+                    }
+                }
+            }
+        }
+    }
+
+    // =============================================
+    // CHÃO PIXELADO — faixas horizontais de 2px
+    // =============================================
+    const chaoPixY = Math.floor(chaoY - camera.y);
+
+    // Linha de chão magenta (sua linha original) — mantida
+    ctx.fillStyle = "#ff00ff";
+    ctx.fillRect(0, chaoPixY, canvas.width, 2);
+
+    // Calçada — faixas em tons alternados de roxo escuro
+    const coresCalcada = ["#0d0020", "#0a001a", "#0c001e", "#08001a"];
+    for (let i = 0; i < 8; i++) {
+        ctx.fillStyle = coresCalcada[i % coresCalcada.length];
+        ctx.fillRect(0, chaoPixY + 2 + i * 4, canvas.width, 4);
+    }
+
+    // Poças de chuva — reflexo rosa nas poças (retângulos finos, posição fixa)
+    const pocas = [
+        { x: 80,  largura: 40 },
+        { x: 200, largura: 25 },
+        { x: 350, largura: 55 },
+        { x: 500, largura: 30 },
+        { x: 650, largura: 45 },
+        { x: 750, largura: 20 },
+    ];
+    pocas.forEach(p => {
+        let px2 = (p.x - camera.x * 0.15) % canvas.width;
+        if (px2 < 0) px2 += canvas.width;
+        // Poça escura
+        ctx.fillStyle = "rgba(20, 0, 40, 0.8)";
+        ctx.fillRect(Math.floor(px2), chaoPixY + 4, p.largura, 2);
+        // Reflexo rosa/lilás dentro da poça
+        ctx.fillStyle = "rgba(200, 60, 160, 0.25)";
+        ctx.fillRect(Math.floor(px2) + 2, chaoPixY + 4, p.largura - 4, 1);
+        // Brilhinho branco na borda superior da poça
+        ctx.fillStyle = "rgba(200, 200, 255, 0.15)";
+        ctx.fillRect(Math.floor(px2), chaoPixY + 3, p.largura, 1);
+    });
 }
 
+// =============================================
+// CHUVA
+// =============================================
 function gerenciarChuva() {
     let hitboxRealX = player.x + player.offsetX - camera.x;
-    let hitboxRealY = player.y + player.offsetY - camera.y; 
+    let hitboxRealY = player.y + player.offsetY - camera.y;
 
     chuva.forEach(pingo => {
         let pingoTelaX = (pingo.x - (camera.x * pingo.fatorParallax)) % canvas.width;
-        if (pingoTelaX < 0) pingoTelaX += canvas.width; 
+        if (pingoTelaX < 0) pingoTelaX += canvas.width;
 
         ctx.strokeStyle = `rgba(174, 219, 255, ${pingo.opacidade})`;
-        ctx.lineWidth = pingo.tamanho > 5 ? 1.5 : 1; 
-        
+        ctx.lineWidth = pingo.tamanho > 5 ? 1.5 : 1;
         ctx.beginPath();
-        ctx.moveTo(pingoTelaX, pingo.y);
-        ctx.lineTo(pingoTelaX - (pingo.fatorParallax * 2), pingo.y + pingo.tamanho);
+        ctx.moveTo(Math.floor(pingoTelaX), Math.floor(pingo.y));
+        ctx.lineTo(Math.floor(pingoTelaX) - Math.floor(pingo.fatorParallax * 2), Math.floor(pingo.y + pingo.tamanho));
         ctx.stroke();
 
         if (estadoAtual !== "TELA_INICIAL") {
             pingo.y += pingo.velocidade;
-            pingo.x -= 0.5 * pingo.fatorParallax; 
+            pingo.x -= 0.5 * pingo.fatorParallax;
         }
 
         if ((estadoAtual === "JOGANDO" || estadoAtual === "ESPERA_POS_DIALOGO" || estadoAtual === "RAPOSA_VIRANDO") && pingo.fatorParallax > 0.6) {
-            if (pingoTelaX > hitboxRealX && pingoTelaX < hitboxRealX + player.larguraHitbox && pingo.y > hitboxRealY && pingo.y < hitboxRealY + player.alturaHitbox) {
+            if (pingoTelaX > hitboxRealX && pingoTelaX < hitboxRealX + player.larguraHitbox &&
+                pingo.y > hitboxRealY && pingo.y < hitboxRealY + player.alturaHitbox) {
                 criarRespingo(pingoTelaX, pingo.y, pingo.fatorParallax);
-                pingo.y = -20; 
-                return; 
+                pingo.y = -20;
+                return;
             }
         }
 
@@ -502,22 +636,24 @@ function gerenciarChuva() {
 
     for (let i = respingos.length - 1; i >= 0; i--) {
         let r = respingos[i];
-        ctx.fillStyle = `rgba(174, 219, 255, 0.5)`;
-        ctx.fillRect(r.x, r.y, 1.5, 1.5);
+        ctx.fillStyle = "rgba(174, 219, 255, 0.5)";
+        ctx.fillRect(Math.floor(r.x), Math.floor(r.y), 1, 1);
 
         if (estadoAtual !== "TELA_INICIAL") {
             r.x += r.velX;
             if (teclas["KeyD"] && estadoAtual === "JOGANDO") r.x -= player.velocidade * r.fatorParallax;
             if (teclas["KeyA"] && estadoAtual === "JOGANDO") r.x += player.velocidade * r.fatorParallax;
             r.y += r.velY;
-            r.velY += 0.2; 
+            r.velY += 0.2;
             r.vida--;
         }
         if (r.vida <= 0) respingos.splice(i, 1);
     }
 }
 
-// --- LOOP PRINCIPAL ---
+// =============================================
+// LOOP PRINCIPAL
+// =============================================
 function atualizar() {
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
@@ -526,7 +662,6 @@ function atualizar() {
     if (estadoAtual !== "TELA_INICIAL") {
         player.velY += player.gravidade;
         player.y += player.velY;
-
         let baseHitboxY = player.y + player.offsetY + player.alturaHitbox;
         if (baseHitboxY >= chaoY) {
             player.y = chaoY - player.alturaHitbox - player.offsetY;
@@ -539,7 +674,7 @@ function atualizar() {
         cena450.timerPausaPos++;
         player.estaAndando = false;
         if (cena450.timerPausaPos >= cena450.tempoPausaPos) {
-            estadoAtual = "RAPOSA_VIRANDO"; 
+            estadoAtual = "RAPOSA_VIRANDO";
             npc2.estado = "ANIMANDO";
             npc2.frameAnimacao = 0;
             npc2.timerAnimacao = 0;
@@ -547,14 +682,14 @@ function atualizar() {
     }
 
     if (estadoAtual === "RAPOSA_VIRANDO") {
-        player.estaAndando = false; 
+        player.estaAndando = false;
         npc2.timerAnimacao++;
         if (npc2.timerAnimacao >= npc2.tempoPorFrame) {
             npc2.timerAnimacao = 0;
             if (npc2.frameAnimacao < imgFoxFrames.length - 1) {
                 npc2.frameAnimacao++;
             } else {
-                npc2.estado = "OLHANDO_ESQUERDA"; 
+                npc2.estado = "OLHANDO_ESQUERDA";
                 estadoAtual = "JOGANDO";
                 cena450.concluida = true;
                 cena450.ativa = false;
@@ -566,8 +701,8 @@ function atualizar() {
         if (player.x >= 4500 && !cena450.concluida) {
             estadoAtual = "CENA_450";
             cena450.ativa = true;
-            cena450.timerEspera = 0; 
-            teclas["KeyD"] = false; 
+            cena450.timerEspera = 0;
+            teclas["KeyD"] = false;
             teclas["KeyA"] = false;
             player.estaAndando = false;
         }
@@ -588,12 +723,12 @@ function atualizar() {
 
         if (player.estaAndando && player.noChao) {
             player.tempoAnimacao++;
-            if (player.tempoAnimacao >= 10) { 
-                player.frameAtual = player.frameAtual === 0 ? 1 : 0; 
+            if (player.tempoAnimacao >= 10) {
+                player.frameAtual = player.frameAtual === 0 ? 1 : 0;
                 player.tempoAnimacao = 0;
             }
         } else {
-            player.frameAtual = 0; 
+            player.frameAtual = 0;
         }
 
         let centroPlayerX = player.x + player.offsetX + (player.larguraHitbox / 2);
@@ -607,7 +742,7 @@ function atualizar() {
             }
         }
 
-        camera.x = player.x - 150; 
+        camera.x = player.x - 150;
         if (camera.x < 0) camera.x = 0;
 
         if ((teclas["KeyW"] || teclas["Space"]) && player.noChao) {
@@ -617,9 +752,9 @@ function atualizar() {
     }
 
     if (estadoAtual === "CENA_450" || estadoAtual === "ESPERA_POS_DIALOGO" || estadoAtual === "RAPOSA_VIRANDO" || cena450.concluida) {
-        if (estadoAtual === "CENA_450") cena450.timerEspera++; 
-        if (cena450.alturaBarras < cena450.maxAlturaBarras) cena450.alturaBarras += cena450.velocidadeBarras; 
-        if (camera.y < 90) camera.y += (cena450.velocidadeBarras * 0.65); 
+        if (estadoAtual === "CENA_450") cena450.timerEspera++;
+        if (cena450.alturaBarras < cena450.maxAlturaBarras) cena450.alturaBarras += cena450.velocidadeBarras;
+        if (camera.y < 90) camera.y += (cena450.velocidadeBarras * 0.65);
     } else {
         if (cena450.alturaBarras > 0) cena450.alturaBarras -= 4;
         if (camera.y > 0) camera.y -= 3;
@@ -629,10 +764,13 @@ function atualizar() {
     requestAnimationFrame(atualizar);
 }
 
+// =============================================
+// UI — CAIXAS DE DIÁLOGO
+// =============================================
 function desenharCaixaTexto(texto) {
-    ctx.fillStyle = "rgba(0, 0, 26, 0.9)"; 
+    ctx.fillStyle = "rgba(0, 0, 26, 0.9)";
     ctx.fillRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
-    ctx.strokeStyle = "#ff0055"; 
+    ctx.strokeStyle = "#ff0055";
     ctx.lineWidth = 2;
     ctx.strokeRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
     ctx.fillStyle = "white";
@@ -640,14 +778,14 @@ function desenharCaixaTexto(texto) {
     ctx.textAlign = "left";
     ctx.fillText(texto, caixaDialogo.x + 20, caixaDialogo.y + 55);
     ctx.font = "12px 'Courier New', monospace";
-    ctx.fillStyle = "rgba(0, 255, 204, 0.7)"; 
+    ctx.fillStyle = "rgba(0, 255, 204, 0.7)";
     ctx.fillText("[Espaço / Enter] para continuar", caixaDialogo.x + 20, caixaDialogo.y + 100);
 }
 
 function desenharCaixaPensamento(texto) {
-    ctx.fillStyle = "rgba(75, 0, 130, 0.9)"; 
-    ctx.fillRect(caixaDialogo.x, 20, caixaDialogo.largura, 80); 
-    ctx.strokeStyle = "#ff0000"; 
+    ctx.fillStyle = "rgba(75, 0, 130, 0.9)";
+    ctx.fillRect(caixaDialogo.x, 20, caixaDialogo.largura, 80);
+    ctx.strokeStyle = "#ff0000";
     ctx.lineWidth = 3;
     ctx.strokeRect(caixaDialogo.x, 20, caixaDialogo.largura, 80);
     ctx.fillStyle = "white";
@@ -658,10 +796,13 @@ function desenharCaixaPensamento(texto) {
 
 function desenharBarrasCinematicas() {
     ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, canvas.width, cena450.alturaBarras); 
-    ctx.fillRect(0, canvas.height - cena450.alturaBarras, canvas.width, cena450.alturaBarras); 
+    ctx.fillRect(0, 0, canvas.width, cena450.alturaBarras);
+    ctx.fillRect(0, canvas.height - cena450.alturaBarras, canvas.width, cena450.alturaBarras);
 }
 
+// =============================================
+// DESENHAR (frame)
+// =============================================
 function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -672,29 +813,27 @@ function desenhar() {
         ctx.font = "40px 'Courier New', monospace";
         ctx.textAlign = "center";
         ctx.fillText("CIDADE INFINITA", canvas.width / 2, 150);
-    } 
-    else {
+    } else {
         desenharCenario();
 
+        // Chão (corpo preenchido abaixo da linha)
         ctx.fillStyle = "#0a0712";
-        ctx.fillRect(0, chaoY - camera.y, canvas.width, (canvas.height - chaoY) + camera.y);
-        ctx.fillStyle = "#ff00ffff";
-        ctx.fillRect(0, chaoY - camera.y, canvas.width, 2);
+        ctx.fillRect(0, chaoY - camera.y + 34, canvas.width, (canvas.height - chaoY) + camera.y);
 
-        let displayX = Math.floor(player.x / 10); 
-        let displayY = Math.floor((chaoY - (player.y + player.offsetY + player.alturaHitbox)));
+        // Coordenadas do player
+        let displayX = Math.floor(player.x / 10);
+        let displayY = Math.floor(chaoY - (player.y + player.offsetY + player.alturaHitbox));
         ctx.fillStyle = "rgba(0, 255, 204, 0.8)";
         ctx.font = "16px 'Courier New', monospace";
         ctx.textAlign = "left";
         ctx.fillText(`COORD X: ${displayX}  COORD Y: ${Math.max(0, displayY)}`, 20, 30);
 
-        // NPC 1 (Espírito)
+        // NPC Espírito
         let npcRelativoX = npc.x - camera.x;
         if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
             let flutuarY = npc.y + Math.sin(npc.tempoFlutuar) * 8 - camera.y;
-            if (imgNpcEspirito.complete && imgNpcEspirito.width > 0) {
+            if (imgNpcEspirito.complete && imgNpcEspirito.width > 0)
                 ctx.drawImage(imgNpcEspirito, npcRelativoX, flutuarY, npc.largura, npc.altura);
-            }
         }
 
         // Raposa
@@ -718,14 +857,12 @@ function desenhar() {
         // Player
         let playerRelativoX = player.x - camera.x;
         let playerY = player.y - camera.y;
-        
-        ctx.save(); 
+        ctx.save();
         if (player.direcao === "esquerda") {
             ctx.translate(playerRelativoX + player.larguraVisual / 2, playerY + player.alturaVisual / 2);
             ctx.scale(-1, 1);
             ctx.translate(-(playerRelativoX + player.larguraVisual / 2), -(playerY + player.alturaVisual / 2));
         }
-
         if (imgPlayerParado.complete && imgPlayerCorrendo.complete && imgPlayerParado.width > 0) {
             if (player.estaAndando) {
                 ctx.drawImage(imgPlayerCorrendo, player.frameAtual * player.spriteLargura, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
@@ -736,8 +873,9 @@ function desenhar() {
             ctx.fillStyle = "#00aaff";
             ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
         }
-        ctx.restore(); 
+        ctx.restore();
 
+        // Hitbox debug
         ctx.strokeStyle = "#00ff00";
         ctx.lineWidth = 1.5;
         ctx.strokeRect(playerRelativoX + player.offsetX, playerY + player.offsetY, player.larguraHitbox, player.alturaHitbox);
@@ -748,12 +886,11 @@ function desenhar() {
         if (estadoAtual === "DIALOGO_NPC") desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
 
         desenharBarrasCinematicas();
-        
-        if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo) {
+
+        if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo)
             desenharCaixaPensamento(cena450.texto[cena450.indiceAtual]);
-        }
     }
 }
 
-// Inicia o jogo
+// Inicia
 atualizar();
