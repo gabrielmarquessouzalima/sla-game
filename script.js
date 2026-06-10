@@ -106,7 +106,7 @@ const npc = {
     distanciaInteracao: 80 
 };
 
-// --- RAPOSINHA (Lógica por Frames Estáticos) ---
+// --- RAPOSINHA ---
 const npc2 = {
     x: 5000, 
     y: 272, 
@@ -122,14 +122,6 @@ const npc2 = {
 const camera = { x: 0, y: 0 };
 const chaoY = 350;
 const teclas = {};
-
-const parallax = {
-    camadas: [
-        { x: 0, velocidade: 0.02, cor: "#090014", alturaBase: 200, larguraPredio: 110, espacamento: 140 }, 
-        { x: 0, velocidade: 0.06, cor: "#120024", alturaBase: 140, larguraPredio: 85,  espacamento: 110 }, 
-        { x: 0, velocidade: 0.15, cor: "#1b003a", alturaBase: 90,  larguraPredio: 65,  espacamento: 95 }   
-    ]
-};
 
 // --- Sistema de Chuva ---
 const maxPingos = 100; 
@@ -151,7 +143,13 @@ for (let i = 0; i < maxPingos; i++) {
 function criarRespingo(x, y, fatorParallax) {
     let quantidade = 2 + Math.floor(Math.random() * 2);
     for (let i = 0; i < quantidade; i++) {
-        respingos.push({ x: x, y: y, velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 2 - 1, vida: 8 + Math.random() * 8, fatorParallax: fatorParallax });
+        respingos.push({
+            x: x, y: y,
+            velX: (Math.random() - 0.5) * 2,
+            velY: -Math.random() * 2 - 1,
+            vida: 8 + Math.random() * 8,
+            fatorParallax: fatorParallax
+        });
     }
 }
 
@@ -209,172 +207,262 @@ btnStart.addEventListener("click", () => {
     btnStart.style.display = "none"; 
 });
 
-// --- CENÁRIO COM LUA CRESCENTE E DETALHES CIBERPUNK ---
+// --- CENÁRIO COMPLETO ---
 function desenharCenario() {
-    // Fundo com gradiente noturno
-    const gradFundo = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradFundo.addColorStop(0, "#020008");
-    gradFundo.addColorStop(0.5, "#08001a");
-    gradFundo.addColorStop(1, "#030010");
-    ctx.fillStyle = gradFundo;
+
+    // 1. FUNDO DO CÉU
+    ctx.fillStyle = "#04000f";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // --- LUA CRESCENTE ---
-    const luaX = canvas.width - 120 - (camera.x * 0.005) % 30;
-    const luaY = 60;
-    const luaR = 38;
+    // Nebulosa roxa distante
+    const nebRoxa = ctx.createRadialGradient(200 - camera.x * 0.003, 80, 10, 200 - camera.x * 0.003, 80, 180);
+    nebRoxa.addColorStop(0, "rgba(80, 0, 120, 0.18)");
+    nebRoxa.addColorStop(0.5, "rgba(50, 0, 90, 0.08)");
+    nebRoxa.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = nebRoxa;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Halo suave ao redor da lua
-    const haloGrad = ctx.createRadialGradient(luaX, luaY, luaR * 0.8, luaX, luaY, luaR * 2.5);
-    haloGrad.addColorStop(0, "rgba(200, 220, 255, 0.08)");
-    haloGrad.addColorStop(1, "rgba(200, 220, 255, 0)");
-    ctx.fillStyle = haloGrad;
-    ctx.beginPath();
-    ctx.arc(luaX, luaY, luaR * 2.5, 0, Math.PI * 2);
-    ctx.fill();
+    // Nebulosa azul central
+    const nebAzul = ctx.createRadialGradient(500 - camera.x * 0.004, 60, 5, 500 - camera.x * 0.004, 60, 140);
+    nebAzul.addColorStop(0, "rgba(0, 40, 120, 0.2)");
+    nebAzul.addColorStop(0.5, "rgba(0, 20, 80, 0.08)");
+    nebAzul.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = nebAzul;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Corpo da lua + crescente via clipping
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(luaX, luaY, luaR, 0, Math.PI * 2);
-    ctx.clip();
-
-    ctx.fillStyle = "#d8e8ff";
-    ctx.beginPath();
-    ctx.arc(luaX, luaY, luaR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Variação sutil de brilho na superfície
-    const luaGrad = ctx.createRadialGradient(luaX - 10, luaY - 10, 0, luaX, luaY, luaR);
-    luaGrad.addColorStop(0, "rgba(255,255,255,0.5)");
-    luaGrad.addColorStop(0.6, "rgba(200,215,255,0.1)");
-    luaGrad.addColorStop(1, "rgba(140,160,220,0.3)");
-    ctx.fillStyle = luaGrad;
-    ctx.beginPath();
-    ctx.arc(luaX, luaY, luaR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // "Mordida" que cria o crescente
-    ctx.fillStyle = "#020008";
-    ctx.beginPath();
-    ctx.arc(luaX + luaR * 0.6, luaY - luaR * 0.1, luaR * 0.88, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-
-    // --- ESTRELAS COM TWINKLE ---
+    // 2. ESTRELAS (desenhadas ANTES da lua)
     const tempoAgora = Date.now() * 0.001;
-    for (let i = 0; i < 60; i++) {
-        let x = ((i * 137.5) - (camera.x * 0.008)) % canvas.width;
-        if (x < 0) x += canvas.width;
-        let y = (i * 97) % 160;
-        let brilho = 0.3 + 0.4 * Math.abs(Math.sin(tempoAgora * 0.8 + i * 2.3));
-        let tamanho = i % 5 === 0 ? 1.5 : 1;
-        ctx.fillStyle = `rgba(220, 230, 255, ${brilho})`;
-        ctx.fillRect(x, y, tamanho, tamanho);
-    }
 
-    // --- NEBLINA URBANA NO HORIZONTE ---
-    const neblinaGrad = ctx.createLinearGradient(0, chaoY - 120 - camera.y, 0, chaoY - camera.y);
-    neblinaGrad.addColorStop(0, "rgba(80, 0, 160, 0)");
-    neblinaGrad.addColorStop(0.5, "rgba(120, 0, 200, 0.04)");
-    neblinaGrad.addColorStop(1, "rgba(180, 20, 255, 0.12)");
-    ctx.fillStyle = neblinaGrad;
-    ctx.fillRect(0, chaoY - 120 - camera.y, canvas.width, 120);
-
-    // --- PRÉDIOS COM DETALHES CIBERPUNK ---
-    const camadasCiberpunk = [
-        { velocidade: 0.02, cor: "#090014", altBase: 200, largura: 110, espaco: 140, corNeon: null },
-        { velocidade: 0.06, cor: "#120024", altBase: 140, largura: 85,  espaco: 110, corNeon: "rgba(255,0,100,0.7)" },
-        { velocidade: 0.15, cor: "#1b003a", altBase: 90,  largura: 65,  espaco: 95,  corNeon: "rgba(0,200,255,0.8)" }
+    // Estrelas distantes
+    const estrelasDist = [
+        {x:15,y:12},{x:47,y:8},{x:93,y:22},{x:134,y:5},{x:178,y:18},
+        {x:221,y:10},{x:265,y:28},{x:312,y:7},{x:358,y:15},{x:401,y:3},
+        {x:444,y:25},{x:488,y:11},{x:531,y:20},{x:577,y:6},{x:620,y:17},
+        {x:663,y:30},{x:701,y:9},{x:741,y:22},{x:777,y:4},{x:55,y:35},
+        {x:110,y:42},{x:190,y:38},{x:280,y:44},{x:370,y:33},{x:460,y:40},
+        {x:550,y:36},{x:640,y:43},{x:730,y:31},{x:25,y:50},{x:330,y:55},
     ];
+    estrelasDist.forEach((s, i) => {
+        let sx = (s.x - camera.x * 0.006) % canvas.width;
+        if (sx < 0) sx += canvas.width;
+        let brilho = 0.35 + 0.25 * Math.abs(Math.sin(tempoAgora * 0.5 + i * 1.7));
+        ctx.fillStyle = `rgba(200, 210, 255, ${brilho})`;
+        ctx.fillRect(Math.floor(sx), s.y, 1, 1);
+    });
 
-    camadasCiberpunk.forEach((camada, idx) => {
-        let espaco = camada.espaco;
-        let scrollX = (camera.x * camada.velocidade) % espaco;
-
-        for (let i = -1; i < (canvas.width / espaco) + 2; i++) {
-            let xPos = (i * espaco) - scrollX;
-            let idPredio = Math.floor((camera.x * camada.velocidade) / espaco) + i;
-            let h = camada.altBase + (Math.abs(Math.sin(idPredio + idx)) * 70);
-            let topoY = chaoY - h - camera.y;
-
-            // Corpo do prédio
-            ctx.fillStyle = camada.cor;
-            ctx.fillRect(xPos, topoY, camada.largura, h);
-
-            if (idx > 0) {
-                // Janelas (amarelas, azuis e apagadas)
-                let linhaJanela = 0;
-                for (let wy = topoY + 20; wy < (chaoY - camera.y) - 20; wy += 25) {
-                    linhaJanela++;
-                    let colJanela = 0;
-                    for (let wx = xPos + 12; wx < xPos + camada.largura - 12; wx += 20) {
-                        colJanela++;
-                        let semente = Math.abs(Math.sin(idPredio * 7 + linhaJanela * 13 + colJanela * 31));
-                        if (semente > 0.4) {
-                            let cor;
-                            if (semente > 0.82) {
-                                cor = "rgba(255, 230, 100, 0.85)";
-                            } else if (semente > 0.65) {
-                                cor = "rgba(0, 200, 255, 0.5)";
-                            } else {
-                                cor = "rgba(0, 0, 0, 0.6)";
-                            }
-                            ctx.fillStyle = cor;
-                            ctx.fillRect(wx, wy, 4, 6);
-                        }
-                    }
-                }
-
-                // Antena no topo
-                if (Math.abs(Math.sin(idPredio * 5.1)) > 0.5) {
-                    let antX = xPos + camada.largura / 2;
-                    ctx.strokeStyle = "rgba(180,180,200,0.5)";
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(antX, topoY);
-                    ctx.lineTo(antX, topoY - 18);
-                    ctx.stroke();
-
-                    // Luz vermelha piscando na antena
-                    let pisca = Math.sin(Date.now() * 0.002 + idPredio) > 0.3;
-                    if (pisca) {
-                        ctx.fillStyle = "rgba(255, 50, 50, 0.9)";
-                        ctx.beginPath();
-                        ctx.arc(antX, topoY - 20, 2, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                }
-
-                // Letreiro de neon horizontal no topo
-                if (camada.corNeon && Math.abs(Math.sin(idPredio * 3.7)) > 0.65) {
-                    ctx.strokeStyle = camada.corNeon;
-                    ctx.lineWidth = 2;
-                    ctx.shadowColor = camada.corNeon;
-                    ctx.shadowBlur = 6;
-                    ctx.beginPath();
-                    ctx.moveTo(xPos + 8, topoY + 8);
-                    ctx.lineTo(xPos + camada.largura - 8, topoY + 8);
-                    ctx.stroke();
-                    ctx.shadowBlur = 0;
-                }
-
-                // Plataforma/terraço no topo
-                if (Math.abs(Math.cos(idPredio * 2.9)) > 0.6) {
-                    ctx.fillStyle = "rgba(255,255,255,0.06)";
-                    ctx.fillRect(xPos - 4, topoY - 4, camada.largura + 8, 5);
-                }
-            }
-
-            // Reflexo de neon no chão (camada frontal)
-            if (idx === 2 && camada.corNeon) {
-                let refAlpha = 0.04 + 0.03 * Math.abs(Math.sin(idPredio * 3.7));
-                ctx.fillStyle = camada.corNeon.replace("0.8", `${refAlpha}`);
-                ctx.fillRect(xPos, chaoY - camera.y, camada.largura, 4);
-            }
+    // Estrelas médias com twinkle
+    const estrelasMed = [
+        {x:30,y:20},{x:80,y:14},{x:150,y:30},{x:230,y:8},{x:310,y:25},
+        {x:390,y:12},{x:470,y:35},{x:560,y:18},{x:650,y:28},{x:745,y:10},
+        {x:60,y:45},{x:200,y:50},{x:340,y:42},{x:480,y:48},{x:600,y:38},
+        {x:720,y:55},{x:120,y:60},{x:260,y:65},{x:420,y:58},{x:580,y:62},
+    ];
+    estrelasMed.forEach((s, i) => {
+        let sx = (s.x - camera.x * 0.01) % canvas.width;
+        if (sx < 0) sx += canvas.width;
+        let brilho = 0.5 + 0.4 * Math.abs(Math.sin(tempoAgora * 0.7 + i * 2.3));
+        let cor = i % 3 === 0 ? `rgba(160, 190, 255, ${brilho})` : `rgba(220, 230, 255, ${brilho})`;
+        ctx.fillStyle = cor;
+        ctx.fillRect(Math.floor(sx), s.y, 1, 1);
+        if (i % 5 === 0 && brilho > 0.75) {
+            ctx.fillStyle = `rgba(200, 220, 255, ${brilho * 0.4})`;
+            ctx.fillRect(Math.floor(sx) - 1, s.y, 1, 1);
+            ctx.fillRect(Math.floor(sx) + 1, s.y, 1, 1);
+            ctx.fillRect(Math.floor(sx), s.y - 1, 1, 1);
+            ctx.fillRect(Math.floor(sx), s.y + 1, 1, 1);
         }
     });
+
+    // Estrelas grandes com cruzinha pixel art
+    const estrelasGrandes = [
+        {x:100,y:18},{x:300,y:10},{x:520,y:22},{x:700,y:8},{x:420,y:45},
+    ];
+    estrelasGrandes.forEach((s, i) => {
+        let sx = (s.x - camera.x * 0.012) % canvas.width;
+        if (sx < 0) sx += canvas.width;
+        let brilho = 0.6 + 0.4 * Math.abs(Math.sin(tempoAgora * 0.9 + i * 3.1));
+        ctx.fillStyle = `rgba(230, 240, 255, ${brilho})`;
+        ctx.fillRect(Math.floor(sx), s.y, 2, 2);
+        ctx.fillStyle = `rgba(180, 210, 255, ${brilho * 0.5})`;
+        ctx.fillRect(Math.floor(sx) - 1, s.y,     1, 2);
+        ctx.fillRect(Math.floor(sx) + 2, s.y,     1, 2);
+        ctx.fillRect(Math.floor(sx),     s.y - 1, 2, 1);
+        ctx.fillRect(Math.floor(sx),     s.y + 2, 2, 1);
+    });
+
+    // Poeira estelar azulada
+    for (let i = 0; i < 40; i++) {
+        let sx = ((i * 197 + 43) - camera.x * 0.007) % canvas.width;
+        if (sx < 0) sx += canvas.width;
+        let sy = (i * 83 + 17) % 140;
+        let brilho = 0.1 + 0.15 * Math.abs(Math.sin(i * 4.7));
+        ctx.fillStyle = `rgba(100, 140, 255, ${brilho})`;
+        ctx.fillRect(Math.floor(sx), sy, 1, 1);
+    }
+
+    // 3. LUA CRESCENTE (por cima das estrelas)
+    const luaBaseX = canvas.width - 130;
+    const luaBaseY = 55;
+    const luaR = 36;
+    const luaX = luaBaseX - (camera.x * 0.004) % 8;
+
+    // Halo
+    const haloGrad = ctx.createRadialGradient(luaX, luaBaseY, luaR * 0.9, luaX, luaBaseY, luaR * 3);
+    haloGrad.addColorStop(0, "rgba(180, 210, 255, 0.06)");
+    haloGrad.addColorStop(0.5, "rgba(140, 180, 255, 0.03)");
+    haloGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = haloGrad;
+    ctx.beginPath();
+    ctx.arc(luaX, luaBaseY, luaR * 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.save();
+    ctx.fillStyle = "rgba(160, 190, 255, 0.06)";
+    ctx.beginPath();
+    ctx.arc(luaX, luaBaseY, luaR + 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Disco principal
+    ctx.fillStyle = "#c8dcf8";
+    ctx.beginPath();
+    ctx.arc(luaX, luaBaseY, luaR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Gradiente de brilho
+    const luaGrad = ctx.createRadialGradient(luaX - 8, luaBaseY - 10, 2, luaX, luaBaseY, luaR);
+    luaGrad.addColorStop(0, "rgba(255, 255, 255, 0.45)");
+    luaGrad.addColorStop(0.5, "rgba(200, 220, 255, 0.1)");
+    luaGrad.addColorStop(1, "rgba(100, 140, 220, 0.2)");
+    ctx.fillStyle = luaGrad;
+    ctx.beginPath();
+    ctx.arc(luaX, luaBaseY, luaR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mordida do crescente
+    ctx.fillStyle = "#04000f";
+    ctx.beginPath();
+    ctx.arc(luaX + luaR * 0.58, luaBaseY - luaR * 0.08, luaR * 0.87, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 4. NEBLINA DO HORIZONTE
+    const nebHorizonte = ctx.createLinearGradient(0, chaoY - 100 - camera.y, 0, chaoY - camera.y);
+    nebHorizonte.addColorStop(0, "rgba(30, 0, 60, 0)");
+    nebHorizonte.addColorStop(0.6, "rgba(60, 0, 100, 0.05)");
+    nebHorizonte.addColorStop(1, "rgba(100, 0, 140, 0.15)");
+    ctx.fillStyle = nebHorizonte;
+    ctx.fillRect(0, chaoY - 100 - camera.y, canvas.width, 100);
+
+    // 5. PRÉDIOS TRASEIROS
+    {
+        const vel = 0.02, cor = "#080012", altBase = 200, larg = 110, espaco = 140;
+        let scrollX = (camera.x * vel) % espaco;
+        for (let i = -1; i < (canvas.width / espaco) + 2; i++) {
+            let xPos = (i * espaco) - scrollX;
+            let id = Math.floor((camera.x * vel) / espaco) + i;
+            let h = altBase + (Math.abs(Math.sin(id * 1.3)) * 65);
+            let topoY = chaoY - h - camera.y;
+            ctx.fillStyle = cor;
+            ctx.fillRect(Math.floor(xPos), Math.floor(topoY), larg, h + 1);
+        }
+    }
+
+    // 6. PRÉDIOS DO MEIO (com luzes rosas)
+    {
+        const vel = 0.06, cor = "#110020", altBase = 140, larg = 85, espaco = 110;
+        let scrollX = (camera.x * vel) % espaco;
+        for (let i = -1; i < (canvas.width / espaco) + 2; i++) {
+            let xPos = (i * espaco) - scrollX;
+            let id = Math.floor((camera.x * vel) / espaco) + i;
+            let h = altBase + (Math.abs(Math.sin(id * 1.7 + 1)) * 65);
+            let topoY = chaoY - h - camera.y;
+            let chaoTela = chaoY - camera.y;
+
+            ctx.fillStyle = cor;
+            ctx.fillRect(Math.floor(xPos), Math.floor(topoY), larg, h + 1);
+
+            // Janelas
+            let lj = 0;
+            for (let wy = topoY + 18; wy < chaoTela - 18; wy += 22) {
+                lj++;
+                let cj = 0;
+                for (let wx = xPos + 10; wx < xPos + larg - 10; wx += 18) {
+                    cj++;
+                    let s = Math.abs(Math.sin(id * 7 + lj * 13 + cj * 31));
+                    if (s > 0.42) {
+                        ctx.fillStyle = s > 0.80
+                            ? "rgba(255, 220, 90, 0.75)"
+                            : s > 0.62
+                                ? "rgba(140, 200, 255, 0.5)"
+                                : "rgba(0, 0, 0, 0.5)";
+                        ctx.fillRect(Math.floor(wx), Math.floor(wy), 3, 5);
+                    }
+                }
+            }
+
+            // Antena esparsa (~30% dos prédios)
+            if (Math.abs(Math.sin(id * 5.1 + 2)) > 0.72) {
+                let antX = Math.floor(xPos + larg / 2);
+                ctx.fillStyle = "rgba(160, 150, 180, 0.4)";
+                ctx.fillRect(antX, Math.floor(topoY) - 14, 1, 14);
+                let pisca = Math.sin(tempoAgora * 2.1 + id) > 0.2;
+                if (pisca) {
+                    ctx.fillStyle = "rgba(255, 80, 80, 0.85)";
+                    ctx.fillRect(antX, Math.floor(topoY) - 15, 1, 1);
+                }
+            }
+
+            // Luz rosa/lilás vindo de baixo
+            let intensidade = 0.5 + 0.5 * Math.abs(Math.sin(id * 3.3));
+            if (intensidade > 0.6) {
+                let luzGrad = ctx.createLinearGradient(xPos + larg / 2, chaoTela - 40, xPos + larg / 2, chaoTela);
+                luzGrad.addColorStop(0, "rgba(200, 50, 150, 0)");
+                luzGrad.addColorStop(1, `rgba(220, 60, 180, ${0.08 + intensidade * 0.06})`);
+                ctx.fillStyle = luzGrad;
+                ctx.fillRect(Math.floor(xPos - 6), Math.floor(chaoTela - 40), larg + 12, 40);
+
+                ctx.fillStyle = `rgba(230, 80, 180, ${0.04 + intensidade * 0.04})`;
+                ctx.fillRect(Math.floor(xPos), Math.floor(chaoTela - 8), larg, 8);
+            }
+        }
+    }
+
+    // 7. PRÉDIOS DA FRENTE
+    {
+        const vel = 0.15, cor = "#1a0035", altBase = 90, larg = 65, espaco = 95;
+        let scrollX = (camera.x * vel) % espaco;
+        for (let i = -1; i < (canvas.width / espaco) + 2; i++) {
+            let xPos = (i * espaco) - scrollX;
+            let id = Math.floor((camera.x * vel) / espaco) + i;
+            let h = altBase + (Math.abs(Math.sin(id * 2.1 + 0.5)) * 65);
+            let topoY = chaoY - h - camera.y;
+            let chaoTela = chaoY - camera.y;
+
+            ctx.fillStyle = cor;
+            ctx.fillRect(Math.floor(xPos), Math.floor(topoY), larg, h + 1);
+
+            // Janelas
+            let lj = 0;
+            for (let wy = topoY + 14; wy < chaoTela - 14; wy += 20) {
+                lj++;
+                let cj = 0;
+                for (let wx = xPos + 8; wx < xPos + larg - 8; wx += 16) {
+                    cj++;
+                    let s = Math.abs(Math.sin(id * 11 + lj * 17 + cj * 23));
+                    if (s > 0.5) {
+                        ctx.fillStyle = s > 0.78
+                            ? "rgba(255, 210, 70, 0.7)"
+                            : "rgba(0, 0, 0, 0.5)";
+                        ctx.fillRect(Math.floor(wx), Math.floor(wy), 3, 4);
+                    }
+                }
+            }
+
+            // Parapeito no topo
+            ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+            ctx.fillRect(Math.floor(xPos) - 1, Math.floor(topoY) - 2, larg + 2, 2);
+        }
+    }
 }
 
 function gerenciarChuva() {
@@ -429,7 +517,7 @@ function gerenciarChuva() {
     }
 }
 
-// --- LOOP PRINCIPAL DO JOGO ---
+// --- LOOP PRINCIPAL ---
 function atualizar() {
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
@@ -450,7 +538,6 @@ function atualizar() {
     if (estadoAtual === "ESPERA_POS_DIALOGO") {
         cena450.timerPausaPos++;
         player.estaAndando = false;
-
         if (cena450.timerPausaPos >= cena450.tempoPausaPos) {
             estadoAtual = "RAPOSA_VIRANDO"; 
             npc2.estado = "ANIMANDO";
@@ -462,7 +549,6 @@ function atualizar() {
     if (estadoAtual === "RAPOSA_VIRANDO") {
         player.estaAndando = false; 
         npc2.timerAnimacao++;
-
         if (npc2.timerAnimacao >= npc2.tempoPorFrame) {
             npc2.timerAnimacao = 0;
             if (npc2.frameAnimacao < imgFoxFrames.length - 1) {
@@ -611,31 +697,25 @@ function desenhar() {
             }
         }
 
-        // --- RENDERIZAÇÃO DA RAPOSA POR SEQUÊNCIA ---
+        // Raposa
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             let npc2Y = npc2.y - camera.y;
-
             if (npc2.estado === "OLHANDO_DIREITA") {
-                if (imgFoxFrames[0].complete && imgFoxFrames[0].width > 0) {
+                if (imgFoxFrames[0].complete && imgFoxFrames[0].width > 0)
                     ctx.drawImage(imgFoxFrames[0], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
-                }
-            } 
-            else if (npc2.estado === "OLHANDO_ESQUERDA") {
-                let ultimoFrame = imgFoxFrames.length - 1;
-                if (imgFoxFrames[ultimoFrame].complete && imgFoxFrames[ultimoFrame].width > 0) {
-                    ctx.drawImage(imgFoxFrames[ultimoFrame], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
-                }
-            } 
-            else if (npc2.estado === "ANIMANDO") {
-                let frameAlvo = imgFoxFrames[npc2.frameAnimacao];
-                if (frameAlvo && frameAlvo.complete && frameAlvo.width > 0) {
-                    ctx.drawImage(frameAlvo, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
-                }
+            } else if (npc2.estado === "OLHANDO_ESQUERDA") {
+                let uf = imgFoxFrames.length - 1;
+                if (imgFoxFrames[uf].complete && imgFoxFrames[uf].width > 0)
+                    ctx.drawImage(imgFoxFrames[uf], npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
+            } else if (npc2.estado === "ANIMANDO") {
+                let fa = imgFoxFrames[npc2.frameAnimacao];
+                if (fa && fa.complete && fa.width > 0)
+                    ctx.drawImage(fa, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
             }
         }
 
-        // Renderização do Player
+        // Player
         let playerRelativoX = player.x - camera.x;
         let playerY = player.y - camera.y;
         
