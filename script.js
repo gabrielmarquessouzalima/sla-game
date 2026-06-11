@@ -9,6 +9,51 @@ ctx.imageSmoothingEnabled = false;
 
 let estadoAtual = "TELA_INICIAL";
 
+// --- SISTEMA DE MÚSICA ---
+const playlist = [
+    "Maré_Cinza.mp3",
+    "Maré_Cinza_1_.mp3",
+    "Maré_Lenta.mp3",
+    "Maré_Lenta_1_.mp3",
+    "Bruma_Noturna.mp3",
+    "Bruma_Noturna_1_.mp3"
+];
+
+let ordemMusicas = [];
+let indiceMusicaAtual = 0;
+const audio = new Audio();
+audio.volume = 0.5;
+
+function embaralharPlaylist() {
+    ordemMusicas = [...playlist];
+    for (let i = ordemMusicas.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [ordemMusicas[i], ordemMusicas[j]] = [ordemMusicas[j], ordemMusicas[i]];
+    }
+}
+
+function tocarProximaMusica() {
+    if (estadoAtual !== "TELA_INICIAL") return;
+    if (indiceMusicaAtual >= ordemMusicas.length) {
+        embaralharPlaylist();
+        indiceMusicaAtual = 0;
+    }
+    audio.src = ordemMusicas[indiceMusicaAtual];
+    audio.play().catch(() => {}); // catch silencioso caso o navegador bloqueie
+    indiceMusicaAtual++;
+}
+
+function pararMusica() {
+    audio.pause();
+    audio.currentTime = 0;
+}
+
+audio.addEventListener("ended", tocarProximaMusica);
+
+// Toca quando o usuário interage pela primeira vez (política dos navegadores)
+embaralharPlaylist();
+
+// --- Carregamento de Sprites ---
 const imgPlayerParado = new Image();
 imgPlayerParado.src = "IMG_20260525_102813.png";
 
@@ -140,6 +185,7 @@ const dialogoInicial = {
 
 const caixaDialogo = { x: 50, y: 250, largura: 700, altura: 120 };
 
+// --- INPUTS ---
 window.addEventListener("keydown", (e) => {
     teclas[e.code] = true;
     if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo && (e.code === "Space" || e.code === "Enter")) {
@@ -166,8 +212,21 @@ window.addEventListener("keydown", (e) => {
     }
 });
 window.addEventListener("keyup", (e) => teclas[e.code] = false);
+
 btnStart.addEventListener("click", () => {
+    // Inicia a música ao clicar (resolve bloqueio de autoplay dos navegadores)
+    tocarProximaMusica();
     estadoAtual = "DIALOGO_INICIAL";
+    // Fade out suave ao sair da tela inicial
+    let fadeInterval = setInterval(() => {
+        if (audio.volume > 0.05) {
+            audio.volume -= 0.05;
+        } else {
+            pararMusica();
+            audio.volume = 0.5;
+            clearInterval(fadeInterval);
+        }
+    }, 80);
     btnStart.style.display = "none";
 });
 
@@ -231,7 +290,6 @@ gerarLua();
 function desenharCenario() {
     const tempoAgora = Date.now() * 0.001;
 
-    // Céu em faixas
     const coresCeu = [
         "#03000c","#04000f","#050011","#060014",
         "#070016","#080018","#07001a","#06001c"
@@ -242,7 +300,6 @@ function desenharCenario() {
         ctx.fillRect(0, i * alturaFaixa, canvas.width, alturaFaixa + 1);
     });
 
-    // Nebulosas em blocos 2x2
     for (let y = 0; y < 160; y += 2) {
         for (let x = 0; x < canvas.width; x += 2) {
             let nx = x + camera.x * 0.003;
@@ -266,7 +323,6 @@ function desenharCenario() {
         }
     }
 
-    // Estrelas distantes
     const estrelasDist = [
         {x:15,y:12},{x:47,y:8},{x:93,y:22},{x:134,y:5},{x:178,y:18},
         {x:221,y:10},{x:265,y:28},{x:312,y:7},{x:358,y:15},{x:401,y:3},
@@ -285,7 +341,6 @@ function desenharCenario() {
         ctx.fillRect(Math.floor(sx), s.y, 1, 1);
     });
 
-    // Estrelas médias
     const estrelasMed = [
         {x:30,y:20},{x:80,y:14},{x:150,y:30},{x:230,y:8},{x:310,y:25},
         {x:390,y:12},{x:470,y:35},{x:560,y:18},{x:650,y:28},{x:745,y:10},
@@ -311,7 +366,6 @@ function desenharCenario() {
         }
     });
 
-    // Estrelas grandes
     const estrelasGrandes = [
         {x:100,y:18},{x:300,y:10},{x:520,y:22},{x:700,y:8},
         {x:420,y:45},{x:180,y:35},{x:600,y:40},
@@ -336,7 +390,6 @@ function desenharCenario() {
         }
     });
 
-    // Poeira estelar
     for (let i = 0; i < 50; i++) {
         let sx = ((i * 197 + 43) - camera.x * 0.006) % canvas.width;
         if (sx < 0) sx += canvas.width;
@@ -346,7 +399,6 @@ function desenharCenario() {
         ctx.fillRect(Math.floor(sx), sy, 1, 1);
     }
 
-    // Lua
     const luaX = Math.floor(canvas.width - 140 - (camera.x * 0.003) % 6);
     const luaY = 28;
     for (let y = luaY - 30; y <= luaY + 90; y += 2) {
@@ -364,7 +416,6 @@ function desenharCenario() {
     }
     ctx.drawImage(luaCanvas, luaX, luaY, 100, 100);
 
-    // Neblina do horizonte
     const chaoTela = chaoY - camera.y;
     for (let y = chaoTela - 80; y < chaoTela; y += 2) {
         let progresso = (y - (chaoTela - 80)) / 80;
@@ -373,7 +424,7 @@ function desenharCenario() {
         ctx.fillRect(0, Math.floor(y), canvas.width, 2);
     }
 
-    // --- PRÉDIOS TRASEIROS ---
+    // Prédios traseiros
     {
         const vel = 0.02, altBase = 200, larg = 112, espaco = 140;
         let scrollX = (camera.x * vel) % espaco;
@@ -382,13 +433,10 @@ function desenharCenario() {
             let id = Math.floor((camera.x * vel) / espaco) + i;
             let hBase = altBase + Math.floor(Math.abs(Math.sin(id * 1.3)) * 64 / 8) * 8;
             let topoY = Math.floor(chaoY - hBase - camera.y);
-
             ctx.fillStyle = "#07000f";
             ctx.fillRect(xPos, topoY, larg, hBase + 1);
             ctx.fillStyle = "#09001a";
             ctx.fillRect(xPos - 1, topoY, larg + 2, 2);
-
-            // Janelas com índices fixos
             for (let wy = 0; wy < Math.floor(hBase / 20) - 1; wy++) {
                 for (let wx = 0; wx < Math.floor(larg / 18) - 1; wx++) {
                     let s = Math.abs(Math.sin(id * 5 + wy * 11 + wx * 7));
@@ -401,7 +449,7 @@ function desenharCenario() {
         }
     }
 
-    // --- PRÉDIOS DO MEIO ---
+    // Prédios do meio
     {
         const vel = 0.06, altBase = 140, larg = 86, espaco = 110;
         let scrollX = (camera.x * vel) % espaco;
@@ -410,15 +458,12 @@ function desenharCenario() {
             let id = Math.floor((camera.x * vel) / espaco) + i;
             let hBase = altBase + Math.floor(Math.abs(Math.sin(id * 1.7 + 1)) * 64 / 8) * 8;
             let topoY = Math.floor(chaoY - hBase - camera.y);
-
             ctx.fillStyle = "#0f001e";
             ctx.fillRect(xPos, topoY, larg, hBase + 1);
             ctx.fillStyle = "#1a0030";
             ctx.fillRect(xPos - 1, topoY - 2, larg + 2, 3);
             ctx.fillStyle = "#140026";
             ctx.fillRect(xPos, topoY - 4, larg, 2);
-
-            // Antena esparsa
             if (Math.abs(Math.sin(id * 5.1 + 2)) > 0.76) {
                 let antX = Math.floor(xPos + larg / 2);
                 for (let ay = topoY - 18; ay < topoY - 2; ay += 2) {
@@ -431,8 +476,6 @@ function desenharCenario() {
                     ctx.fillRect(antX, topoY - 19, 1, 1);
                 }
             }
-
-            // Janelas com índices fixos
             for (let wy = 0; wy < Math.floor(hBase / 20) - 1; wy++) {
                 for (let wx = 0; wx < Math.floor(larg / 16) - 1; wx++) {
                     let s = Math.abs(Math.sin(id * 7 + wy * 13 + wx * 31));
@@ -448,8 +491,6 @@ function desenharCenario() {
                     }
                 }
             }
-
-            // Luz rosa embaixo
             let intensidade = 0.5 + 0.5 * Math.abs(Math.sin(id * 3.3));
             if (intensidade > 0.55) {
                 for (let ly = chaoTela - 48; ly < chaoTela; ly += 2) {
@@ -464,7 +505,7 @@ function desenharCenario() {
         }
     }
 
-    // --- PRÉDIOS DA FRENTE ---
+    // Prédios da frente
     {
         const vel = 0.15, altBase = 90, larg = 66, espaco = 96;
         let scrollX = (camera.x * vel) % espaco;
@@ -473,7 +514,6 @@ function desenharCenario() {
             let id = Math.floor((camera.x * vel) / espaco) + i;
             let hBase = altBase + Math.floor(Math.abs(Math.sin(id * 2.1 + 0.5)) * 56 / 8) * 8;
             let topoY = Math.floor(chaoY - hBase - camera.y);
-
             ctx.fillStyle = "#160030";
             ctx.fillRect(xPos, topoY, larg, hBase + 1);
             ctx.fillStyle = "rgba(255,255,255,0.03)";
@@ -484,8 +524,6 @@ function desenharCenario() {
             ctx.fillRect(xPos - 1, topoY - 1, larg + 2, 1);
             ctx.fillStyle = "#1c0036";
             ctx.fillRect(xPos, topoY - 2, larg, 1);
-
-            // Janelas com índices fixos
             for (let wy = 0; wy < Math.floor(hBase / 18) - 1; wy++) {
                 for (let wx = 0; wx < Math.floor(larg / 14) - 1; wx++) {
                     let s = Math.abs(Math.sin(id * 11 + wy * 17 + wx * 23));
@@ -504,13 +542,11 @@ function desenharCenario() {
     const chaoPixY = Math.floor(chaoY - camera.y);
     ctx.fillStyle = "#ff00ff";
     ctx.fillRect(0, chaoPixY, canvas.width, 2);
-
     const coresCalcada = ["#0d0020","#0a001a","#0c001e","#08001a"];
     for (let i = 0; i < 8; i++) {
         ctx.fillStyle = coresCalcada[i % coresCalcada.length];
         ctx.fillRect(0, chaoPixY + 2 + i * 4, canvas.width, 4);
     }
-
     const pocas = [
         { x: 80,  largura: 40 },
         { x: 200, largura: 25 },
@@ -538,19 +574,16 @@ function gerenciarChuva() {
     chuva.forEach(pingo => {
         let pingoTelaX = (pingo.x - (camera.x * pingo.fatorParallax)) % canvas.width;
         if (pingoTelaX < 0) pingoTelaX += canvas.width;
-
         ctx.strokeStyle = `rgba(174, 219, 255, ${pingo.opacidade})`;
         ctx.lineWidth = pingo.tamanho > 5 ? 1.5 : 1;
         ctx.beginPath();
         ctx.moveTo(Math.floor(pingoTelaX), Math.floor(pingo.y));
         ctx.lineTo(Math.floor(pingoTelaX) - Math.floor(pingo.fatorParallax * 2), Math.floor(pingo.y + pingo.tamanho));
         ctx.stroke();
-
         if (estadoAtual !== "TELA_INICIAL") {
             pingo.y += pingo.velocidade;
             pingo.x -= 0.5 * pingo.fatorParallax;
         }
-
         if ((estadoAtual === "JOGANDO" || estadoAtual === "ESPERA_POS_DIALOGO" || estadoAtual === "RAPOSA_VIRANDO") && pingo.fatorParallax > 0.6) {
             if (pingoTelaX > hitboxRealX && pingoTelaX < hitboxRealX + player.larguraHitbox &&
                 pingo.y > hitboxRealY && pingo.y < hitboxRealY + player.alturaHitbox) {
@@ -559,7 +592,6 @@ function gerenciarChuva() {
                 return;
             }
         }
-
         if (pingo.y > chaoY - camera.y) {
             criarRespingo(pingoTelaX, chaoY - camera.y, pingo.fatorParallax);
             pingo.y = -20;
@@ -570,7 +602,6 @@ function gerenciarChuva() {
         let r = respingos[i];
         ctx.fillStyle = "rgba(174, 219, 255, 0.5)";
         ctx.fillRect(Math.floor(r.x), Math.floor(r.y), 1, 1);
-
         if (estadoAtual !== "TELA_INICIAL") {
             r.x += r.velX;
             if (teclas["KeyD"] && estadoAtual === "JOGANDO") r.x -= player.velocidade * r.fatorParallax;
@@ -587,7 +618,6 @@ function atualizar() {
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
     }
-
     if (estadoAtual !== "TELA_INICIAL") {
         player.velY += player.gravidade;
         player.y += player.velY;
@@ -598,7 +628,6 @@ function atualizar() {
             player.noChao = true;
         }
     }
-
     if (estadoAtual === "ESPERA_POS_DIALOGO") {
         cena450.timerPausaPos++;
         player.estaAndando = false;
@@ -609,7 +638,6 @@ function atualizar() {
             npc2.timerAnimacao = 0;
         }
     }
-
     if (estadoAtual === "RAPOSA_VIRANDO") {
         player.estaAndando = false;
         npc2.timerAnimacao++;
@@ -625,7 +653,6 @@ function atualizar() {
             }
         }
     }
-
     if (estadoAtual === "JOGANDO") {
         if (player.x >= 4500 && !cena450.concluida) {
             estadoAtual = "CENA_450";
@@ -635,9 +662,7 @@ function atualizar() {
             teclas["KeyA"] = false;
             player.estaAndando = false;
         }
-
         player.estaAndando = false;
-
         if (teclas["KeyA"]) {
             player.x -= player.velocidade;
             player.direcao = "esquerda";
@@ -649,7 +674,6 @@ function atualizar() {
             player.direcao = "direita";
             player.estaAndando = true;
         }
-
         if (player.estaAndando && player.noChao) {
             player.tempoAnimacao++;
             if (player.tempoAnimacao >= 10) {
@@ -659,7 +683,6 @@ function atualizar() {
         } else {
             player.frameAtual = 0;
         }
-
         let centroPlayerX = player.x + player.offsetX + (player.larguraHitbox / 2);
         if (!npc.jaConversou && npc.x !== -9999) {
             let distancia = Math.abs(centroPlayerX - npc.x);
@@ -670,16 +693,13 @@ function atualizar() {
                 player.estaAndando = false;
             }
         }
-
         camera.x = player.x - 150;
         if (camera.x < 0) camera.x = 0;
-
         if ((teclas["KeyW"] || teclas["Space"]) && player.noChao) {
             player.velY = player.pulo;
             player.noChao = false;
         }
     }
-
     if (estadoAtual === "CENA_450" || estadoAtual === "ESPERA_POS_DIALOGO" || estadoAtual === "RAPOSA_VIRANDO" || cena450.concluida) {
         if (estadoAtual === "CENA_450") cena450.timerEspera++;
         if (cena450.alturaBarras < cena450.maxAlturaBarras) cena450.alturaBarras += cena450.velocidadeBarras;
@@ -688,7 +708,6 @@ function atualizar() {
         if (cena450.alturaBarras > 0) cena450.alturaBarras -= 4;
         if (camera.y > 0) camera.y -= 3;
     }
-
     desenhar();
     requestAnimationFrame(atualizar);
 }
@@ -738,10 +757,8 @@ function desenhar() {
         ctx.fillText("CIDADE INFINITA", canvas.width / 2, 150);
     } else {
         desenharCenario();
-
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY - camera.y + 34, canvas.width, (canvas.height - chaoY) + camera.y);
-
         let displayX = Math.floor(player.x / 10);
         let displayY = Math.floor(chaoY - (player.y + player.offsetY + player.alturaHitbox));
         ctx.fillStyle = "rgba(0, 255, 204, 0.8)";
@@ -749,7 +766,6 @@ function desenhar() {
         ctx.textAlign = "left";
         ctx.fillText(`COORD X: ${displayX}  COORD Y: ${Math.max(0, displayY)}`, 20, 30);
 
-        // NPC Espírito
         let npcRelativoX = npc.x - camera.x;
         if (npcRelativoX > -100 && npcRelativoX < canvas.width + 100) {
             let flutuarY = npc.y + Math.sin(npc.tempoFlutuar) * 8 - camera.y;
@@ -757,7 +773,6 @@ function desenhar() {
                 ctx.drawImage(imgNpcEspirito, npcRelativoX, flutuarY, npc.largura, npc.altura);
         }
 
-        // Raposa
         let npc2RelativoX = npc2.x - camera.x;
         if (npc2RelativoX > -150 && npc2RelativoX < canvas.width + 150) {
             let npc2Y = npc2.y - camera.y;
@@ -775,7 +790,6 @@ function desenhar() {
             }
         }
 
-        // Player
         let playerRelativoX = player.x - camera.x;
         let playerY = player.y - camera.y;
         ctx.save();
