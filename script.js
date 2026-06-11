@@ -5,12 +5,10 @@ const btnStart = document.getElementById("btnStart");
 canvas.width = 800;
 canvas.height = 400;
 
-// Desativa suavização para visual pixel art
 ctx.imageSmoothingEnabled = false;
 
 let estadoAtual = "TELA_INICIAL";
 
-// --- Carregamento de Sprites ---
 const imgPlayerParado = new Image();
 imgPlayerParado.src = "IMG_20260525_102813.png";
 
@@ -20,7 +18,6 @@ imgPlayerCorrendo.src = "IMG_20260525_102751.png";
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "pixel-art-blue-spirit-character-png.png";
 
-// --- Raposa ---
 const nomesArquivosFox = [
     "Untitled 05-25-2026 03-13-21 (1).png",
     "Untitled 05-25-2026 03-13-21 (2).png",
@@ -36,7 +33,6 @@ nomesArquivosFox.forEach((src) => {
     imgFoxFrames.push(img);
 });
 
-// --- Player ---
 const player = {
     x: 0, y: 100,
     larguraVisual: 50, alturaVisual: 80,
@@ -59,7 +55,6 @@ imgPlayerCorrendo.onload = function() {
     player.spriteAltura = imgPlayerCorrendo.height;
 };
 
-// --- Cena cinematográfica ---
 const cena450 = {
     ativa: false, concluida: false,
     alturaBarras: 0, maxAlturaBarras: 140,
@@ -99,7 +94,6 @@ const camera = { x: 0, y: 0 };
 const chaoY = 350;
 const teclas = {};
 
-// --- Chuva ---
 const maxPingos = 100;
 const chuva = [];
 const respingos = [];
@@ -146,7 +140,6 @@ const dialogoInicial = {
 
 const caixaDialogo = { x: 50, y: 250, largura: 700, altura: 120 };
 
-// --- INPUTS ---
 window.addEventListener("keydown", (e) => {
     teclas[e.code] = true;
     if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo && (e.code === "Space" || e.code === "Enter")) {
@@ -178,17 +171,7 @@ btnStart.addEventListener("click", () => {
     btnStart.style.display = "none";
 });
 
-// =============================================
-// FUNÇÃO AUXILIAR — desenha pixel "gordo" (bloco)
-// =============================================
-function px(x, y, tamanho, cor) {
-    ctx.fillStyle = cor;
-    ctx.fillRect(Math.floor(x), Math.floor(y), tamanho, tamanho);
-}
-
-// =============================================
-// LUA CRESCENTE — desenhada pixel a pixel num offscreen canvas
-// =============================================
+// --- LUA OFFSCREEN ---
 const luaCanvas = document.createElement("canvas");
 luaCanvas.width = 100;
 luaCanvas.height = 100;
@@ -198,25 +181,19 @@ luaCtx.imageSmoothingEnabled = false;
 function gerarLua() {
     luaCtx.clearRect(0, 0, 100, 100);
     const cx = 50, cy = 50, r = 38;
-    // Desenha pixel a pixel para garantir visual pixelado e crescente correto
     for (let y = 0; y < 100; y++) {
         for (let x = 0; x < 100; x++) {
             const dx = x - cx, dy = y - cy;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            // Dentro do disco principal
             if (dist <= r) {
-                // Verifica se está FORA do disco que cria a mordida (crescente)
                 const dx2 = x - (cx + 20), dy2 = y - (cy - 3);
                 const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
                 if (dist2 > r * 0.87) {
-                    // Borda da lua (1-2px) mais escura
                     if (dist > r - 2) {
                         luaCtx.fillStyle = "#8aaee0";
                     } else if (dist < r * 0.4 && dx < -5) {
-                        // Parte brilhante interna (canto superior esquerdo)
                         luaCtx.fillStyle = "#eef4ff";
                     } else {
-                        // Corpo principal com variação sutil
                         let tom = Math.floor(200 + (r - dist) * 1.2);
                         tom = Math.min(tom, 230);
                         luaCtx.fillStyle = `rgb(${tom}, ${tom + 10}, 255)`;
@@ -226,8 +203,6 @@ function gerarLua() {
             }
         }
     }
-
-    // Crateras pixeladas pequenas
     const crateras = [
         { x: 38, y: 44, r: 3 },
         { x: 28, y: 56, r: 2 },
@@ -239,7 +214,6 @@ function gerarLua() {
             for (let x = c.x - c.r; x <= c.x + c.r; x++) {
                 const dx = x - c.x, dy = y - c.y;
                 if (dx * dx + dy * dy <= c.r * c.r) {
-                    // Verifica se ainda está dentro da lua crescente
                     const dlx = x - 50, dly = y - 50;
                     const dlx2 = x - 70, dly2 = y - 47;
                     if (Math.sqrt(dlx*dlx+dly*dly) <= 38 && Math.sqrt(dlx2*dlx2+dly2*dly2) > 33) {
@@ -253,17 +227,14 @@ function gerarLua() {
 }
 gerarLua();
 
-// =============================================
-// CENÁRIO PRINCIPAL
-// =============================================
+// --- CENÁRIO ---
 function desenharCenario() {
     const tempoAgora = Date.now() * 0.001;
 
-    // --- CÉU ---
-    // Gradiente vertical do céu em blocos de pixel (dithering manual)
+    // Céu em faixas
     const coresCeu = [
-        "#03000c", "#04000f", "#050011", "#060014",
-        "#070016", "#080018", "#07001a", "#06001c"
+        "#03000c","#04000f","#050011","#060014",
+        "#070016","#080018","#07001a","#06001c"
     ];
     const alturaFaixa = Math.floor(chaoY / coresCeu.length);
     coresCeu.forEach((cor, i) => {
@@ -271,7 +242,7 @@ function desenharCenario() {
         ctx.fillRect(0, i * alturaFaixa, canvas.width, alturaFaixa + 1);
     });
 
-    // Nebulosa roxa — blocos de 2px para parecer pixelada
+    // Nebulosas em blocos 2x2
     for (let y = 0; y < 160; y += 2) {
         for (let x = 0; x < canvas.width; x += 2) {
             let nx = x + camera.x * 0.003;
@@ -283,7 +254,6 @@ function desenharCenario() {
                     ctx.fillRect(x, y, 2, 2);
                 }
             }
-            // Nebulosa azul
             let nx2 = x + camera.x * 0.004;
             let distNeb2 = Math.sqrt(Math.pow(nx2 - 580, 2) + Math.pow(y - 50, 2));
             if (distNeb2 < 110) {
@@ -296,7 +266,7 @@ function desenharCenario() {
         }
     }
 
-    // --- ESTRELAS DISTANTES (1x1 px) ---
+    // Estrelas distantes
     const estrelasDist = [
         {x:15,y:12},{x:47,y:8},{x:93,y:22},{x:134,y:5},{x:178,y:18},
         {x:221,y:10},{x:265,y:28},{x:312,y:7},{x:358,y:15},{x:401,y:3},
@@ -315,7 +285,7 @@ function desenharCenario() {
         ctx.fillRect(Math.floor(sx), s.y, 1, 1);
     });
 
-    // --- ESTRELAS MÉDIAS (1x1 com cruzinha ocasional) ---
+    // Estrelas médias
     const estrelasMed = [
         {x:30,y:20},{x:80,y:14},{x:150,y:30},{x:230,y:8},{x:310,y:25},
         {x:390,y:12},{x:470,y:35},{x:560,y:18},{x:650,y:28},{x:745,y:10},
@@ -327,10 +297,11 @@ function desenharCenario() {
         let sx = (s.x - camera.x * 0.009) % canvas.width;
         if (sx < 0) sx += canvas.width;
         let brilho = 0.45 + 0.45 * Math.abs(Math.sin(tempoAgora * 0.6 + i * 2.3));
-        let cor = i % 3 === 0 ? `rgba(150, 180, 255, ${brilho.toFixed(2)})` : `rgba(215, 228, 255, ${brilho.toFixed(2)})`;
+        let cor = i % 3 === 0
+            ? `rgba(150, 180, 255, ${brilho.toFixed(2)})`
+            : `rgba(215, 228, 255, ${brilho.toFixed(2)})`;
         ctx.fillStyle = cor;
         ctx.fillRect(Math.floor(sx), s.y, 1, 1);
-        // Cruzinha pixel art quando brilhante
         if (i % 4 === 0 && brilho > 0.7) {
             ctx.fillStyle = `rgba(200, 220, 255, ${(brilho * 0.35).toFixed(2)})`;
             ctx.fillRect(Math.floor(sx) - 1, s.y, 1, 1);
@@ -340,7 +311,7 @@ function desenharCenario() {
         }
     });
 
-    // --- ESTRELAS GRANDES (2x2 com cruzinha 1px) ---
+    // Estrelas grandes
     const estrelasGrandes = [
         {x:100,y:18},{x:300,y:10},{x:520,y:22},{x:700,y:8},
         {x:420,y:45},{x:180,y:35},{x:600,y:40},
@@ -349,16 +320,13 @@ function desenharCenario() {
         let sx = (s.x - camera.x * 0.011) % canvas.width;
         if (sx < 0) sx += canvas.width;
         let brilho = 0.55 + 0.45 * Math.abs(Math.sin(tempoAgora * 0.8 + i * 3.1));
-        // Núcleo 2x2
         ctx.fillStyle = `rgba(235, 245, 255, ${brilho.toFixed(2)})`;
         ctx.fillRect(Math.floor(sx), s.y, 2, 2);
-        // Braços da cruz
         ctx.fillStyle = `rgba(170, 205, 255, ${(brilho * 0.45).toFixed(2)})`;
         ctx.fillRect(Math.floor(sx) - 1, s.y,     1, 2);
         ctx.fillRect(Math.floor(sx) + 2, s.y,     1, 2);
         ctx.fillRect(Math.floor(sx),     s.y - 1, 2, 1);
         ctx.fillRect(Math.floor(sx),     s.y + 2, 2, 1);
-        // Pontas mais longas quando muito brilhante
         if (brilho > 0.85) {
             ctx.fillStyle = `rgba(140, 180, 255, ${(brilho * 0.2).toFixed(2)})`;
             ctx.fillRect(Math.floor(sx) - 2, s.y,     1, 2);
@@ -368,7 +336,7 @@ function desenharCenario() {
         }
     });
 
-    // --- POEIRA ESTELAR azulada (1x1, semi-transparente) ---
+    // Poeira estelar
     for (let i = 0; i < 50; i++) {
         let sx = ((i * 197 + 43) - camera.x * 0.006) % canvas.width;
         if (sx < 0) sx += canvas.width;
@@ -378,11 +346,9 @@ function desenharCenario() {
         ctx.fillRect(Math.floor(sx), sy, 1, 1);
     }
 
-    // --- LUA CRESCENTE (offscreen canvas pixel a pixel) ---
+    // Lua
     const luaX = Math.floor(canvas.width - 140 - (camera.x * 0.003) % 6);
     const luaY = 28;
-
-    // Halo em blocos de 2px
     for (let y = luaY - 30; y <= luaY + 90; y += 2) {
         for (let x = luaX - 30; x <= luaX + 110; x += 2) {
             let dx = x - (luaX + 50), dy = y - (luaY + 50);
@@ -396,11 +362,9 @@ function desenharCenario() {
             }
         }
     }
-
-    // Lua em si (do offscreen canvas)
     ctx.drawImage(luaCanvas, luaX, luaY, 100, 100);
 
-    // --- NEBLINA DO HORIZONTE em faixas pixeladas ---
+    // Neblina do horizonte
     const chaoTela = chaoY - camera.y;
     for (let y = chaoTela - 80; y < chaoTela; y += 2) {
         let progresso = (y - (chaoTela - 80)) / 80;
@@ -409,43 +373,35 @@ function desenharCenario() {
         ctx.fillRect(0, Math.floor(y), canvas.width, 2);
     }
 
-    // =============================================
-    // PRÉDIOS TRASEIROS — silhueta pura, sem detalhes
-    // =============================================
+    // --- PRÉDIOS TRASEIROS ---
     {
         const vel = 0.02, altBase = 200, larg = 112, espaco = 140;
         let scrollX = (camera.x * vel) % espaco;
         for (let i = -1; i < (canvas.width / espaco) + 2; i++) {
             let xPos = Math.floor((i * espaco) - scrollX);
             let id = Math.floor((camera.x * vel) / espaco) + i;
-            // Altura determinística com "degraus" pixelados
             let hBase = altBase + Math.floor(Math.abs(Math.sin(id * 1.3)) * 64 / 8) * 8;
             let topoY = Math.floor(chaoY - hBase - camera.y);
 
-            // Silhueta principal
             ctx.fillStyle = "#07000f";
             ctx.fillRect(xPos, topoY, larg, hBase + 1);
-
-            // Degrau no topo (2px) para visual de parapeito pixelado
             ctx.fillStyle = "#09001a";
             ctx.fillRect(xPos - 1, topoY, larg + 2, 2);
 
-            // Janelas muito sutis e pequenas (só 1x2 px)
-            for (let wy = topoY + 16; wy < chaoTela - 16; wy += 20) {
-                for (let wx = xPos + 10; wx < xPos + larg - 10; wx += 18) {
-                    let s = Math.abs(Math.sin(id * 5 + (wy / 20) * 11 + (wx / 18) * 7));
+            // Janelas com índices fixos
+            for (let wy = 0; wy < Math.floor(hBase / 20) - 1; wy++) {
+                for (let wx = 0; wx < Math.floor(larg / 18) - 1; wx++) {
+                    let s = Math.abs(Math.sin(id * 5 + wy * 11 + wx * 7));
                     if (s > 0.72) {
                         ctx.fillStyle = "rgba(80, 60, 120, 0.35)";
-                        ctx.fillRect(wx, wy, 2, 3);
+                        ctx.fillRect(xPos + 10 + wx * 18, topoY + 16 + wy * 20, 2, 3);
                     }
                 }
             }
         }
     }
 
-    // =============================================
-    // PRÉDIOS DO MEIO — janelas + luzes rosas embaixo
-    // =============================================
+    // --- PRÉDIOS DO MEIO ---
     {
         const vel = 0.06, altBase = 140, larg = 86, espaco = 110;
         let scrollX = (camera.x * vel) % espaco;
@@ -457,22 +413,18 @@ function desenharCenario() {
 
             ctx.fillStyle = "#0f001e";
             ctx.fillRect(xPos, topoY, larg, hBase + 1);
-
-            // Parapeito pixelado no topo
             ctx.fillStyle = "#1a0030";
             ctx.fillRect(xPos - 1, topoY - 2, larg + 2, 3);
             ctx.fillStyle = "#140026";
             ctx.fillRect(xPos, topoY - 4, larg, 2);
 
-            // Antena esparsa — só ~25% dos prédios, 1px de largura
+            // Antena esparsa
             if (Math.abs(Math.sin(id * 5.1 + 2)) > 0.76) {
                 let antX = Math.floor(xPos + larg / 2);
-                // Haste em pixels individuais
                 for (let ay = topoY - 18; ay < topoY - 2; ay += 2) {
                     ctx.fillStyle = "rgba(150, 140, 170, 0.45)";
                     ctx.fillRect(antX, ay, 1, 1);
                 }
-                // Luz piscando (1x1 px, vermelha)
                 let pisca = Math.sin(tempoAgora * 2.2 + id) > 0.15;
                 if (pisca) {
                     ctx.fillStyle = "#ff4040";
@@ -480,43 +432,39 @@ function desenharCenario() {
                 }
             }
 
-            // Janelas pixeladas (2x3 px)
-            for (let wy = topoY + 16; wy < chaoTela - 14; wy += 20) {
-                for (let wx = xPos + 8; wx < xPos + larg - 8; wx += 16) {
-                    let s = Math.abs(Math.sin(id * 7 + (wy / 20) * 13 + (wx / 16) * 31));
+            // Janelas com índices fixos
+            for (let wy = 0; wy < Math.floor(hBase / 20) - 1; wy++) {
+                for (let wx = 0; wx < Math.floor(larg / 16) - 1; wx++) {
+                    let s = Math.abs(Math.sin(id * 7 + wy * 13 + wx * 31));
                     if (s > 0.40) {
                         if (s > 0.80) {
-                            ctx.fillStyle = "#ffd84a";  // Amarelo quente
+                            ctx.fillStyle = "#ffd84a";
                         } else if (s > 0.62) {
-                            ctx.fillStyle = "rgba(120, 190, 255, 0.6)"; // Azul frio
+                            ctx.fillStyle = "rgba(120, 190, 255, 0.6)";
                         } else {
                             ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
                         }
-                        ctx.fillRect(wx, wy, 2, 3);
+                        ctx.fillRect(xPos + 8 + wx * 16, topoY + 16 + wy * 20, 2, 3);
                     }
                 }
             }
 
-            // LUZ ROSA — faixas horizontais pixeladas crescendo de baixo
+            // Luz rosa embaixo
             let intensidade = 0.5 + 0.5 * Math.abs(Math.sin(id * 3.3));
             if (intensidade > 0.55) {
-                // Faixas de 2px, alpha crescente de baixo pra cima
                 for (let ly = chaoTela - 48; ly < chaoTela; ly += 2) {
                     let progresso = (ly - (chaoTela - 48)) / 48;
                     let alpha = progresso * progresso * (0.10 + intensidade * 0.07);
                     ctx.fillStyle = `rgba(220, 55, 170, ${alpha.toFixed(3)})`;
                     ctx.fillRect(xPos - 4, Math.floor(ly), larg + 8, 2);
                 }
-                // Faixa base de reflexo na fachada (2px no rodapé)
                 ctx.fillStyle = `rgba(230, 70, 180, ${(0.06 + intensidade * 0.05).toFixed(3)})`;
                 ctx.fillRect(xPos, Math.floor(chaoTela) - 6, larg, 3);
             }
         }
     }
 
-    // =============================================
-    // PRÉDIOS DA FRENTE — mais escuros, sem luzes rosas
-    // =============================================
+    // --- PRÉDIOS DA FRENTE ---
     {
         const vel = 0.15, altBase = 90, larg = 66, espaco = 96;
         let scrollX = (camera.x * vel) % espaco;
@@ -528,51 +476,41 @@ function desenharCenario() {
 
             ctx.fillStyle = "#160030";
             ctx.fillRect(xPos, topoY, larg, hBase + 1);
-
-            // Borda esquerda e direita levemente mais clara (1px) — profundidade
-            ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
+            ctx.fillStyle = "rgba(255,255,255,0.03)";
             ctx.fillRect(xPos, topoY, 1, hBase);
-            ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
             ctx.fillRect(xPos + larg - 1, topoY, 1, hBase);
-
-            // Parapeito (3 faixas de 1px)
             ctx.fillStyle = "#220040";
             ctx.fillRect(xPos - 1, topoY - 1, larg + 2, 1);
             ctx.fillStyle = "#1c0036";
             ctx.fillRect(xPos, topoY - 2, larg, 1);
 
-            // Janelas 2x3
-            for (let wy = topoY + 12; wy < chaoTela - 12; wy += 18) {
-                for (let wx = xPos + 7; wx < xPos + larg - 7; wx += 14) {
-                    let s = Math.abs(Math.sin(id * 11 + (wy / 18) * 17 + (wx / 14) * 23));
+            // Janelas com índices fixos
+            for (let wy = 0; wy < Math.floor(hBase / 18) - 1; wy++) {
+                for (let wx = 0; wx < Math.floor(larg / 14) - 1; wx++) {
+                    let s = Math.abs(Math.sin(id * 11 + wy * 17 + wx * 23));
                     if (s > 0.50) {
                         ctx.fillStyle = s > 0.78
                             ? "rgba(255, 205, 60, 0.7)"
                             : "rgba(0, 0, 0, 0.5)";
-                        ctx.fillRect(wx, wy, 2, 3);
+                        ctx.fillRect(xPos + 7 + wx * 14, topoY + 12 + wy * 18, 2, 3);
                     }
                 }
             }
         }
     }
 
-    // =============================================
-    // CHÃO PIXELADO — faixas horizontais de 2px
-    // =============================================
+    // Chão pixelado
     const chaoPixY = Math.floor(chaoY - camera.y);
-
-    // Linha de chão magenta (sua linha original) — mantida
     ctx.fillStyle = "#ff00ff";
     ctx.fillRect(0, chaoPixY, canvas.width, 2);
 
-    // Calçada — faixas em tons alternados de roxo escuro
-    const coresCalcada = ["#0d0020", "#0a001a", "#0c001e", "#08001a"];
+    const coresCalcada = ["#0d0020","#0a001a","#0c001e","#08001a"];
     for (let i = 0; i < 8; i++) {
         ctx.fillStyle = coresCalcada[i % coresCalcada.length];
         ctx.fillRect(0, chaoPixY + 2 + i * 4, canvas.width, 4);
     }
 
-    // Poças de chuva — reflexo rosa nas poças (retângulos finos, posição fixa)
     const pocas = [
         { x: 80,  largura: 40 },
         { x: 200, largura: 25 },
@@ -584,21 +522,15 @@ function desenharCenario() {
     pocas.forEach(p => {
         let px2 = (p.x - camera.x * 0.15) % canvas.width;
         if (px2 < 0) px2 += canvas.width;
-        // Poça escura
         ctx.fillStyle = "rgba(20, 0, 40, 0.8)";
         ctx.fillRect(Math.floor(px2), chaoPixY + 4, p.largura, 2);
-        // Reflexo rosa/lilás dentro da poça
         ctx.fillStyle = "rgba(200, 60, 160, 0.25)";
         ctx.fillRect(Math.floor(px2) + 2, chaoPixY + 4, p.largura - 4, 1);
-        // Brilhinho branco na borda superior da poça
         ctx.fillStyle = "rgba(200, 200, 255, 0.15)";
         ctx.fillRect(Math.floor(px2), chaoPixY + 3, p.largura, 1);
     });
 }
 
-// =============================================
-// CHUVA
-// =============================================
 function gerenciarChuva() {
     let hitboxRealX = player.x + player.offsetX - camera.x;
     let hitboxRealY = player.y + player.offsetY - camera.y;
@@ -651,9 +583,6 @@ function gerenciarChuva() {
     }
 }
 
-// =============================================
-// LOOP PRINCIPAL
-// =============================================
 function atualizar() {
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
@@ -764,9 +693,6 @@ function atualizar() {
     requestAnimationFrame(atualizar);
 }
 
-// =============================================
-// UI — CAIXAS DE DIÁLOGO
-// =============================================
 function desenharCaixaTexto(texto) {
     ctx.fillStyle = "rgba(0, 0, 26, 0.9)";
     ctx.fillRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
@@ -800,9 +726,6 @@ function desenharBarrasCinematicas() {
     ctx.fillRect(0, canvas.height - cena450.alturaBarras, canvas.width, cena450.alturaBarras);
 }
 
-// =============================================
-// DESENHAR (frame)
-// =============================================
 function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -816,11 +739,9 @@ function desenhar() {
     } else {
         desenharCenario();
 
-        // Chão (corpo preenchido abaixo da linha)
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY - camera.y + 34, canvas.width, (canvas.height - chaoY) + camera.y);
 
-        // Coordenadas do player
         let displayX = Math.floor(player.x / 10);
         let displayY = Math.floor(chaoY - (player.y + player.offsetY + player.alturaHitbox));
         ctx.fillStyle = "rgba(0, 255, 204, 0.8)";
@@ -875,7 +796,6 @@ function desenhar() {
         }
         ctx.restore();
 
-        // Hitbox debug
         ctx.strokeStyle = "#00ff00";
         ctx.lineWidth = 1.5;
         ctx.strokeRect(playerRelativoX + player.offsetX, playerY + player.offsetY, player.larguraHitbox, player.alturaHitbox);
@@ -892,5 +812,4 @@ function desenhar() {
     }
 }
 
-// Inicia
 atualizar();
