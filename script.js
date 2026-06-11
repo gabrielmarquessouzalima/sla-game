@@ -32,11 +32,36 @@ function embaralharPlaylist() {
     }
 }
 
+function embaralharPlaylist() {
+    ordemMusicas = [...playlist];
+    for (let i = ordemMusicas.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [ordemMusicas[i], ordemMusicas[j]] = [ordemMusicas[j], ordemMusicas[i]];
+    }
+}
+
 function tocarProximaMusica() {
+    // Só toca música no menu (TELA_INICIAL)
     if (estadoAtual !== "TELA_INICIAL") return;
+
+    // Se chegou ao fim da lista, embaralha de novo
     if (indiceMusicaAtual >= ordemMusicas.length) {
         embaralharPlaylist();
         indiceMusicaAtual = 0;
+    }
+
+    // Define a música atual e toca
+    audio.src = ordemMusicas[indiceMusicaAtual];
+    audio.play().catch(() => {}); // evita erro de autoplay
+    indiceMusicaAtual++;
+}
+
+// Garante que a playlist já esteja embaralhada antes de começar
+embaralharPlaylist();
+
+// Quando a música terminar, chama a próxima
+audio.addEventListener("ended", tocarProximaMusica);
+
     }
     audio.src = ordemMusicas[indiceMusicaAtual];
     audio.play().catch(() => {}); // catch silencioso caso o navegador bloqueie
