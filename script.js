@@ -22,6 +22,7 @@ let ordemMusicas = [];
 let indiceMusicaAtual = 0;
 const audio = new Audio();
 audio.volume = 0.5;
+let musicaAtivada = true;
 
 function embaralharPlaylist() {
     ordemMusicas = [...playlist];
@@ -32,7 +33,8 @@ function embaralharPlaylist() {
 }
 
 function tocarProximaMusica() {
-    if (estadoAtual !== "TELA_INICIAL") return;
+    if (estadoAtual !== "TELA_INICIAL" && estadoAtual !== "TELA_MENU") return;
+    if (!musicaAtivada) return;
     if (indiceMusicaAtual >= ordemMusicas.length) {
         embaralharPlaylist();
         indiceMusicaAtual = 0;
@@ -49,6 +51,73 @@ function pararMusica() {
 
 embaralharPlaylist();
 audio.addEventListener("ended", tocarProximaMusica);
+
+// --- SISTEMA DE SAVE ---
+const MAX_SAVES = 3;
+
+function salvarJogo(slot) {
+    const agora = new Date();
+    const dataStr = agora.toLocaleDateString("pt-BR") + " " + agora.toLocaleTimeString("pt-BR");
+    const saveData = {
+        nickname: nickname,
+        playerX: player.x,
+        playerY: player.y,
+        tempoJogo: tempoJogo,
+        npcJaConversou: npc.jaConversou,
+        cena450Concluida: cena450.concluida,
+        npc2Estado: npc2.estado,
+        data: dataStr
+    };
+    localStorage.setItem(`cidadeInfinita_save_${slot}`, JSON.stringify(saveData));
+}
+
+function carregarJogo(slot) {
+    const raw = localStorage.getItem(`cidadeInfinita_save_${slot}`);
+    if (!raw) return false;
+    const save = JSON.parse(raw);
+    nickname = save.nickname || "???";
+    player.x = save.playerX || 0;
+    player.y = save.playerY || 100;
+    tempoJogo = save.tempoJogo || 0;
+    npc.jaConversou = save.npcJaConversou || false;
+    if (npc.jaConversou) npc.x = -9999;
+    cena450.concluida = save.cena450Concluida || false;
+    npc2.estado = save.npc2Estado || "OLHANDO_DIREITA";
+    return true;
+}
+
+function listarSaves() {
+    const saves = [];
+    for (let i = 0; i < MAX_SAVES; i++) {
+        const raw = localStorage.getItem(`cidadeInfinita_save_${i}`);
+        saves.push(raw ? JSON.parse(raw) : null);
+    }
+    return saves;
+}
+
+function deletarSave(slot) {
+    localStorage.removeItem(`cidadeInfinita_save_${slot}`);
+}
+
+// --- MENU ---
+let nickname = "";
+let nicknameCursor = true;
+let nicknameCursorTimer = 0;
+let menuOpcaoSelecionada = 0;
+let subEstado = "NICKNAME"; // NICKNAME, OPCOES, SETTINGS, VIEW_SAVES, SAVE_SLOT
+const menuOpcoes = ["START NEW GAME", "LOAD GAME", "VIEW SAVES", "SETTINGS", "SAIR"];
+
+let settingsOpcaoSelecionada = 0;
+const settingsOpcoes = ["MÚSICA", "HITBOX", "COORDENADAS", "VOLTAR"];
+let mostrarHitbox = false;
+let mostrarCoordenadas = true;
+
+let viewSavesOpcao = 0;
+let saveSlotOpcao = 0;
+let saveSlotModo = "LOAD"; // LOAD ou SAVE
+
+let tempoJogo = 0;
+let tempoJogoTimer = 0;
 
 // --- SPRITES ---
 const imgPlayerParado = new Image();
@@ -137,6 +206,7 @@ const npc2 = {
 const camera = { x: 0, y: 0 };
 const chaoY = 350;
 const teclas = {};
+const teclasPressionadas = {};
 
 // --- CHUVA ---
 const maxPingos = 100;
@@ -187,7 +257,120 @@ const caixaDialogo = { x: 50, y: 250, largura: 700, altura: 120 };
 
 // --- INPUTS ---
 window.addEventListener("keydown", (e) => {
+    if (teclasPressionadas[e.code]) return;
+    teclasPressionadas[e.code] = true;
     teclas[e.code] = true;
+
+    // --- TELA_MENU ---
+    if (estadoAtual === "TELA_MENU") {
+
+        // NICKNAME
+        if (subEstado === "NICKNAME") {
+            if (e.code === "Backspace") {
+                nickname = nickname.slice(0, -1);
+            } else if ((e.code === "Enter" || e.code === "Space") && nickname.trim().length > 0) {
+                subEstado = "OPCOES";
+                menuOpcaoSelecionada = 0;
+            } else if (e.key.length === 1 && nickname.length < 16) {
+                nickname += e.key;
+            }
+            return;
+        }
+
+        // OPCOES
+        if (subEstado === "OPCOES") {
+            if (e.code === "ArrowUp") menuOpcaoSelecionada = (menuOpcaoSelecionada - 1 + menuOpcoes.length) % menuOpcoes.length;
+            if (e.code === "ArrowDown") menuOpcaoSelecionada = (menuOpcaoSelecionada + 1) % menuOpcoes.length;
+            if (e.code === "Enter" || e.code === "Space") {
+                if (menuOpcaoSelecionada === 0) { // START NEW GAME
+                    pararMusica();
+                    player.x = 0; player.y = 100;
+                    tempoJogo = 0;
+                    npc.jaConversou = false; npc.x = 2500;
+                    cena450.concluida = false; cena450.ativa = false;
+                    npc2.estado = "OLHANDO_DIREITA";
+                    estadoAtual = "DIALOGO_INICIAL";
+                    dialogoInicial.indiceAtual = 0;
+                }
+                if (menuOpcaoSelecionada === 1) { // LOAD GAME
+                    saveSlotModo = "LOAD";
+                    saveSlotOpcao = 0;
+                    subEstado = "SAVE_SLOT";
+                }
+                if (menuOpcaoSelecionada === 2) { // VIEW SAVES
+                    viewSavesOpcao = 0;
+                    subEstado = "VIEW_SAVES";
+                }
+                if (menuOpcaoSelecionada === 3) { // SETTINGS
+                    settingsOpcaoSelecionada = 0;
+                    subEstado = "SETTINGS";
+                }
+                if (menuOpcaoSelecionada === 4) { // SAIR
+                    ctx.fillStyle = "#000";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = "#fff";
+                    ctx.font = "20px 'Courier New'";
+                    ctx.textAlign = "center";
+                    ctx.fillText("até logo...", canvas.width / 2, canvas.height / 2);
+                    pararMusica();
+                }
+            }
+            return;
+        }
+
+        // SETTINGS
+        if (subEstado === "SETTINGS") {
+            if (e.code === "ArrowUp") settingsOpcaoSelecionada = (settingsOpcaoSelecionada - 1 + settingsOpcoes.length) % settingsOpcoes.length;
+            if (e.code === "ArrowDown") settingsOpcaoSelecionada = (settingsOpcaoSelecionada + 1) % settingsOpcoes.length;
+            if (e.code === "Enter" || e.code === "Space" || e.code === "ArrowLeft" || e.code === "ArrowRight") {
+                if (settingsOpcaoSelecionada === 0) {
+                    musicaAtivada = !musicaAtivada;
+                    if (musicaAtivada) tocarProximaMusica();
+                    else pararMusica();
+                }
+                if (settingsOpcaoSelecionada === 1) mostrarHitbox = !mostrarHitbox;
+                if (settingsOpcaoSelecionada === 2) mostrarCoordenadas = !mostrarCoordenadas;
+                if (settingsOpcaoSelecionada === 3) subEstado = "OPCOES";
+            }
+            if (e.code === "Escape") subEstado = "OPCOES";
+            return;
+        }
+
+        // VIEW SAVES
+        if (subEstado === "VIEW_SAVES") {
+            const saves = listarSaves();
+            if (e.code === "ArrowUp") viewSavesOpcao = (viewSavesOpcao - 1 + MAX_SAVES) % MAX_SAVES;
+            if (e.code === "ArrowDown") viewSavesOpcao = (viewSavesOpcao + 1) % MAX_SAVES;
+            if (e.code === "Delete" || e.code === "KeyX") {
+                if (saves[viewSavesOpcao]) deletarSave(viewSavesOpcao);
+            }
+            if (e.code === "Escape") subEstado = "OPCOES";
+            return;
+        }
+
+        // SAVE SLOT (escolher slot para load ou save)
+        if (subEstado === "SAVE_SLOT") {
+            if (e.code === "ArrowUp") saveSlotOpcao = (saveSlotOpcao - 1 + MAX_SAVES) % MAX_SAVES;
+            if (e.code === "ArrowDown") saveSlotOpcao = (saveSlotOpcao + 1) % MAX_SAVES;
+            if (e.code === "Enter" || e.code === "Space") {
+                if (saveSlotModo === "LOAD") {
+                    const ok = carregarJogo(saveSlotOpcao);
+                    if (ok) {
+                        pararMusica();
+                        estadoAtual = "JOGANDO";
+                    }
+                } else if (saveSlotModo === "SAVE") {
+                    salvarJogo(saveSlotOpcao);
+                    subEstado = "OPCOES";
+                    estadoAtual = "JOGANDO";
+                }
+            }
+            if (e.code === "Escape") subEstado = "OPCOES";
+            return;
+        }
+    }
+
+    // --- JOGO ---
     if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo && (e.code === "Space" || e.code === "Enter")) {
         cena450.indiceAtual++;
         if (cena450.indiceAtual >= cena450.texto.length) {
@@ -210,22 +393,27 @@ window.addEventListener("keydown", (e) => {
             npc.x = -9999;
         }
     }
+
+    // Abrir menu de save com ESC durante o jogo
+    if ((estadoAtual === "JOGANDO") && e.code === "Escape") {
+        saveSlotModo = "SAVE";
+        saveSlotOpcao = 0;
+        subEstado = "SAVE_SLOT";
+        estadoAtual = "TELA_MENU";
+    }
 });
-window.addEventListener("keyup", (e) => teclas[e.code] = false);
+
+window.addEventListener("keyup", (e) => {
+    teclas[e.code] = false;
+    teclasPressionadas[e.code] = false;
+});
 
 btnStart.addEventListener("click", () => {
     tocarProximaMusica();
-    estadoAtual = "DIALOGO_INICIAL";
-    let fadeInterval = setInterval(() => {
-        if (audio.volume > 0.05) {
-            audio.volume -= 0.05;
-        } else {
-            pararMusica();
-            audio.volume = 0.5;
-            clearInterval(fadeInterval);
-        }
-    }, 80);
     btnStart.style.display = "none";
+    estadoAtual = "TELA_MENU";
+    subEstado = "NICKNAME";
+    nickname = "";
 });
 
 // --- LUA OFFSCREEN ---
@@ -261,10 +449,8 @@ function gerarLua() {
         }
     }
     const crateras = [
-        { x: 38, y: 44, r: 3 },
-        { x: 28, y: 56, r: 2 },
-        { x: 44, y: 62, r: 2 },
-        { x: 33, y: 36, r: 2 },
+        { x: 38, y: 44, r: 3 }, { x: 28, y: 56, r: 2 },
+        { x: 44, y: 62, r: 2 }, { x: 33, y: 36, r: 2 },
     ];
     crateras.forEach(c => {
         for (let y = c.y - c.r; y <= c.y + c.r; y++) {
@@ -288,7 +474,6 @@ gerarLua();
 function desenharCenario() {
     const tempoAgora = Date.now() * 0.001;
 
-    // Céu em faixas
     const coresCeu = [
         "#03000c","#04000f","#050011","#060014",
         "#070016","#080018","#07001a","#06001c"
@@ -299,7 +484,6 @@ function desenharCenario() {
         ctx.fillRect(0, i * alturaFaixa, canvas.width, alturaFaixa + 1);
     });
 
-    // Nebulosas em blocos 2x2
     for (let y = 0; y < 160; y += 2) {
         for (let x = 0; x < canvas.width; x += 2) {
             let nx = x + camera.x * 0.003;
@@ -323,7 +507,6 @@ function desenharCenario() {
         }
     }
 
-    // Estrelas distantes
     const estrelasDist = [
         {x:15,y:12},{x:47,y:8},{x:93,y:22},{x:134,y:5},{x:178,y:18},
         {x:221,y:10},{x:265,y:28},{x:312,y:7},{x:358,y:15},{x:401,y:3},
@@ -342,7 +525,6 @@ function desenharCenario() {
         ctx.fillRect(Math.floor(sx), s.y, 1, 1);
     });
 
-    // Estrelas médias
     const estrelasMed = [
         {x:30,y:20},{x:80,y:14},{x:150,y:30},{x:230,y:8},{x:310,y:25},
         {x:390,y:12},{x:470,y:35},{x:560,y:18},{x:650,y:28},{x:745,y:10},
@@ -368,7 +550,6 @@ function desenharCenario() {
         }
     });
 
-    // Estrelas grandes
     const estrelasGrandes = [
         {x:100,y:18},{x:300,y:10},{x:520,y:22},{x:700,y:8},
         {x:420,y:45},{x:180,y:35},{x:600,y:40},
@@ -393,7 +574,6 @@ function desenharCenario() {
         }
     });
 
-    // Poeira estelar
     for (let i = 0; i < 50; i++) {
         let sx = ((i * 197 + 43) - camera.x * 0.006) % canvas.width;
         if (sx < 0) sx += canvas.width;
@@ -403,7 +583,6 @@ function desenharCenario() {
         ctx.fillRect(Math.floor(sx), sy, 1, 1);
     }
 
-    // Lua
     const luaX = Math.floor(canvas.width - 140 - (camera.x * 0.003) % 6);
     const luaY = 28;
     for (let y = luaY - 30; y <= luaY + 90; y += 2) {
@@ -421,7 +600,6 @@ function desenharCenario() {
     }
     ctx.drawImage(luaCanvas, luaX, luaY, 100, 100);
 
-    // Neblina do horizonte
     const chaoTela = chaoY - camera.y;
     for (let y = chaoTela - 80; y < chaoTela; y += 2) {
         let progresso = (y - (chaoTela - 80)) / 80;
@@ -486,13 +664,9 @@ function desenharCenario() {
                 for (let wx = 0; wx < Math.floor(larg / 16) - 1; wx++) {
                     let s = Math.abs(Math.sin(id * 7 + wy * 13 + wx * 31));
                     if (s > 0.40) {
-                        if (s > 0.80) {
-                            ctx.fillStyle = "#ffd84a";
-                        } else if (s > 0.62) {
-                            ctx.fillStyle = "rgba(120, 190, 255, 0.6)";
-                        } else {
-                            ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
-                        }
+                        if (s > 0.80) ctx.fillStyle = "#ffd84a";
+                        else if (s > 0.62) ctx.fillStyle = "rgba(120, 190, 255, 0.6)";
+                        else ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
                         ctx.fillRect(xPos + 8 + wx * 16, topoY + 16 + wy * 20, 2, 3);
                     }
                 }
@@ -534,9 +708,7 @@ function desenharCenario() {
                 for (let wx = 0; wx < Math.floor(larg / 14) - 1; wx++) {
                     let s = Math.abs(Math.sin(id * 11 + wy * 17 + wx * 23));
                     if (s > 0.50) {
-                        ctx.fillStyle = s > 0.78
-                            ? "rgba(255, 205, 60, 0.7)"
-                            : "rgba(0, 0, 0, 0.5)";
+                        ctx.fillStyle = s > 0.78 ? "rgba(255, 205, 60, 0.7)" : "rgba(0, 0, 0, 0.5)";
                         ctx.fillRect(xPos + 7 + wx * 14, topoY + 12 + wy * 18, 2, 3);
                     }
                 }
@@ -554,12 +726,9 @@ function desenharCenario() {
         ctx.fillRect(0, chaoPixY + 2 + i * 4, canvas.width, 4);
     }
     const pocas = [
-        { x: 80,  largura: 40 },
-        { x: 200, largura: 25 },
-        { x: 350, largura: 55 },
-        { x: 500, largura: 30 },
-        { x: 650, largura: 45 },
-        { x: 750, largura: 20 },
+        { x: 80, largura: 40 }, { x: 200, largura: 25 },
+        { x: 350, largura: 55 }, { x: 500, largura: 30 },
+        { x: 650, largura: 45 }, { x: 750, largura: 20 },
     ];
     pocas.forEach(p => {
         let px2 = (p.x - camera.x * 0.15) % canvas.width;
@@ -571,6 +740,163 @@ function desenharCenario() {
         ctx.fillStyle = "rgba(200, 200, 255, 0.15)";
         ctx.fillRect(Math.floor(px2), chaoPixY + 3, p.largura, 1);
     });
+}
+
+// --- TELA DO MENU ---
+function desenharMenu() {
+    // Fundo com o cenário atrás
+    desenharCenario();
+
+    // Overlay escuro semitransparente
+    ctx.fillStyle = "rgba(0, 0, 10, 0.72)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const cx = canvas.width / 2;
+
+    // Título
+    ctx.fillStyle = "#00ffcc";
+    ctx.font = "bold 32px 'Courier New', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("CIDADE INFINITA", cx, 55);
+
+    // Linha decorativa
+    ctx.fillStyle = "#ff00ff";
+    ctx.fillRect(cx - 180, 65, 360, 2);
+
+    if (subEstado === "NICKNAME") {
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        ctx.font = "14px 'Courier New', monospace";
+        ctx.fillText("digite seu nickname para continuar", cx, 110);
+
+        // Caixa do nickname
+        const bx = cx - 150, by = 125, bw = 300, bh = 36;
+        ctx.fillStyle = "rgba(0,0,20,0.9)";
+        ctx.fillRect(bx, by, bw, bh);
+        ctx.strokeStyle = "#00ffcc";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(bx, by, bw, bh);
+
+        // Cursor piscando
+        nicknameCursorTimer++;
+        if (nicknameCursorTimer > 30) { nicknameCursor = !nicknameCursor; nicknameCursorTimer = 0; }
+        const textoNick = nickname + (nicknameCursor ? "|" : " ");
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "18px 'Courier New', monospace";
+        ctx.textAlign = "left";
+        ctx.fillText(textoNick, bx + 10, by + 24);
+        ctx.textAlign = "center";
+
+        ctx.fillStyle = "rgba(0,255,204,0.5)";
+        ctx.font = "12px 'Courier New', monospace";
+        ctx.fillText("[ENTER] para confirmar", cx, 185);
+    }
+
+    if (subEstado === "OPCOES") {
+        // Saudação
+        ctx.fillStyle = "rgba(0,255,204,0.8)";
+        ctx.font = "14px 'Courier New', monospace";
+        ctx.fillText(`olá, ${nickname}`, cx, 105);
+
+        // Opções
+        menuOpcoes.forEach((op, i) => {
+            const y = 145 + i * 36;
+            const selecionado = i === menuOpcaoSelecionada;
+            if (selecionado) {
+                ctx.fillStyle = "rgba(255,0,255,0.15)";
+                ctx.fillRect(cx - 160, y - 18, 320, 26);
+                ctx.fillStyle = "#ff00ff";
+                ctx.font = "bold 17px 'Courier New', monospace";
+                ctx.fillText(`> ${op} <`, cx, y);
+            } else {
+                ctx.fillStyle = "rgba(255,255,255,0.55)";
+                ctx.font = "15px 'Courier New', monospace";
+                ctx.fillText(op, cx, y);
+            }
+        });
+
+        ctx.fillStyle = "rgba(255,255,255,0.3)";
+        ctx.font = "11px 'Courier New', monospace";
+        ctx.fillText("[↑↓] navegar  [ENTER] confirmar", cx, 340);
+    }
+
+    if (subEstado === "SETTINGS") {
+        ctx.fillStyle = "#00ffcc";
+        ctx.font = "bold 18px 'Courier New', monospace";
+        ctx.fillText("— SETTINGS —", cx, 110);
+
+        const itens = [
+            `MÚSICA: ${musicaAtivada ? "ON" : "OFF"}`,
+            `HITBOX: ${mostrarHitbox ? "ON" : "OFF"}`,
+            `COORDENADAS: ${mostrarCoordenadas ? "ON" : "OFF"}`,
+            "VOLTAR"
+        ];
+
+        itens.forEach((op, i) => {
+            const y = 150 + i * 40;
+            const sel = i === settingsOpcaoSelecionada;
+            if (sel) {
+                ctx.fillStyle = "rgba(255,0,255,0.15)";
+                ctx.fillRect(cx - 180, y - 18, 360, 26);
+                ctx.fillStyle = "#ff00ff";
+                ctx.font = "bold 16px 'Courier New', monospace";
+                ctx.fillText(`> ${op} <`, cx, y);
+            } else {
+                ctx.fillStyle = "rgba(255,255,255,0.55)";
+                ctx.font = "14px 'Courier New', monospace";
+                ctx.fillText(op, cx, y);
+            }
+        });
+
+        ctx.fillStyle = "rgba(255,255,255,0.3)";
+        ctx.font = "11px 'Courier New', monospace";
+        ctx.fillText("[↑↓] navegar  [ENTER] alternar  [ESC] voltar", cx, 340);
+    }
+
+    if (subEstado === "VIEW_SAVES" || subEstado === "SAVE_SLOT") {
+        const titulo = subEstado === "VIEW_SAVES" ? "— VIEW SAVES —" :
+                       saveSlotModo === "LOAD" ? "— LOAD GAME —" : "— SAVE GAME —";
+        ctx.fillStyle = "#00ffcc";
+        ctx.font = "bold 18px 'Courier New', monospace";
+        ctx.fillText(titulo, cx, 110);
+
+        const saves = listarSaves();
+        const opcaoAtual = subEstado === "VIEW_SAVES" ? viewSavesOpcao : saveSlotOpcao;
+
+        saves.forEach((save, i) => {
+            const y = 155 + i * 60;
+            const sel = i === opcaoAtual;
+
+            // Caixa do slot
+            ctx.fillStyle = sel ? "rgba(255,0,255,0.12)" : "rgba(0,0,20,0.6)";
+            ctx.fillRect(cx - 200, y - 22, 400, 50);
+            ctx.strokeStyle = sel ? "#ff00ff" : "rgba(255,255,255,0.2)";
+            ctx.lineWidth = sel ? 2 : 1;
+            ctx.strokeRect(cx - 200, y - 22, 400, 50);
+
+            if (save) {
+                ctx.fillStyle = sel ? "#ff00ff" : "rgba(255,255,255,0.8)";
+                ctx.font = `${sel ? "bold " : ""}14px 'Courier New', monospace`;
+                ctx.fillText(`SLOT ${i + 1} — ${save.nickname}`, cx, y);
+                ctx.fillStyle = "rgba(0,255,204,0.7)";
+                ctx.font = "11px 'Courier New', monospace";
+                const mins = Math.floor((save.tempoJogo || 0) / 3600);
+                const segs = Math.floor(((save.tempoJogo || 0) % 3600) / 60);
+                ctx.fillText(`${save.data}  |  tempo: ${mins}m ${segs}s`, cx, y + 18);
+            } else {
+                ctx.fillStyle = "rgba(255,255,255,0.3)";
+                ctx.font = "13px 'Courier New', monospace";
+                ctx.fillText(`SLOT ${i + 1} — vazio`, cx, y + 5);
+            }
+        });
+
+        ctx.fillStyle = "rgba(255,255,255,0.3)";
+        ctx.font = "11px 'Courier New', monospace";
+        if (subEstado === "VIEW_SAVES") {
+            ctx.fillText("[↑↓] navegar  [X/DEL] deletar save  [ESC] voltar", cx, 348);
+        } else {
+            ctx.fillText("[↑↓] navegar  [ENTER] confirmar  [ESC] voltar", cx, 348);
+        }
+    }
 }
 
 // --- CHUVA ---
@@ -623,11 +949,17 @@ function gerenciarChuva() {
 
 // --- LOOP PRINCIPAL ---
 function atualizar() {
+    // Tempo de jogo (só conta quando jogando)
+    if (estadoAtual === "JOGANDO") {
+        tempoJogoTimer++;
+        if (tempoJogoTimer >= 60) { tempoJogo++; tempoJogoTimer = 0; }
+    }
+
     if (estadoAtual === "JOGANDO" || estadoAtual === "DIALOGO_NPC") {
         npc.tempoFlutuar += 0.05;
     }
 
-    if (estadoAtual !== "TELA_INICIAL") {
+    if (estadoAtual !== "TELA_INICIAL" && estadoAtual !== "TELA_MENU") {
         player.velY += player.gravidade;
         player.y += player.velY;
         let baseHitboxY = player.y + player.offsetY + player.alturaHitbox;
@@ -777,18 +1109,33 @@ function desenhar() {
         ctx.font = "40px 'Courier New', monospace";
         ctx.textAlign = "center";
         ctx.fillText("CIDADE INFINITA", canvas.width / 2, 150);
+        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        ctx.font = "14px 'Courier New', monospace";
+        ctx.fillText("pressione START para continuar", canvas.width / 2, 210);
+    } else if (estadoAtual === "TELA_MENU") {
+        desenharMenu();
     } else {
         desenharCenario();
 
         ctx.fillStyle = "#0a0712";
         ctx.fillRect(0, chaoY - camera.y + 34, canvas.width, (canvas.height - chaoY) + camera.y);
 
-        let displayX = Math.floor(player.x / 10);
-        let displayY = Math.floor(chaoY - (player.y + player.offsetY + player.alturaHitbox));
-        ctx.fillStyle = "rgba(0, 255, 204, 0.8)";
-        ctx.font = "16px 'Courier New', monospace";
-        ctx.textAlign = "left";
-        ctx.fillText(`COORD X: ${displayX}  COORD Y: ${Math.max(0, displayY)}`, 20, 30);
+        if (mostrarCoordenadas) {
+            let displayX = Math.floor(player.x / 10);
+            let displayY = Math.floor(chaoY - (player.y + player.offsetY + player.alturaHitbox));
+            ctx.fillStyle = "rgba(0, 255, 204, 0.8)";
+            ctx.font = "16px 'Courier New', monospace";
+            ctx.textAlign = "left";
+            ctx.fillText(`COORD X: ${displayX}  COORD Y: ${Math.max(0, displayY)}`, 20, 30);
+        }
+
+        // Nickname no canto
+        ctx.fillStyle = "rgba(0,255,204,0.6)";
+        ctx.font = "12px 'Courier New', monospace";
+        ctx.textAlign = "right";
+        const mins = Math.floor(tempoJogo / 60);
+        const segs = tempoJogo % 60;
+        ctx.fillText(`${nickname}  |  ${mins}m ${segs}s`, canvas.width - 10, 20);
 
         // NPC Espírito
         let npcRelativoX = npc.x - camera.x;
@@ -837,9 +1184,11 @@ function desenhar() {
         }
         ctx.restore();
 
-        ctx.strokeStyle = "#00ff00";
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(playerRelativoX + player.offsetX, playerY + player.offsetY, player.larguraHitbox, player.alturaHitbox);
+        if (mostrarHitbox) {
+            ctx.strokeStyle = "#00ff00";
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(playerRelativoX + player.offsetX, playerY + player.offsetY, player.larguraHitbox, player.alturaHitbox);
+        }
 
         gerenciarChuva();
 
@@ -850,6 +1199,12 @@ function desenhar() {
 
         if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo)
             desenharCaixaPensamento(cena450.texto[cena450.indiceAtual]);
+
+        // Dica ESC
+        ctx.fillStyle = "rgba(255,255,255,0.2)";
+        ctx.font = "11px 'Courier New', monospace";
+        ctx.textAlign = "left";
+        ctx.fillText("[ESC] menu / save", 10, canvas.height - 8);
     }
 }
 
