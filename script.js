@@ -147,20 +147,20 @@ nomesArquivosFox.forEach((src) => {
 
 // Frames da raposa virando o CORPO TODO (novos, 14 frames)
 const nomesArquivosFoxVirandoCorpo = [
-    "img/Untitled 06-17-2026 12-06-07.png",
-    "img/Untitled 06-17-2026 12-06-07 (1).png",
-    "img/Untitled 06-17-2026 12-06-07 (2).png",
-    "img/Untitled 06-17-2026 12-06-07 (3).png",
-    "img/Untitled 06-17-2026 12-06-07 (4).png",
-    "img/Untitled 06-17-2026 12-06-07 (5).png",
-    "img/Untitled 06-17-2026 12-06-07 (6).png",
-    "img/Untitled 06-17-2026 12-06-07 (7).png",
-    "img/Untitled 06-17-2026 12-06-07 (8).png",
-    "img/Untitled 06-17-2026 12-06-07 (9).png",
-    "img/Untitled 06-17-2026 12-06-07 (10).png",
-    "img/Untitled 06-17-2026 12-06-07 (11).png",
-    "img/Untitled 06-17-2026 12-06-07 (12).png",
-    "img/Untitled 06-17-2026 12-06-07 (13).png"
+    "img/Untitled_06-17-2026_12-06-07.png",
+    "img/Untitled_06-17-2026_12-06-07__1_.png",
+    "img/Untitled_06-17-2026_12-06-07__2_.png",
+    "img/Untitled_06-17-2026_12-06-07__3_.png",
+    "img/Untitled_06-17-2026_12-06-07__4_.png",
+    "img/Untitled_06-17-2026_12-06-07__5_.png",
+    "img/Untitled_06-17-2026_12-06-07__6_.png",
+    "img/Untitled_06-17-2026_12-06-07__7_.png",
+    "img/Untitled_06-17-2026_12-06-07__8_.png",
+    "img/Untitled_06-17-2026_12-06-07__9_.png",
+    "img/Untitled_06-17-2026_12-06-07__10_.png",
+    "img/Untitled_06-17-2026_12-06-07__11_.png",
+    "img/Untitled_06-17-2026_12-06-07__12_.png",
+    "img/Untitled_06-17-2026_12-06-07__13_.png"
 ];
 const imgFoxVirandoCorpoFrames = [];
 nomesArquivosFoxVirandoCorpo.forEach((src) => {
@@ -171,10 +171,10 @@ nomesArquivosFoxVirandoCorpo.forEach((src) => {
 
 // Frames da raposa ANDANDO saindo de cena (novos, 4 frames)
 const nomesArquivosFoxAndando = [
-    "img/Untitled 05-30-2026 10-30-03.png",
-    "img/Untitled 05-30-2026 10-30-03 (1).png",
-    "img/Untitled 05-30-2026 10-30-03 (2).png",
-    "img/Untitled 05-30-2026 10-30-03 (3).png"
+    "img/Untitled_05-30-2026_10-30-03.png",
+    "img/Untitled_05-30-2026_10-30-03__1_.png",
+    "img/Untitled_05-30-2026_10-30-03_2_.png",
+    "img/Untitled_05-30-2026_10-30-03__3_.png"
 ];
 const imgFoxAndandoFrames = [];
 nomesArquivosFoxAndando.forEach((src) => {
@@ -185,15 +185,16 @@ nomesArquivosFoxAndando.forEach((src) => {
 
 // Frames do player chorando e caindo (novos, 9 frames)
 const nomesArquivosPlayerCaindo = [
-    "img/Untitled 06-22-2026 08-42-43.png",
-    "img/Untitled 06-22-2026 08-42-43 (1).png",
-    "img/Untitled 06-22-2026 08-42-43 (2).png",
-    "img/Untitled 06-22-2026 08-42-43 (3).png",
-    "img/Untitled 06-22-2026 08-42-43 (4).png",
-    "img/Untitled 06-22-2026 08-42-43 (5).png",
-    "img/Untitled 06-22-2026 08-42-43 (6).png",
-    "img/Untitled 06-22-2026 08-42-43 (7).png",
-    "img/Untitled 06-22-2026 08-42-43 (8).png"
+    "img/Untitled_06-22-2026_08-42-43.png",
+    "img/Untitled_06-22-2026_08-42-43__1_.png",
+    "img/Untitled_06-22-2026_08-42-43__2_.png",
+    "img/Untitled_06-22-2026_08-42-43__3_.png",
+    "img/Untitled_06-22-2026_08-42-43__4_.png",
+    "img/Untitled_06-22-2026_08-42-43__5_.png",
+    "img/Untitled_06-22-2026_08-42-43__6_.png",
+    "img/Untitled_06-22-2026_08-42-43__7_.png",
+    "img/Untitled_06-22-2026_08-42-43__8_.png",
+    "img/Untitled_06-22-2026_08-42-43__9_.png"
 ];
 const imgPlayerCaindoFrames = [];
 nomesArquivosPlayerCaindo.forEach((src) => {
@@ -1139,9 +1140,9 @@ function atualizar() {
         }
     }
 
-    // --- NOVA CENA: raposa anda saindo de cena ---
+    // --- NOVA CENA: raposa anda saindo de cena (para a DIREITA) ---
     if (estadoAtual === "RAPOSA_ANDANDO_SAIDA") {
-        npc2.x -= cenaDespedida.velocidadeSaida;
+        npc2.x += cenaDespedida.velocidadeSaida;
 
         cenaDespedida.timerAndando++;
         if (cenaDespedida.timerAndando >= cenaDespedida.tempoPorFrameAndando) {
@@ -1149,9 +1150,9 @@ function atualizar() {
             cenaDespedida.frameAndando = (cenaDespedida.frameAndando + 1) % imgFoxAndandoFrames.length;
         }
 
-        // Quando ela sair totalmente da tela (considerando a câmera), desaparece
+        // Quando ela sair totalmente da tela pela direita, desaparece
         let npc2RelX = npc2.x - camera.x;
-        if (npc2RelX < -150) {
+        if (npc2RelX > canvas.width + 150) {
             npc2.estado = "SUMIU";
             npc2.x = -99999;
             // Player começa a chorar e cair
@@ -1409,8 +1410,15 @@ function desenhar() {
                     ctx.drawImage(fc, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
             } else if (npc2.estado === "ANDANDO_SAIDA") {
                 let fand = imgFoxAndandoFrames[cenaDespedida.frameAndando];
-                if (fand && fand.complete && fand.width > 0)
-                    ctx.drawImage(fand, npc2RelativoX, npc2Y, npc2.largura, npc2.altura);
+                if (fand && fand.complete && fand.width > 0) {
+                    ctx.save();
+                    // Espelha horizontalmente: os frames foram desenhados olhando p/ esquerda,
+                    // mas a raposa está andando para a direita
+                    ctx.translate(npc2RelativoX + npc2.largura, npc2Y);
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(fand, 0, 0, npc2.largura, npc2.altura);
+                    ctx.restore();
+                }
             }
         }
 
