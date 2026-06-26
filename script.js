@@ -1427,10 +1427,23 @@ function desenhar() {
         let playerY = player.y - camera.y;
 
         if (estadoAtual === "PLAYER_CHORANDO_CAINDO" || estadoAtual === "FECHANDO_OLHO") {
-            // Desenha o player com os frames de chorar/cair (sem flip de direção)
+            // Desenha o player com os frames de chorar/cair, mantendo a proporção
+            // original da imagem (em vez de forçar no tamanho do sprite andando/parado)
             let fp = imgPlayerCaindoFrames[cenaDespedida.frameJogadorCaindo];
             if (fp && fp.complete && fp.width > 0) {
-                ctx.drawImage(fp, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                // Altura alvo: um pouco maior que o tamanho normal do player,
+                // ajuste esse valor se ele ainda ficar pequeno/grande demais
+                const alturaAlvo = player.alturaVisual * 1.4;
+                const escala = alturaAlvo / fp.height;
+                const larguraDesenho = fp.width * escala;
+                const alturaDesenho = fp.height * escala;
+
+                // Ancora pela base (pés), usando o "chão visual" do player normal como referência
+                const baseY = playerY + player.alturaVisual;
+                const desenhoX = playerRelativoX + (player.larguraVisual - larguraDesenho) / 2;
+                const desenhoY = baseY - alturaDesenho;
+
+                ctx.drawImage(fp, desenhoX, desenhoY, larguraDesenho, alturaDesenho);
             } else {
                 ctx.fillStyle = "#00aaff";
                 ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
