@@ -145,22 +145,23 @@ nomesArquivosFox.forEach((src) => {
     imgFoxFrames.push(img);
 });
 
-// Frames da raposa virando o CORPO TODO (novos, 14 frames)
+// Frames da raposa virando o CORPO TODO (15 frames)
 const nomesArquivosFoxVirandoCorpo = [
-    "img/Untitled_06-17-2026_12-06-07.png",
-    "img/Untitled_06-17-2026_12-06-07__1_.png",
-    "img/Untitled_06-17-2026_12-06-07__2_.png",
-    "img/Untitled_06-17-2026_12-06-07__3_.png",
-    "img/Untitled_06-17-2026_12-06-07__4_.png",
-    "img/Untitled_06-17-2026_12-06-07__5_.png",
-    "img/Untitled_06-17-2026_12-06-07__6_.png",
-    "img/Untitled_06-17-2026_12-06-07__7_.png",
-    "img/Untitled_06-17-2026_12-06-07__8_.png",
-    "img/Untitled_06-17-2026_12-06-07__9_.png",
-    "img/Untitled_06-17-2026_12-06-07__10_.png",
-    "img/Untitled_06-17-2026_12-06-07__11_.png",
-    "img/Untitled_06-17-2026_12-06-07__12_.png",
-    "img/Untitled_06-17-2026_12-06-07__13_.png"
+    "img/Untitled 06-17-2026 12-06-07.png",
+    "img/Untitled 06-17-2026 12-06-07 (1).png",
+    "img/Untitled 06-17-2026 12-06-07 (2).png",
+    "img/Untitled 06-17-2026 12-06-07 (3).png",
+    "img/Untitled 06-17-2026 12-06-07 (4).png",
+    "img/Untitled 06-17-2026 12-06-07 (5).png",
+    "img/Untitled 06-17-2026 12-06-07 (6).png",
+    "img/Untitled 06-17-2026 12-06-07 (7).png",
+    "img/Untitled 06-17-2026 12-06-07 (8).png",
+    "img/Untitled 06-17-2026 12-06-07 (9).png",
+    "img/Untitled 06-17-2026 12-06-07 (10).png",
+    "img/Untitled 06-17-2026 12-06-07 (11).png",
+    "img/Untitled 06-17-2026 12-06-07 (12).png",
+    "img/Untitled 06-17-2026 12-06-07 (13).png",
+    "img/Untitled 06-17-2026 12-06-07 (14).png"
 ];
 const imgFoxVirandoCorpoFrames = [];
 nomesArquivosFoxVirandoCorpo.forEach((src) => {
@@ -169,12 +170,12 @@ nomesArquivosFoxVirandoCorpo.forEach((src) => {
     imgFoxVirandoCorpoFrames.push(img);
 });
 
-// Frames da raposa ANDANDO saindo de cena (novos, 4 frames)
+// Frames da raposa ANDANDO saindo de cena (4 frames)
 const nomesArquivosFoxAndando = [
-    "img/Untitled_05-30-2026_10-30-03.png",
-    "img/Untitled_05-30-2026_10-30-03__1_.png",
-    "img/Untitled_05-30-2026_10-30-03_2_.png",
-    "img/Untitled_05-30-2026_10-30-03__3_.png"
+    "img/Untitled 05-30-2026 10-30-03.png",
+    "img/Untitled 05-30-2026 10-30-03 (1).png",
+    "img/Untitled 05-30-2026 10-30-03(2).png",
+    "img/Untitled 05-30-2026 10-30-03 (3).png"
 ];
 const imgFoxAndandoFrames = [];
 nomesArquivosFoxAndando.forEach((src) => {
@@ -183,18 +184,17 @@ nomesArquivosFoxAndando.forEach((src) => {
     imgFoxAndandoFrames.push(img);
 });
 
-// Frames do player chorando e caindo (novos, 9 frames)
+// Frames do player chorando e caindo (9 frames: .png, (1) a (3), (5) a (9) — não existe (4))
 const nomesArquivosPlayerCaindo = [
-    "img/Untitled_06-22-2026_08-42-43.png",
-    "img/Untitled_06-22-2026_08-42-43__1_.png",
-    "img/Untitled_06-22-2026_08-42-43__2_.png",
-    "img/Untitled_06-22-2026_08-42-43__3_.png",
-    "img/Untitled_06-22-2026_08-42-43__4_.png",
-    "img/Untitled_06-22-2026_08-42-43__5_.png",
-    "img/Untitled_06-22-2026_08-42-43__6_.png",
-    "img/Untitled_06-22-2026_08-42-43__7_.png",
-    "img/Untitled_06-22-2026_08-42-43__8_.png",
-    "img/Untitled_06-22-2026_08-42-43__9_.png"
+    "img/Untitled 06-22-2026 08-42-43.png",
+    "img/Untitled 06-22-2026 08-42-43 (1).png",
+    "img/Untitled 06-22-2026 08-42-43 (2).png",
+    "img/Untitled 06-22-2026 08-42-43 (3).png",
+    "img/Untitled 06-22-2026 08-42-43 (5).png",
+    "img/Untitled 06-22-2026 08-42-43 (6).png",
+    "img/Untitled 06-22-2026 08-42-43 (7).png",
+    "img/Untitled 06-22-2026 08-42-43 (8).png",
+    "img/Untitled 06-22-2026 08-42-43 (9).png"
 ];
 const imgPlayerCaindoFrames = [];
 nomesArquivosPlayerCaindo.forEach((src) => {
