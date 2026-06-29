@@ -121,10 +121,19 @@ let tempoJogoTimer = 0;
 
 // --- SPRITES ---
 const imgPlayerParado = new Image();
-imgPlayerParado.src = "img/IMG_20260525_102813.png";
+imgPlayerParado.src = "img/Untitled 06-26-2026 09-19-12.png";
 
-const imgPlayerCorrendo = new Image();
-imgPlayerCorrendo.src = "img/IMG_20260525_102751.png";
+// Player correndo agora é 2 frames separados (mesmo canvas 256x256 do sprite parado)
+const nomesArquivosPlayerCorrendo = [
+    "img/Untitled 06-26-2026 09-19-12 (1).png",
+    "img/Untitled 06-26-2026 09-19-12 (2).png"
+];
+const imgPlayerCorrendoFrames = [];
+nomesArquivosPlayerCorrendo.forEach((src) => {
+    const img = new Image();
+    img.src = src;
+    imgPlayerCorrendoFrames.push(img);
+});
 
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "img/pixel-art-blue-spirit-character-png.png";
@@ -217,14 +226,10 @@ const player = {
     estaAndando: false
 };
 
-imgPlayerParado.onload = function() {
-    player.spriteAltura = imgPlayerParado.height;
-    player.spriteLargura = imgPlayerParado.width;
-};
-imgPlayerCorrendo.onload = function() {
-    player.spriteLargura = imgPlayerCorrendo.width / 2;
-    player.spriteAltura = imgPlayerCorrendo.height;
-};
+// Os sprites novos (parado, andando, caindo) usam todos o mesmo canvas 256x256,
+// então não precisamos mais calcular largura/altura dinamicamente — fica fixo aqui.
+player.spriteLargura = 256;
+player.spriteAltura = 256;
 
 // --- CENA CINEMATOGRÁFICA (já existente) ---
 const cena450 = {
@@ -1427,23 +1432,11 @@ function desenhar() {
         let playerY = player.y - camera.y;
 
         if (estadoAtual === "PLAYER_CHORANDO_CAINDO" || estadoAtual === "FECHANDO_OLHO") {
-            // Desenha o player com os frames de chorar/cair, mantendo a proporção
-            // original da imagem (em vez de forçar no tamanho do sprite andando/parado)
+            // Mesmo canvas 256x256 dos sprites de parado/andando, então desenha
+            // do mesmo jeito (canvas inteiro esticado para larguraVisual x alturaVisual)
             let fp = imgPlayerCaindoFrames[cenaDespedida.frameJogadorCaindo];
             if (fp && fp.complete && fp.width > 0) {
-                // Altura alvo: um pouco maior que o tamanho normal do player,
-                // ajuste esse valor se ele ainda ficar pequeno/grande demais
-                const alturaAlvo = player.alturaVisual * 1.4;
-                const escala = alturaAlvo / fp.height;
-                const larguraDesenho = fp.width * escala;
-                const alturaDesenho = fp.height * escala;
-
-                // Ancora pela base (pés), usando o "chão visual" do player normal como referência
-                const baseY = playerY + player.alturaVisual;
-                const desenhoX = playerRelativoX + (player.larguraVisual - larguraDesenho) / 2;
-                const desenhoY = baseY - alturaDesenho;
-
-                ctx.drawImage(fp, desenhoX, desenhoY, larguraDesenho, alturaDesenho);
+                ctx.drawImage(fp, 0, 0, fp.width, fp.height, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
             } else {
                 ctx.fillStyle = "#00aaff";
                 ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
@@ -1455,11 +1448,16 @@ function desenhar() {
                 ctx.scale(-1, 1);
                 ctx.translate(-(playerRelativoX + player.larguraVisual / 2), -(playerY + player.alturaVisual / 2));
             }
-            if (imgPlayerParado.complete && imgPlayerCorrendo.complete && imgPlayerParado.width > 0) {
+            if (imgPlayerParado.complete && imgPlayerParado.width > 0) {
                 if (player.estaAndando) {
-                    ctx.drawImage(imgPlayerCorrendo, player.frameAtual * player.spriteLargura, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                    let fc = imgPlayerCorrendoFrames[player.frameAtual];
+                    if (fc && fc.complete && fc.width > 0) {
+                        ctx.drawImage(fc, 0, 0, fc.width, fc.height, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                    } else {
+                        ctx.drawImage(imgPlayerParado, 0, 0, imgPlayerParado.width, imgPlayerParado.height, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                    }
                 } else {
-                    ctx.drawImage(imgPlayerParado, 0, 0, player.spriteLargura, player.spriteAltura, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                    ctx.drawImage(imgPlayerParado, 0, 0, imgPlayerParado.width, imgPlayerParado.height, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
                 }
             } else {
                 ctx.fillStyle = "#00aaff";
