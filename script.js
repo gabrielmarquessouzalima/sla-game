@@ -215,9 +215,9 @@ nomesArquivosPlayerCaindo.forEach((src) => {
 // --- PLAYER ---
 const player = {
     x: 0, y: 100,
-    larguraVisual: 50, alturaVisual: 80,
+    larguraVisual: 42, alturaVisual: 130,
     larguraHitbox: 24, alturaHitbox: 64,
-    offsetX: 13, offsetY: 2,
+    offsetX: 9, offsetY: 2,
     velocidade: 4, velY: 0,
     gravidade: 1.0, pulo: -14,
     noChao: false, direcao: "direita",
@@ -226,10 +226,10 @@ const player = {
     estaAndando: false
 };
 
-// Os sprites novos (parado, andando, caindo) usam todos o mesmo canvas 256x256,
-// então não precisamos mais calcular largura/altura dinamicamente — fica fixo aqui.
-player.spriteLargura = 256;
-player.spriteAltura = 256;
+// Os sprites novos (parado, andando, caindo) usam canvas 256x256, mas o desenho
+// do personagem ocupa só uma região central. Esse recorte fixo isola essa região
+// para o player ser desenhado no tamanho visual correto, sem a margem transparente.
+const RECORTE_PLAYER = { x: 40, y: 40, largura: 130, altura: 180 };
 
 // --- CENA CINEMATOGRÁFICA (já existente) ---
 const cena450 = {
@@ -1430,38 +1430,40 @@ function desenhar() {
         // Player
         let playerRelativoX = player.x - camera.x;
         let playerY = player.y - camera.y;
+        // Ancora o sprite pela base (pés): a base real do personagem é o fundo do hitbox,
+        // então o sprite (maior que o hitbox) cresce para cima a partir desse ponto.
+        let baseHitboxRealY = playerY + player.offsetY + player.alturaHitbox;
+        let playerDesenhoY = baseHitboxRealY - player.alturaVisual;
 
         if (estadoAtual === "PLAYER_CHORANDO_CAINDO" || estadoAtual === "FECHANDO_OLHO") {
-            // Mesmo canvas 256x256 dos sprites de parado/andando, então desenha
-            // do mesmo jeito (canvas inteiro esticado para larguraVisual x alturaVisual)
             let fp = imgPlayerCaindoFrames[cenaDespedida.frameJogadorCaindo];
             if (fp && fp.complete && fp.width > 0) {
-                ctx.drawImage(fp, 0, 0, fp.width, fp.height, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                ctx.drawImage(fp, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerRelativoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
             } else {
                 ctx.fillStyle = "#00aaff";
-                ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                ctx.fillRect(playerRelativoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
             }
         } else {
             ctx.save();
             if (player.direcao === "esquerda") {
-                ctx.translate(playerRelativoX + player.larguraVisual / 2, playerY + player.alturaVisual / 2);
+                ctx.translate(playerRelativoX + player.larguraVisual / 2, playerDesenhoY + player.alturaVisual / 2);
                 ctx.scale(-1, 1);
-                ctx.translate(-(playerRelativoX + player.larguraVisual / 2), -(playerY + player.alturaVisual / 2));
+                ctx.translate(-(playerRelativoX + player.larguraVisual / 2), -(playerDesenhoY + player.alturaVisual / 2));
             }
             if (imgPlayerParado.complete && imgPlayerParado.width > 0) {
                 if (player.estaAndando) {
                     let fc = imgPlayerCorrendoFrames[player.frameAtual];
                     if (fc && fc.complete && fc.width > 0) {
-                        ctx.drawImage(fc, 0, 0, fc.width, fc.height, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                        ctx.drawImage(fc, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerRelativoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
                     } else {
-                        ctx.drawImage(imgPlayerParado, 0, 0, imgPlayerParado.width, imgPlayerParado.height, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                        ctx.drawImage(imgPlayerParado, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerRelativoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
                     }
                 } else {
-                    ctx.drawImage(imgPlayerParado, 0, 0, imgPlayerParado.width, imgPlayerParado.height, playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                    ctx.drawImage(imgPlayerParado, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerRelativoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
                 }
             } else {
                 ctx.fillStyle = "#00aaff";
-                ctx.fillRect(playerRelativoX, playerY, player.larguraVisual, player.alturaVisual);
+                ctx.fillRect(playerRelativoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
             }
             ctx.restore();
         }
