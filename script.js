@@ -215,7 +215,7 @@ nomesArquivosPlayerCaindo.forEach((src) => {
 // --- PLAYER ---
 const player = {
     x: 0, y: 100,
-    larguraVisual: 24, alturaVisual: 72,
+    larguraVisual: 24, alturaVisual: 69,
     larguraHitbox: 24, alturaHitbox: 64,
     offsetX: 9, offsetY: 2,
     velocidade: 4, velY: 0,
@@ -226,9 +226,9 @@ const player = {
     estaAndando: false
 };
 
-// Recorte com a MESMA proporção do personagem real dentro do canvas 256x256
-// (bbox real do sprite: aprox. x=96 a 148, y=40 a 220 — largura 52, altura 180, folga incluída)
-const RECORTE_PLAYER = { x: 90, y: 40, largura: 60, altura: 180 };
+// Recorte ajustado para terminar EXATAMENTE no pé real (Y=212 no canvas original),
+// sem sobra de transparência embaixo — isso é o que fazia o sprite parecer "flutuando".
+const RECORTE_PLAYER = { x: 90, y: 40, largura: 60, altura: 172 };
 
 // --- CENA CINEMATOGRÁFICA (já existente) ---
 const cena450 = {
