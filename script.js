@@ -226,10 +226,9 @@ const player = {
     estaAndando: false
 };
 
-// Os sprites novos (parado, andando, caindo) usam canvas 256x256, mas o desenho
-// do personagem ocupa só uma região central. Esse recorte fixo isola essa região
-// para o player ser desenhado no tamanho visual correto, sem a margem transparente.
-const RECORTE_PLAYER = { x: 40, y: 40, largura: 130, altura: 180 };
+// Recorte com a MESMA proporção do personagem real dentro do canvas 256x256
+// (bbox real do sprite: aprox. x=96 a 148, y=40 a 220 — largura 52, altura 180, folga incluída)
+const RECORTE_PLAYER = { x: 90, y: 40, largura: 60, altura: 180 };
 
 // --- CENA CINEMATOGRÁFICA (já existente) ---
 const cena450 = {
@@ -1432,7 +1431,9 @@ function desenhar() {
         let playerY = player.y - camera.y;
         // Ancora o sprite pela base (pés): a base real do personagem é o fundo do hitbox,
         // então o sprite (maior que o hitbox) cresce para cima a partir desse ponto.
-        let baseHitboxRealY = playerY + player.offsetY + player.alturaHitbox;
+        // Um pequeno ajuste extra (PE_EXTRA_BAIXO) deixa o pé um pouco abaixo da linha do chão.
+        const PE_EXTRA_BAIXO = 6;
+        let baseHitboxRealY = playerY + player.offsetY + player.alturaHitbox + PE_EXTRA_BAIXO;
         let playerDesenhoY = baseHitboxRealY - player.alturaVisual;
 
         if (estadoAtual === "PLAYER_CHORANDO_CAINDO" || estadoAtual === "FECHANDO_OLHO") {
