@@ -215,7 +215,7 @@ nomesArquivosPlayerCaindo.forEach((src) => {
 // --- PLAYER ---
 const player = {
     x: 0, y: 100,
-    larguraVisual: 24, alturaVisual: 69,
+    larguraVisual: 31, alturaVisual: 95,
     larguraHitbox: 24, alturaHitbox: 64,
     offsetX: 9, offsetY: 2,
     velocidade: 4, velY: 0,
@@ -228,7 +228,7 @@ const player = {
 
 // Recorte para o player PARADO/ANDANDO: ajustado para cobrir a perna estendida
 // do frame de andar (que vai até X=160), sem cortar nada, mantendo o pé em Y=212.
-const RECORTE_PLAYER = { x: 88, y: 40, largura: 72, altura: 172 };
+const RECORTE_PLAYER = { x: 92, y: 44, largura: 64, altura: 168 };
 
 // Recorte para a cena de CHORAR/CAIR: o corpo se espalha mais (braços, pernas dobradas,
 // queda), então usa uma área maior para não cortar nenhuma parte da animação.
@@ -1445,8 +1445,8 @@ function desenhar() {
         if (estadoAtual === "PLAYER_CHORANDO_CAINDO" || estadoAtual === "FECHANDO_OLHO") {
             // Usa tamanho/recorte próprios para essa cena, já que o corpo se espalha mais
             // (braços, pernas dobradas). Mesma altura final do player normal, largura maior.
-            const larguraVisualCaindo = 48;
-            const alturaVisualCaindo = player.alturaVisual; // mesma altura (69)
+            const larguraVisualCaindo = 65;
+            const alturaVisualCaindo = player.alturaVisual; // mesma altura (95)
             const desenhoXCaindo = centroHitboxX - larguraVisualCaindo / 2;
             const desenhoYCaindo = baseHitboxRealY - alturaVisualCaindo;
 
