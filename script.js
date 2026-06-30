@@ -226,9 +226,13 @@ const player = {
     estaAndando: false
 };
 
-// Recorte ajustado para terminar EXATAMENTE no pé real (Y=212 no canvas original),
-// sem sobra de transparência embaixo — isso é o que fazia o sprite parecer "flutuando".
-const RECORTE_PLAYER = { x: 90, y: 40, largura: 60, altura: 172 };
+// Recorte para o player PARADO/ANDANDO: ajustado para cobrir a perna estendida
+// do frame de andar (que vai até X=160), sem cortar nada, mantendo o pé em Y=212.
+const RECORTE_PLAYER = { x: 88, y: 40, largura: 72, altura: 172 };
+
+// Recorte para a cena de CHORAR/CAIR: o corpo se espalha mais (braços, pernas dobradas,
+// queda), então usa uma área maior para não cortar nenhuma parte da animação.
+const RECORTE_PLAYER_CAINDO = { x: 44, y: 40, largura: 124, altura: 180 };
 
 // --- CENA CINEMATOGRÁFICA (já existente) ---
 const cena450 = {
@@ -1439,12 +1443,19 @@ function desenhar() {
         let playerDesenhoY = baseHitboxRealY - player.alturaVisual;
 
         if (estadoAtual === "PLAYER_CHORANDO_CAINDO" || estadoAtual === "FECHANDO_OLHO") {
+            // Usa tamanho/recorte próprios para essa cena, já que o corpo se espalha mais
+            // (braços, pernas dobradas). Mesma altura final do player normal, largura maior.
+            const larguraVisualCaindo = 48;
+            const alturaVisualCaindo = player.alturaVisual; // mesma altura (69)
+            const desenhoXCaindo = centroHitboxX - larguraVisualCaindo / 2;
+            const desenhoYCaindo = baseHitboxRealY - alturaVisualCaindo;
+
             let fp = imgPlayerCaindoFrames[cenaDespedida.frameJogadorCaindo];
             if (fp && fp.complete && fp.width > 0) {
-                ctx.drawImage(fp, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
+                ctx.drawImage(fp, RECORTE_PLAYER_CAINDO.x, RECORTE_PLAYER_CAINDO.y, RECORTE_PLAYER_CAINDO.largura, RECORTE_PLAYER_CAINDO.altura, desenhoXCaindo, desenhoYCaindo, larguraVisualCaindo, alturaVisualCaindo);
             } else {
                 ctx.fillStyle = "#00aaff";
-                ctx.fillRect(playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
+                ctx.fillRect(desenhoXCaindo, desenhoYCaindo, larguraVisualCaindo, alturaVisualCaindo);
             }
         } else {
             ctx.save();
