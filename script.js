@@ -215,7 +215,7 @@ nomesArquivosPlayerCaindo.forEach((src) => {
 // --- PLAYER ---
 const player = {
     x: 0, y: 100,
-    larguraVisual: 21, alturaVisual: 64,
+    larguraVisual: 24, alturaVisual: 72,
     larguraHitbox: 24, alturaHitbox: 64,
     offsetX: 9, offsetY: 2,
     velocidade: 4, velY: 0,
@@ -1429,42 +1429,44 @@ function desenhar() {
         // Player
         let playerRelativoX = player.x - camera.x;
         let playerY = player.y - camera.y;
-        // Ancora o sprite pela base (pés): a base real do personagem é o fundo do hitbox,
-        // então o sprite (maior que o hitbox) cresce para cima a partir desse ponto.
-        // Um pequeno ajuste extra (PE_EXTRA_BAIXO) deixa o pé um pouco abaixo da linha do chão.
-        const PE_EXTRA_BAIXO = 3;
-        let baseHitboxRealY = playerY + player.offsetY + player.alturaHitbox + PE_EXTRA_BAIXO;
+        // Ancora o sprite pelo CENTRO horizontal da hitbox e pela BASE (pés) da hitbox.
+        // O sprite é levemente maior que a hitbox (larguraVisual/alturaVisual > hitbox),
+        // então cresce simetricamente pros lados e só para cima — a base bate exatamente
+        // com o chão da hitbox, sobrando só um pouco de "cabeça" acima dela.
+        let centroHitboxX = playerRelativoX + player.offsetX + player.larguraHitbox / 2;
+        let playerDesenhoX = centroHitboxX - player.larguraVisual / 2;
+        let baseHitboxRealY = playerY + player.offsetY + player.alturaHitbox;
         let playerDesenhoY = baseHitboxRealY - player.alturaVisual;
 
         if (estadoAtual === "PLAYER_CHORANDO_CAINDO" || estadoAtual === "FECHANDO_OLHO") {
             let fp = imgPlayerCaindoFrames[cenaDespedida.frameJogadorCaindo];
             if (fp && fp.complete && fp.width > 0) {
-                ctx.drawImage(fp, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerRelativoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
+                ctx.drawImage(fp, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
             } else {
                 ctx.fillStyle = "#00aaff";
-                ctx.fillRect(playerRelativoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
+                ctx.fillRect(playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
             }
         } else {
             ctx.save();
             if (player.direcao === "esquerda") {
-                ctx.translate(playerRelativoX + player.larguraVisual / 2, playerDesenhoY + player.alturaVisual / 2);
+                ctx.translate(playerDesenhoX + player.larguraVisual / 2, playerDesenhoY + player.alturaVisual / 2);
                 ctx.scale(-1, 1);
-                ctx.translate(-(playerRelativoX + player.larguraVisual / 2), -(playerDesenhoY + player.alturaVisual / 2));
+                ctx.translate(-(playerDesenhoX + player.larguraVisual / 2), -(playerDesenhoY + player.alturaVisual / 2));
             }
             if (imgPlayerParado.complete && imgPlayerParado.width > 0) {
                 if (player.estaAndando) {
                     let fc = imgPlayerCorrendoFrames[player.frameAtual];
                     if (fc && fc.complete && fc.width > 0) {
-                        ctx.drawImage(fc, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerRelativoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
+                        ctx.drawImage(fc, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
                     } else {
-                        ctx.drawImage(imgPlayerParado, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerRelativoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
+                        ctx.drawImage(imgPlayerParado, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
                     }
                 } else {
-                    ctx.drawImage(imgPlayerParado, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerRelativoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
+                    ctx.drawImage(imgPlayerParado, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
                 }
             } else {
                 ctx.fillStyle = "#00aaff";
-                ctx.fillRect(playerRelativoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
+                ctx.fillRect(playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
             }
             ctx.restore();
         }
