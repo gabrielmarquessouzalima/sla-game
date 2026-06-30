@@ -215,7 +215,7 @@ nomesArquivosPlayerCaindo.forEach((src) => {
 // --- PLAYER ---
 const player = {
     x: 0, y: 100,
-    larguraVisual: 42, alturaVisual: 130,
+    larguraVisual: 21, alturaVisual: 64,
     larguraHitbox: 24, alturaHitbox: 64,
     offsetX: 9, offsetY: 2,
     velocidade: 4, velY: 0,
@@ -1432,7 +1432,7 @@ function desenhar() {
         // Ancora o sprite pela base (pés): a base real do personagem é o fundo do hitbox,
         // então o sprite (maior que o hitbox) cresce para cima a partir desse ponto.
         // Um pequeno ajuste extra (PE_EXTRA_BAIXO) deixa o pé um pouco abaixo da linha do chão.
-        const PE_EXTRA_BAIXO = 6;
+        const PE_EXTRA_BAIXO = 3;
         let baseHitboxRealY = playerY + player.offsetY + player.alturaHitbox + PE_EXTRA_BAIXO;
         let playerDesenhoY = baseHitboxRealY - player.alturaVisual;
 
