@@ -228,8 +228,10 @@ const player = {
 
 // Recorte para o player PARADO/ANDANDO: ajustado para cobrir a perna estendida
 // do frame de andar (que vai até X=160), sem cortar nada, mantendo o pé em Y=212.
-// Recorte com a proporção EXATA do personagem na imagem original (bbox real: 52x160)
-const RECORTE_PLAYER = { x: 96, y: 52, largura: 52, altura: 160 };
+// Recorte de ORIGEM um pouco mais largo (66px em vez de 52px) para englobar a perna
+// estendida do frame de andar sem cortar. O tamanho final na TELA (larguraVisual/
+// alturaVisual) continua o mesmo — só a "janela" de captura na imagem ficou maior.
+const RECORTE_PLAYER = { x: 95, y: 52, largura: 66, altura: 160 };
 
 // Recorte para a cena de CHORAR/CAIR: o corpo se espalha mais (braços, pernas dobradas,
 // queda), então usa uma área maior para não cortar nenhuma parte da animação.
