@@ -1371,7 +1371,7 @@ function desenhar() {
         desenharCenario();
 
         ctx.fillStyle = "#0a0712";
-        ctx.fillRect(0, chaoY - camera.y + 34, canvas.width, (canvas.height - chaoY) + camera.y);
+        ctx.fillRect(0, chaoY - camera.y + 2, canvas.width, (canvas.height - chaoY) + camera.y);
 
         if (mostrarCoordenadas) {
             let displayX = Math.floor(player.x / 10);
