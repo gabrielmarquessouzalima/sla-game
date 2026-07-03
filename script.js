@@ -273,12 +273,12 @@ const cenaDespedida = {
     // Controle de animação da raposa virando o corpo todo
     frameVirandoCorpo: 0,
     timerVirandoCorpo: 0,
-    tempoPorFrameVirandoCorpo: 8,
+    tempoPorFrameVirandoCorpo: 5,
 
     // Controle de animação da raposa andando saindo de cena
     frameAndando: 0,
     timerAndando: 0,
-    tempoPorFrameAndando: 10,
+    tempoPorFrameAndando: 6,
     velocidadeSaida: 2.2,
 
     // Controle de animação do player chorando/caindo
@@ -1445,19 +1445,15 @@ function desenhar() {
         let playerDesenhoY = baseHitboxRealY - player.alturaVisual;
 
         if (estadoAtual === "PLAYER_CHORANDO_CAINDO" || estadoAtual === "FECHANDO_OLHO") {
-            // Usa tamanho/recorte próprios para essa cena, já que o corpo se espalha mais
-            // (braços, pernas dobradas). Mesma altura final do player normal, largura maior.
-            const larguraVisualCaindo = 51;
-            const alturaVisualCaindo = player.alturaVisual; // mesma altura (74)
-            const desenhoXCaindo = centroHitboxX - larguraVisualCaindo / 2;
-            const desenhoYCaindo = baseHitboxRealY - alturaVisualCaindo;
-
+            // Usa o MESMO recorte e tamanho do player normal para evitar teleporte
+            // ao entrar nessa animação. O personagem se move naturalmente dentro
+            // do espaço visual conforme os frames de queda avançam.
             let fp = imgPlayerCaindoFrames[cenaDespedida.frameJogadorCaindo];
             if (fp && fp.complete && fp.width > 0) {
-                ctx.drawImage(fp, RECORTE_PLAYER_CAINDO.x, RECORTE_PLAYER_CAINDO.y, RECORTE_PLAYER_CAINDO.largura, RECORTE_PLAYER_CAINDO.altura, desenhoXCaindo, desenhoYCaindo, larguraVisualCaindo, alturaVisualCaindo);
+                ctx.drawImage(fp, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
             } else {
                 ctx.fillStyle = "#00aaff";
-                ctx.fillRect(desenhoXCaindo, desenhoYCaindo, larguraVisualCaindo, alturaVisualCaindo);
+                ctx.fillRect(playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
             }
         } else {
             ctx.save();
