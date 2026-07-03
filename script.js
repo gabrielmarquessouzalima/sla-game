@@ -1432,22 +1432,26 @@ function desenhar() {
             }
         }
 
-        // Player
-        let playerRelativoX = player.x - camera.x;
-        let playerY = player.y - camera.y;
-        // Ancora o sprite pelo CENTRO horizontal da hitbox e pela BASE (pés) da hitbox.
-        // O sprite é levemente maior que a hitbox (larguraVisual/alturaVisual > hitbox),
-        // então cresce simetricamente pros lados e só para cima — a base bate exatamente
-        // com o chão da hitbox, sobrando só um pouco de "cabeça" acima dela.
+        gerenciarChuva();
+
+        if (estadoAtual === "DIALOGO_INICIAL") desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
+        if (estadoAtual === "DIALOGO_NPC") desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
+
+        desenharBarrasCinematicas();
+
+        if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo)
+            desenharCaixaPensamento(cena450.texto[cena450.indiceAtual]);
+
+        if (estadoAtual === "DESPEDIDA_FALA_PLAYER")
+            desenharCaixaPensamento(cenaDespedida.falaPlayer[cenaDespedida.indicePlayer]);
+
+        // Player desenhado POR ÚLTIMO, sempre por cima das barras cinemáticas
         let centroHitboxX = playerRelativoX + player.offsetX + player.larguraHitbox / 2;
         let playerDesenhoX = centroHitboxX - player.larguraVisual / 2;
         let baseHitboxRealY = playerY + player.offsetY + player.alturaHitbox;
         let playerDesenhoY = baseHitboxRealY - player.alturaVisual;
 
         if (estadoAtual === "PLAYER_CHORANDO_CAINDO" || estadoAtual === "FECHANDO_OLHO") {
-            // Usa o MESMO recorte e tamanho do player normal para evitar teleporte
-            // ao entrar nessa animação. O personagem se move naturalmente dentro
-            // do espaço visual conforme os frames de queda avançam.
             let fp = imgPlayerCaindoFrames[cenaDespedida.frameJogadorCaindo];
             if (fp && fp.complete && fp.width > 0) {
                 ctx.drawImage(fp, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
@@ -1486,21 +1490,6 @@ function desenhar() {
             ctx.strokeRect(playerRelativoX + player.offsetX, playerY + player.offsetY, player.larguraHitbox, player.alturaHitbox);
         }
 
-        gerenciarChuva();
-
-        if (estadoAtual === "DIALOGO_INICIAL") desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
-        if (estadoAtual === "DIALOGO_NPC") desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
-
-        desenharBarrasCinematicas();
-
-        if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo)
-            desenharCaixaPensamento(cena450.texto[cena450.indiceAtual]);
-
-        // Fala do player na cena de despedida (caixa roxa de pensamento)
-        if (estadoAtual === "DESPEDIDA_FALA_PLAYER")
-            desenharCaixaPensamento(cenaDespedida.falaPlayer[cenaDespedida.indicePlayer]);
-
-        // Efeito de fechamento tipo olho, desenhado por cima de tudo
         if (estadoAtual === "FECHANDO_OLHO") {
             desenharFechamentoOlho(cenaDespedida.fechamentoOlho);
         }
