@@ -1448,6 +1448,8 @@ function desenhar() {
             desenharCaixaPensamento(cenaDespedida.falaPlayer[cenaDespedida.indicePlayer]);
 
         // Player desenhado POR ÚLTIMO, sempre por cima das barras cinemáticas
+        let playerRelativoX = player.x - camera.x;
+        let playerY = player.y - camera.y;
         let centroHitboxX = playerRelativoX + player.offsetX + player.larguraHitbox / 2;
         let playerDesenhoX = centroHitboxX - player.larguraVisual / 2;
         let baseHitboxRealY = playerY + player.offsetY + player.alturaHitbox;
