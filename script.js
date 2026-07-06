@@ -248,7 +248,7 @@ const cena450 = {
         "nao tenha medo, sei que cometi um erro m-mas...",
         "por favor me perdoe eu, eu nao queria..."
     ],
-    timerPausaPos: 0, tempoPausaPos: 120
+    timerPausaPos: 0, tempoPausaPos: 60
 };
 
 // --- CENA NOVA: despedida da raposa ---
@@ -1370,8 +1370,10 @@ function desenhar() {
     } else {
         desenharCenario();
 
+        // Chão escuro — começa exatamente na linha rosa (chaoY - camera.y),
+        // sem nenhum offset que pudesse cobrir o player
         ctx.fillStyle = "#0a0712";
-        ctx.fillRect(0, chaoY - camera.y + 2, canvas.width, (canvas.height - chaoY) + camera.y);
+        ctx.fillRect(0, chaoY - camera.y, canvas.width, canvas.height);
 
         if (mostrarCoordenadas) {
             let displayX = Math.floor(player.x / 10);
