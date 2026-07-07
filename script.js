@@ -1465,20 +1465,20 @@ function desenhar() {
                 // sendo cortado e sumindo dentro da hitbox.
                 // Agora usamos o recorte já definido (RECORTE_PLAYER_CAINDO),
                 // que cobre exatamente a área onde o personagem aparece em
-                // TODOS os frames dessa animação, e mantemos a proporção
-                // largura/altura do recorte no destino, evitando distorção.
+                // TODOS os frames dessa animação.
+                //
+                // CORREÇÃO #3: o destino agora usa o MESMO tamanho e a MESMA
+                // posição (playerDesenhoX/playerDesenhoY, larguraVisual x
+                // alturaVisual) que o player usa parado/andando, em vez de um
+                // tamanho ampliado (*2.5 / *1.3). Assim ele não fica "gigante"
+                // nessa animação — mantém exatamente a proporção de sempre.
                 // ---------------------------------------------------------
-                const larguraCaindo = player.larguraVisual * 2.5;
-                const alturaCaindo = larguraCaindo *
-                    (RECORTE_PLAYER_CAINDO.altura / RECORTE_PLAYER_CAINDO.largura);
-                const xCaindo = centroHitboxX - larguraCaindo / 2;
-                const yCaindo = baseHitboxRealY - alturaCaindo;
                 ctx.drawImage(
                     fp,
                     RECORTE_PLAYER_CAINDO.x, RECORTE_PLAYER_CAINDO.y,
                     RECORTE_PLAYER_CAINDO.largura, RECORTE_PLAYER_CAINDO.altura,
-                    xCaindo, yCaindo,
-                    larguraCaindo, alturaCaindo
+                    playerDesenhoX, playerDesenhoY,
+                    player.larguraVisual, player.alturaVisual
                 );
             } else {
                 ctx.fillStyle = "#00aaff";
