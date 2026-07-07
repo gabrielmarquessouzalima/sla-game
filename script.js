@@ -288,7 +288,12 @@ const cenaDespedida = {
 
     // Controle do fechamento de tela tipo "olho"
     fechamentoOlho: 0, // 0 a 1
-    velocidadeFechamento: 0.012
+    velocidadeFechamento: 0.012,
+
+    // Posição travada (capturada 1x quando a animação de cair começa) para
+    // o player não se mexer nem um pixel do início ao fim dessa animação
+    anchorX: 0,
+    anchorY: 0
 };
 
 const npc = {
