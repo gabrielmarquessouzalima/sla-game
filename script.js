@@ -1458,7 +1458,14 @@ function desenhar() {
         if (estadoAtual === "PLAYER_CHORANDO_CAINDO" || estadoAtual === "FECHANDO_OLHO") {
             let fp = imgPlayerCaindoFrames[cenaDespedida.frameJogadorCaindo];
             if (fp && fp.complete && fp.width > 0) {
-                ctx.drawImage(fp, RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura, playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
+                // Recorte grande que cobre TODOS os frames da animação de cair
+                // (conteúdo real vai de X=52 a X=148, Y=52 a Y=220 entre todos os frames)
+                // Usa um canvas fixo de 256x256 completo para não cortar nada
+                const larguraCaindo = player.larguraVisual * 2.5;
+                const alturaCaindo = player.alturaVisual * 1.3;
+                const xCaindo = centroHitboxX - larguraCaindo / 2;
+                const yCaindo = baseHitboxRealY - alturaCaindo;
+                ctx.drawImage(fp, 0, 0, 256, 256, xCaindo, yCaindo, larguraCaindo, alturaCaindo);
             } else {
                 ctx.fillStyle = "#00aaff";
                 ctx.fillRect(playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
