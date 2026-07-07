@@ -215,7 +215,7 @@ nomesArquivosPlayerCaindo.forEach((src) => {
 // --- PLAYER ---
 const player = {
     x: 0, y: 100,
-    larguraVisual: 24, alturaVisual: 74,
+    larguraVisual: 25, alturaVisual: 74,
     larguraHitbox: 24, alturaHitbox: 64,
     offsetX: 9, offsetY: 2,
     velocidade: 4, velY: 0,
