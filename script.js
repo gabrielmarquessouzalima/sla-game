@@ -1455,20 +1455,26 @@ function desenhar() {
             let fp = imgPlayerCaindoFrames[cenaDespedida.frameJogadorCaindo];
             if (fp && fp.complete && fp.width > 0) {
                 // ---------------------------------------------------------
-                // A animação de cair usa exatamente a MESMA posição e o
-                // MESMO tamanho (playerDesenhoX, playerDesenhoY,
-                // larguraVisual, alturaVisual) que o player já usa parado/
-                // andando. Nada de tamanho ampliado nem recalculado — é a
-                // mesma caixa de sempre, só trocando o recorte da imagem
-                // (RECORTE_PLAYER_CAINDO) para pegar o frame certo de cada
-                // etapa da animação de cair.
+                // A altura fica IGUAL à do player parado/andando
+                // (player.alturaVisual) — mesmo tamanho vertical de sempre.
+                // A largura (eixo X) é calculada a partir da proporção real
+                // do recorte da imagem (RECORTE_PLAYER_CAINDO), em vez de
+                // ser forçada num valor fixo — é isso que corrige o "xscale"
+                // e tira o efeito de personagem esticado/magro.
+                // A posição continua ancorada no mesmo centro horizontal e
+                // na mesma base (pés) do player normal.
                 // ---------------------------------------------------------
+                const alturaCaindo = player.alturaVisual;
+                const larguraCaindo = alturaCaindo *
+                    (RECORTE_PLAYER_CAINDO.largura / RECORTE_PLAYER_CAINDO.altura);
+                const xCaindo = centroHitboxX - larguraCaindo / 2;
+                const yCaindo = baseHitboxRealY - alturaCaindo;
                 ctx.drawImage(
                     fp,
                     RECORTE_PLAYER_CAINDO.x, RECORTE_PLAYER_CAINDO.y,
                     RECORTE_PLAYER_CAINDO.largura, RECORTE_PLAYER_CAINDO.altura,
-                    playerDesenhoX, playerDesenhoY,
-                    player.larguraVisual, player.alturaVisual
+                    xCaindo, yCaindo,
+                    larguraCaindo, alturaCaindo
                 );
             } else {
                 ctx.fillStyle = "#00aaff";
