@@ -1455,23 +1455,13 @@ function desenhar() {
             let fp = imgPlayerCaindoFrames[cenaDespedida.frameJogadorCaindo];
             if (fp && fp.complete && fp.width > 0) {
                 // ---------------------------------------------------------
-                // CORREÇÃO #2: antes o código ignorava o recorte
-                // RECORTE_PLAYER_CAINDO e desenhava o frame INTEIRO
-                // (0,0,256,256) espremido numa caixinha pequena. Como o
-                // personagem ocupa só uma fração desse canvas 256x256, e essa
-                // fração muda levemente de posição em cada frame do arquivo,
-                // isso fazia o personagem encolher/deslocar de forma
-                // inconsistente a cada frame — dando a impressão de estar
-                // sendo cortado e sumindo dentro da hitbox.
-                // Agora usamos o recorte já definido (RECORTE_PLAYER_CAINDO),
-                // que cobre exatamente a área onde o personagem aparece em
-                // TODOS os frames dessa animação.
-                //
-                // CORREÇÃO #3: o destino agora usa o MESMO tamanho e a MESMA
-                // posição (playerDesenhoX/playerDesenhoY, larguraVisual x
-                // alturaVisual) que o player usa parado/andando, em vez de um
-                // tamanho ampliado (*2.5 / *1.3). Assim ele não fica "gigante"
-                // nessa animação — mantém exatamente a proporção de sempre.
+                // A animação de cair usa exatamente a MESMA posição e o
+                // MESMO tamanho (playerDesenhoX, playerDesenhoY,
+                // larguraVisual, alturaVisual) que o player já usa parado/
+                // andando. Nada de tamanho ampliado nem recalculado — é a
+                // mesma caixa de sempre, só trocando o recorte da imagem
+                // (RECORTE_PLAYER_CAINDO) para pegar o frame certo de cada
+                // etapa da animação de cair.
                 // ---------------------------------------------------------
                 ctx.drawImage(
                     fp,
