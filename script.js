@@ -1436,18 +1436,14 @@ function desenhar() {
 
         gerenciarChuva();
 
-        if (estadoAtual === "DIALOGO_INICIAL") desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
-        if (estadoAtual === "DIALOGO_NPC") desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
-
-        desenharBarrasCinematicas();
-
-        if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo)
-            desenharCaixaPensamento(cena450.texto[cena450.indiceAtual]);
-
-        if (estadoAtual === "DESPEDIDA_FALA_PLAYER")
-            desenharCaixaPensamento(cenaDespedida.falaPlayer[cenaDespedida.indicePlayer]);
-
-        // Player desenhado POR ÚLTIMO, sempre por cima das barras cinemáticas
+        // ===================================================================
+        // CORREÇÃO #1: o player agora é desenhado AQUI, antes das caixas de
+        // diálogo/pensamento e das barras cinematográficas. Antes ele era
+        // desenhado por último (comentário antigo dizia "sempre por cima das
+        // barras"), o que fazia ele aparecer por cima da caixa de diálogo,
+        // cobrindo o texto. Agora a ordem é: player -> diálogo -> barras,
+        // então tudo isso fica corretamente por cima dele.
+        // ===================================================================
         let playerRelativoX = player.x - camera.x;
         let playerY = player.y - camera.y;
         let centroHitboxX = playerRelativoX + player.offsetX + player.larguraHitbox / 2;
@@ -1458,14 +1454,32 @@ function desenhar() {
         if (estadoAtual === "PLAYER_CHORANDO_CAINDO" || estadoAtual === "FECHANDO_OLHO") {
             let fp = imgPlayerCaindoFrames[cenaDespedida.frameJogadorCaindo];
             if (fp && fp.complete && fp.width > 0) {
-                // Recorte grande que cobre TODOS os frames da animação de cair
-                // (conteúdo real vai de X=52 a X=148, Y=52 a Y=220 entre todos os frames)
-                // Usa um canvas fixo de 256x256 completo para não cortar nada
+                // ---------------------------------------------------------
+                // CORREÇÃO #2: antes o código ignorava o recorte
+                // RECORTE_PLAYER_CAINDO e desenhava o frame INTEIRO
+                // (0,0,256,256) espremido numa caixinha pequena. Como o
+                // personagem ocupa só uma fração desse canvas 256x256, e essa
+                // fração muda levemente de posição em cada frame do arquivo,
+                // isso fazia o personagem encolher/deslocar de forma
+                // inconsistente a cada frame — dando a impressão de estar
+                // sendo cortado e sumindo dentro da hitbox.
+                // Agora usamos o recorte já definido (RECORTE_PLAYER_CAINDO),
+                // que cobre exatamente a área onde o personagem aparece em
+                // TODOS os frames dessa animação, e mantemos a proporção
+                // largura/altura do recorte no destino, evitando distorção.
+                // ---------------------------------------------------------
                 const larguraCaindo = player.larguraVisual * 2.5;
-                const alturaCaindo = player.alturaVisual * 1.3;
+                const alturaCaindo = larguraCaindo *
+                    (RECORTE_PLAYER_CAINDO.altura / RECORTE_PLAYER_CAINDO.largura);
                 const xCaindo = centroHitboxX - larguraCaindo / 2;
                 const yCaindo = baseHitboxRealY - alturaCaindo;
-                ctx.drawImage(fp, 0, 0, 256, 256, xCaindo, yCaindo, larguraCaindo, alturaCaindo);
+                ctx.drawImage(
+                    fp,
+                    RECORTE_PLAYER_CAINDO.x, RECORTE_PLAYER_CAINDO.y,
+                    RECORTE_PLAYER_CAINDO.largura, RECORTE_PLAYER_CAINDO.altura,
+                    xCaindo, yCaindo,
+                    larguraCaindo, alturaCaindo
+                );
             } else {
                 ctx.fillStyle = "#00aaff";
                 ctx.fillRect(playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
@@ -1500,6 +1514,19 @@ function desenhar() {
             ctx.lineWidth = 1.5;
             ctx.strokeRect(playerRelativoX + player.offsetX, playerY + player.offsetY, player.larguraHitbox, player.alturaHitbox);
         }
+
+        // A partir daqui, tudo é desenhado por cima do player (diálogos,
+        // barras cinematográficas, etc.) — é assim que deve ser.
+        if (estadoAtual === "DIALOGO_INICIAL") desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
+        if (estadoAtual === "DIALOGO_NPC") desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
+
+        desenharBarrasCinematicas();
+
+        if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo)
+            desenharCaixaPensamento(cena450.texto[cena450.indiceAtual]);
+
+        if (estadoAtual === "DESPEDIDA_FALA_PLAYER")
+            desenharCaixaPensamento(cenaDespedida.falaPlayer[cenaDespedida.indicePlayer]);
 
         if (estadoAtual === "FECHANDO_OLHO") {
             desenharFechamentoOlho(cenaDespedida.fechamentoOlho);
