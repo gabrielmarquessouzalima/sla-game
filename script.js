@@ -215,7 +215,7 @@ nomesArquivosPlayerCaindo.forEach((src) => {
 // --- PLAYER ---
 const player = {
     x: 0, y: 100,
-    larguraVisual: 25, alturaVisual: 74,
+    larguraVisual: 24, alturaVisual: 74,
     larguraHitbox: 24, alturaHitbox: 64,
     offsetX: 9, offsetY: 2,
     velocidade: 4, velY: 0,
@@ -288,12 +288,7 @@ const cenaDespedida = {
 
     // Controle do fechamento de tela tipo "olho"
     fechamentoOlho: 0, // 0 a 1
-    velocidadeFechamento: 0.012,
-
-    // Posição travada (capturada 1x quando a animação de cair começa) para
-    // o player não se mexer nem um pixel do início ao fim dessa animação
-    anchorX: 0,
-    anchorY: 0
+    velocidadeFechamento: 0.012
 };
 
 const npc = {
@@ -1441,14 +1436,18 @@ function desenhar() {
 
         gerenciarChuva();
 
-        // ===================================================================
-        // CORREÇÃO #1: o player agora é desenhado AQUI, antes das caixas de
-        // diálogo/pensamento e das barras cinematográficas. Antes ele era
-        // desenhado por último (comentário antigo dizia "sempre por cima das
-        // barras"), o que fazia ele aparecer por cima da caixa de diálogo,
-        // cobrindo o texto. Agora a ordem é: player -> diálogo -> barras,
-        // então tudo isso fica corretamente por cima dele.
-        // ===================================================================
+        if (estadoAtual === "DIALOGO_INICIAL") desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
+        if (estadoAtual === "DIALOGO_NPC") desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
+
+        desenharBarrasCinematicas();
+
+        if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo)
+            desenharCaixaPensamento(cena450.texto[cena450.indiceAtual]);
+
+        if (estadoAtual === "DESPEDIDA_FALA_PLAYER")
+            desenharCaixaPensamento(cenaDespedida.falaPlayer[cenaDespedida.indicePlayer]);
+
+        // Player desenhado POR ÚLTIMO, sempre por cima das barras cinemáticas
         let playerRelativoX = player.x - camera.x;
         let playerY = player.y - camera.y;
         let centroHitboxX = playerRelativoX + player.offsetX + player.larguraHitbox / 2;
@@ -1459,28 +1458,14 @@ function desenhar() {
         if (estadoAtual === "PLAYER_CHORANDO_CAINDO" || estadoAtual === "FECHANDO_OLHO") {
             let fp = imgPlayerCaindoFrames[cenaDespedida.frameJogadorCaindo];
             if (fp && fp.complete && fp.width > 0) {
-                // ---------------------------------------------------------
-                // A altura fica IGUAL à do player parado/andando
-                // (player.alturaVisual) — mesmo tamanho vertical de sempre.
-                // A largura (eixo X) é calculada a partir da proporção real
-                // do recorte da imagem (RECORTE_PLAYER_CAINDO), em vez de
-                // ser forçada num valor fixo — é isso que corrige o "xscale"
-                // e tira o efeito de personagem esticado/magro.
-                // A posição continua ancorada no mesmo centro horizontal e
-                // na mesma base (pés) do player normal.
-                // ---------------------------------------------------------
-                const alturaCaindo = player.alturaVisual;
-                const larguraCaindo = alturaCaindo *
-                    (RECORTE_PLAYER_CAINDO.largura / RECORTE_PLAYER_CAINDO.altura);
+                // Recorte grande que cobre TODOS os frames da animação de cair
+                // (conteúdo real vai de X=52 a X=148, Y=52 a Y=220 entre todos os frames)
+                // Usa um canvas fixo de 256x256 completo para não cortar nada
+                const larguraCaindo = player.larguraVisual * 2.5;
+                const alturaCaindo = player.alturaVisual * 1.3;
                 const xCaindo = centroHitboxX - larguraCaindo / 2;
                 const yCaindo = baseHitboxRealY - alturaCaindo;
-                ctx.drawImage(
-                    fp,
-                    RECORTE_PLAYER_CAINDO.x, RECORTE_PLAYER_CAINDO.y,
-                    RECORTE_PLAYER_CAINDO.largura, RECORTE_PLAYER_CAINDO.altura,
-                    xCaindo, yCaindo,
-                    larguraCaindo, alturaCaindo
-                );
+                ctx.drawImage(fp, 0, 0, 256, 256, xCaindo, yCaindo, larguraCaindo, alturaCaindo);
             } else {
                 ctx.fillStyle = "#00aaff";
                 ctx.fillRect(playerDesenhoX, playerDesenhoY, player.larguraVisual, player.alturaVisual);
@@ -1515,19 +1500,6 @@ function desenhar() {
             ctx.lineWidth = 1.5;
             ctx.strokeRect(playerRelativoX + player.offsetX, playerY + player.offsetY, player.larguraHitbox, player.alturaHitbox);
         }
-
-        // A partir daqui, tudo é desenhado por cima do player (diálogos,
-        // barras cinematográficas, etc.) — é assim que deve ser.
-        if (estadoAtual === "DIALOGO_INICIAL") desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
-        if (estadoAtual === "DIALOGO_NPC") desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
-
-        desenharBarrasCinematicas();
-
-        if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo)
-            desenharCaixaPensamento(cena450.texto[cena450.indiceAtual]);
-
-        if (estadoAtual === "DESPEDIDA_FALA_PLAYER")
-            desenharCaixaPensamento(cenaDespedida.falaPlayer[cenaDespedida.indicePlayer]);
 
         if (estadoAtual === "FECHANDO_OLHO") {
             desenharFechamentoOlho(cenaDespedida.fechamentoOlho);
