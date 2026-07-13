@@ -711,8 +711,9 @@ function atualizar() {
         if(cenaPosDemo.flashTimer>=durTotal){cenaPosDemo.flashTimer=0;cenaPosDemo.flashIndex++;if(cenaPosDemo.flashIndex>=cenaPosDemo.flashDuracoes.length){cenaPosDemo.telaEmBranco=false;cenaPosDemo.alphaVermelho=0;cenaPosDemo.tituloAlpha=0;estadoAtual="TELA_VERMELHA";}}
     }
     if (estadoAtual==="TELA_VERMELHA") {
-        if(cenaPosDemo.alphaVermelho<1)cenaPosDemo.alphaVermelho=Math.min(1,cenaPosDemo.alphaVermelho+0.022);
-        if(cenaPosDemo.alphaVermelho>0.75&&cenaPosDemo.tituloAlpha<1)cenaPosDemo.tituloAlpha=Math.min(1,cenaPosDemo.tituloAlpha+0.014);
+        // Vermelho e titulo aparecem JUNTOS, com o mesmo ritmo de fade-in
+        if(cenaPosDemo.alphaVermelho<1)cenaPosDemo.alphaVermelho=Math.min(1,cenaPosDemo.alphaVermelho+0.02);
+        if(cenaPosDemo.tituloAlpha<1)cenaPosDemo.tituloAlpha=Math.min(1,cenaPosDemo.tituloAlpha+0.02);
         if(cenaPosDemo.tituloAlpha>=1){cenaPosDemo.botaoTimer++;if(cenaPosDemo.botaoTimer>=30){cenaPosDemo.botaoTimer=0;cenaPosDemo.botaoVisivel=!cenaPosDemo.botaoVisivel;}}
     }
 
