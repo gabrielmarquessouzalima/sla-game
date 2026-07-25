@@ -10,12 +10,12 @@ let estadoAtual = "TELA_INICIAL";
 
 // --- SISTEMA DE MÚSICA ---
 const playlist = [
-    "musicas/Maré_Cinza.mp3",
-    "musicas/Maré_Cinza_1_.mp3",
-    "musicas/Maré_Lenta.mp3",
-    "musicas/Maré_Lenta_1_.mp3",
-    "musicas/Bruma_Noturna.mp3",
-    "musicas/Bruma_Noturna_1_.mp3"
+    "musicas/mare_cinza.mp3",
+    "musicas/mare_cinza_1.mp3",
+    "musicas/mare_lenta.mp3",
+    "musicas/mare_lenta_1.mp3",
+    "musicas/bruma_noturna.mp3",
+    "musicas/bruma_noturna_1.mp3"
 ];
 
 let ordemMusicas = [];
