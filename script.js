@@ -49,6 +49,19 @@ function pararMusica() {
     audio.currentTime = 0;
 }
 
+// Garante que a musica esteja tocando sempre que estivermos em uma tela
+// de menu (inicial ou TELA_MENU, incluindo o menu de save aberto com ESC).
+// Chamada a cada frame no loop principal - se a musica parou por qualquer
+// motivo (erro de carregamento, autoplay bloqueado, etc.) ela tenta de novo.
+function garantirMusicaTocando() {
+    if (!musicaAtivada) return;
+    // So tenta nas telas de menu (nao na TELA_INICIAL, pois antes do clique
+    // em START o navegador bloqueia autoplay sem gesto do usuario)
+    if (estadoAtual === "TELA_MENU" && audio.paused) {
+        tocarProximaMusica();
+    }
+}
+
 embaralharPlaylist();
 audio.addEventListener("ended", tocarProximaMusica);
 
@@ -662,6 +675,8 @@ function gerenciarChuva() {
 
 // --- LOOP PRINCIPAL ---
 function atualizar() {
+    garantirMusicaTocando();
+
     if (estadoAtual==="JOGANDO") { tempoJogoTimer++; if(tempoJogoTimer>=60){tempoJogo++;tempoJogoTimer=0;} }
     if (estadoAtual==="JOGANDO"||estadoAtual==="DIALOGO_NPC") npc.tempoFlutuar+=0.05;
 
@@ -799,18 +814,33 @@ function desenhar() {
         ctx.fillStyle="#000";ctx.fillRect(0,0,canvas.width,canvas.height);
         ctx.fillStyle=`rgba(160,0,0,${cenaPosDemo.alphaVermelho.toFixed(3)})`;ctx.fillRect(0,0,canvas.width,canvas.height);
 
-        if (cenaPosDemo.tituloAlpha>0&&imgTituloNovoJogo.complete&&imgTituloNovoJogo.width>0) {
-            const maxLarg=canvas.width*0.78;
-            const escala=maxLarg/imgTituloNovoJogo.width;
-            const larg=imgTituloNovoJogo.width*escala;
-            const alt=imgTituloNovoJogo.height*escala;
-            const ix=cx-larg/2, iy=cy-alt/2-28;
-            ctx.globalAlpha=cenaPosDemo.tituloAlpha;
-            ctx.globalCompositeOperation="multiply";
-            ctx.imageSmoothingEnabled=false;
-            ctx.drawImage(imgTituloNovoJogo,ix,iy,larg,alt);
-            ctx.globalCompositeOperation="source-over";
-            ctx.globalAlpha=1;
+        if (cenaPosDemo.tituloAlpha>0) {
+            if (imgTituloNovoJogo.complete && imgTituloNovoJogo.width>0) {
+                // Imagem carregou normalmente
+                const maxLarg=canvas.width*0.78;
+                const escala=maxLarg/imgTituloNovoJogo.width;
+                const larg=imgTituloNovoJogo.width*escala;
+                const alt=imgTituloNovoJogo.height*escala;
+                const ix=cx-larg/2, iy=cy-alt/2-28;
+                ctx.globalAlpha=cenaPosDemo.tituloAlpha;
+                ctx.globalCompositeOperation="multiply";
+                ctx.imageSmoothingEnabled=false;
+                ctx.drawImage(imgTituloNovoJogo,ix,iy,larg,alt);
+                ctx.globalCompositeOperation="source-over";
+                ctx.globalAlpha=1;
+            } else {
+                // FALLBACK: a imagem ainda nao carregou ou o caminho esta
+                // errado (ex.: arquivo nao esta em "img/titulo_do_jogo.png").
+                // Sem isso o titulo simplesmente nao aparecia e nao dava
+                // nenhum aviso. Confira se o arquivo do PNG do titulo esta
+                // exatamente nesse caminho/nome no seu projeto.
+                ctx.globalAlpha=cenaPosDemo.tituloAlpha;
+                ctx.fillStyle="#ffffff";
+                ctx.font="bold 46px 'Courier New', monospace";
+                ctx.textAlign="center";
+                ctx.fillText("GUILTAME",cx,cy-20);
+                ctx.globalAlpha=1;
+            }
         }
 
         if (cenaPosDemo.tituloAlpha>=1&&cenaPosDemo.botaoVisivel) {
