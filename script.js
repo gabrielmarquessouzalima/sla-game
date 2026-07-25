@@ -823,10 +823,8 @@ function desenhar() {
                 const alt=imgTituloNovoJogo.height*escala;
                 const ix=cx-larg/2, iy=cy-alt/2-28;
                 ctx.globalAlpha=cenaPosDemo.tituloAlpha;
-                ctx.globalCompositeOperation="multiply";
                 ctx.imageSmoothingEnabled=false;
                 ctx.drawImage(imgTituloNovoJogo,ix,iy,larg,alt);
-                ctx.globalCompositeOperation="source-over";
                 ctx.globalAlpha=1;
             } else {
                 // FALLBACK: a imagem ainda nao carregou ou o caminho esta
