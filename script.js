@@ -58,12 +58,28 @@ function garantirMusicaTocando() {
     // So tenta nas telas de menu (nao na TELA_INICIAL, pois antes do clique
     // em START o navegador bloqueia autoplay sem gesto do usuario)
     if (estadoAtual === "TELA_MENU" && audio.paused) {
-        tocarProximaMusica();
+        // Cooldown evita tentar tocar a cada frame (60x/seg) quando um
+        // arquivo falha (ex.: 404) - sem isso o navegador fica martelando
+        // requisicoes pro arquivo que nao existe, travando tudo.
+        if (musicaCooldown <= 0) {
+            tocarProximaMusica();
+            musicaCooldown = 90; // ~1.5s antes de tentar de novo se falhar
+        } else {
+            musicaCooldown--;
+        }
     }
 }
+let musicaCooldown = 0;
 
 embaralharPlaylist();
+// "ended" = musica terminou normalmente; "error" = falhou ao carregar
+// (ex.: arquivo nao encontrado / 404). Em ambos os casos, pula pra proxima
+// da playlist em vez de travar tocando nada.
 audio.addEventListener("ended", tocarProximaMusica);
+audio.addEventListener("error", () => {
+    console.warn("Musica nao encontrada, pulando para a proxima:", audio.src);
+    tocarProximaMusica();
+});
 
 // --- SISTEMA DE SAVE ---
 const MAX_SAVES = 3;
