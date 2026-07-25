@@ -55,6 +55,7 @@ function pararMusica() {
 // motivo (erro de carregamento, autoplay bloqueado, etc.) ela tenta de novo.
 function garantirMusicaTocando() {
     if (!musicaAtivada) return;
+    if (musicaIndisponivel) return; // ja esgotou a playlist sem sucesso, nao insiste
     // So tenta nas telas de menu (nao na TELA_INICIAL, pois antes do clique
     // em START o navegador bloqueia autoplay sem gesto do usuario)
     if (estadoAtual === "TELA_MENU" && audio.paused) {
@@ -70,14 +71,32 @@ function garantirMusicaTocando() {
     }
 }
 let musicaCooldown = 0;
+let falhasConsecutivas = 0;
+let musicaIndisponivel = false; // true = ja tentou tudo e nada carregou, para de tentar
 
 embaralharPlaylist();
-// "ended" = musica terminou normalmente; "error" = falhou ao carregar
-// (ex.: arquivo nao encontrado / 404). Em ambos os casos, pula pra proxima
-// da playlist em vez de travar tocando nada.
-audio.addEventListener("ended", tocarProximaMusica);
+// "ended" = musica terminou normalmente (sucesso -> zera contador de falhas)
+audio.addEventListener("ended", () => {
+    falhasConsecutivas = 0;
+    tocarProximaMusica();
+});
+// "error" = falhou ao carregar (ex.: arquivo nao encontrado / 404).
+// IMPORTANTE: sem limite de tentativas, se TODOS os arquivos da playlist
+// estiverem com caminho errado, cada falha chama tocarProximaMusica(), que
+// carrega o proximo, que tambem falha, que chama de novo... um loop infinito
+// disparando erros sem parar. Por isso contamos as falhas seguidas e paramos
+// depois de esgotar a playlist inteira uma vez.
 audio.addEventListener("error", () => {
-    console.warn("Musica nao encontrada, pulando para a proxima:", audio.src);
+    falhasConsecutivas++;
+    if (falhasConsecutivas >= playlist.length) {
+        musicaIndisponivel = true;
+        console.warn(
+            "Nenhum arquivo de musica foi encontrado na pasta 'musicas/'. " +
+            "Musica desativada ate corrigir os caminhos dos arquivos. " +
+            "Ultimo caminho tentado:", audio.src
+        );
+        return; // para de tentar - evita o loop infinito
+    }
     tocarProximaMusica();
 });
 
@@ -441,7 +460,7 @@ window.addEventListener("keydown", (e) => {
             if (e.code === "ArrowUp") settingsOpcaoSelecionada = (settingsOpcaoSelecionada - 1 + settingsOpcoes.length) % settingsOpcoes.length;
             if (e.code === "ArrowDown") settingsOpcaoSelecionada = (settingsOpcaoSelecionada + 1) % settingsOpcoes.length;
             if (e.code === "Enter" || e.code === "Space" || e.code === "ArrowLeft" || e.code === "ArrowRight") {
-                if (settingsOpcaoSelecionada === 0) { musicaAtivada = !musicaAtivada; if (musicaAtivada) tocarProximaMusica(); else pararMusica(); }
+                if (settingsOpcaoSelecionada === 0) { musicaAtivada = !musicaAtivada; if (musicaAtivada) { falhasConsecutivas = 0; musicaIndisponivel = false; tocarProximaMusica(); } else pararMusica(); }
                 if (settingsOpcaoSelecionada === 1) mostrarHitbox = !mostrarHitbox;
                 if (settingsOpcaoSelecionada === 2) mostrarCoordenadas = !mostrarCoordenadas;
                 if (settingsOpcaoSelecionada === 3) subEstado = "OPCOES";
