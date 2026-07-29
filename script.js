@@ -258,6 +258,73 @@ nomesArquivosPlayerCaindo.forEach((src) => {
 const imgTituloNovoJogo = new Image();
 imgTituloNovoJogo.src = "img/titulo_do_jogo.png";
 
+// --- QUARTO (camadas) ---
+// Coloque os arquivos na pasta img/ com estes nomes (ou ajuste os caminhos):
+const imgQuartoVazio = new Image();
+imgQuartoVazio.src = "img/quarto_vazio.png";
+const imgQuartoSombra = new Image();
+imgQuartoSombra.src = "img/sombra_do_quarto.png";
+const imgQuartoPorta = new Image();
+imgQuartoPorta.src = "img/porta.png";
+const imgQuartoPosters = new Image();
+imgQuartoPosters.src = "img/posters.png";
+const imgQuartoArmario = new Image();
+imgQuartoArmario.src = "img/armario.png";
+const imgQuartoCama = new Image();
+imgQuartoCama.src = "img/cama.png";
+const imgQuartoInterruptor = new Image();
+imgQuartoInterruptor.src = "img/interruptor.png";
+const imgQuartoColoracao = new Image();
+imgQuartoColoracao.src = "img/coloracao_noturna.png";
+
+// Player do quarto – frente (parado = índice 1)
+const nomesPlayerQuartoFrente = [
+    "img/player_quarto_frente_1.png", // (8) andando
+    "img/player_quarto_frente_2.png", // (7) PARADO
+    "img/player_quarto_frente_3.png"  // (6) andando
+];
+const imgPlayerQuartoFrente = [];
+nomesPlayerQuartoFrente.forEach((src) => {
+    const img = new Image();
+    img.src = src;
+    imgPlayerQuartoFrente.push(img);
+});
+
+// Player do quarto – costas (parado = índice 1)
+const nomesPlayerQuartoTras = [
+    "img/player_quarto_tras_1.png", // (5) andando
+    "img/player_quarto_tras_2.png", // (4) PARADO
+    "img/player_quarto_tras_3.png"  // (3) andando
+];
+const imgPlayerQuartoTras = [];
+nomesPlayerQuartoTras.forEach((src) => {
+    const img = new Image();
+    img.src = src;
+    imgPlayerQuartoTras.push(img);
+});
+
+// Estado do player no quarto
+const playerQuarto = {
+    x: 420,
+    y: 280,
+    largura: 42,
+    altura: 100,
+    velocidade: 2.2,
+    direcao: "frente", // "frente" | "tras"
+    frame: 1,          // 1 = parado
+    tempoAnimacao: 0,
+    tempoPorFrame: 8,
+    andando: false,
+    // sequência ping-pong: 0 → 1 → 2 → 1 → 0 ...
+    walkSeq: [0, 1, 2, 1],
+    walkIndex: 0
+};
+
+// Escala e posição das camadas 256x256 no canvas 800x400
+const QUARTO_ESCALA = 400 / 256;
+const QUARTO_OFFSET_X = (800 - 256 * QUARTO_ESCALA) / 2; // centraliza
+const QUARTO_OFFSET_Y = 0;
+
 // --- PLAYER ---
 const player = {
     x: 0, y: 100,
@@ -533,8 +600,16 @@ window.addEventListener("keydown", (e) => {
         cenaPosDemo.timer = 0; cenaPosDemo.flashIndex = 0; cenaPosDemo.flashTimer = 0;
         cenaPosDemo.telaEmBranco = false; cenaPosDemo.alphaVermelho = 0;
         cenaPosDemo.tituloAlpha = 0; cenaPosDemo.botaoTimer = 0; cenaPosDemo.botaoVisivel = true;
-        estadoAtual = "TELA_MENU"; subEstado = "NICKNAME"; nickname = "";
-        tocarProximaMusica();
+        // Vai para o quarto (acordar do sonho) em vez do menu
+        estadoAtual = "QUARTO";
+        playerQuarto.x = 420;
+        playerQuarto.y = 280;
+        playerQuarto.direcao = "frente";
+        playerQuarto.frame = 1;
+        playerQuarto.andando = false;
+        playerQuarto.walkIndex = 0;
+        playerQuarto.tempoAnimacao = 0;
+        pararMusica();
     }
     if (estadoAtual === "JOGANDO" && e.code === "Escape") {
         saveSlotModo = "SAVE"; saveSlotOpcao = 0; subEstado = "SAVE_SLOT"; estadoAtual = "TELA_MENU";
@@ -715,10 +790,43 @@ function atualizar() {
     if (estadoAtual==="JOGANDO") { tempoJogoTimer++; if(tempoJogoTimer>=60){tempoJogo++;tempoJogoTimer=0;} }
     if (estadoAtual==="JOGANDO"||estadoAtual==="DIALOGO_NPC") npc.tempoFlutuar+=0.05;
 
-    if (estadoAtual!=="TELA_INICIAL"&&estadoAtual!=="TELA_MENU"&&estadoAtual!=="PLAYER_CHORANDO_CAINDO"&&estadoAtual!=="FECHANDO_OLHO"&&estadoAtual!=="DESPEDIDA_NARRACAO"&&estadoAtual!=="FIM_DEMO"&&estadoAtual!=="POSDEM_PISCANDO"&&estadoAtual!=="TELA_VERMELHA") {
+    if (estadoAtual!=="TELA_INICIAL"&&estadoAtual!=="TELA_MENU"&&estadoAtual!=="PLAYER_CHORANDO_CAINDO"&&estadoAtual!=="FECHANDO_OLHO"&&estadoAtual!=="DESPEDIDA_NARRACAO"&&estadoAtual!=="FIM_DEMO"&&estadoAtual!=="POSDEM_PISCANDO"&&estadoAtual!=="TELA_VERMELHA"&&estadoAtual!=="QUARTO") {
         player.velY+=player.gravidade; player.y+=player.velY;
         let baseHitboxY=player.y+player.offsetY+player.alturaHitbox;
         if(baseHitboxY>=chaoY){player.y=chaoY-player.alturaHitbox-player.offsetY;player.velY=0;player.noChao=true;}
+    }
+
+    // --- MOVIMENTO NO QUARTO ---
+    if (estadoAtual === "QUARTO") {
+        playerQuarto.andando = false;
+        let dx = 0, dy = 0;
+        if (teclas["KeyA"] || teclas["ArrowLeft"])  { dx -= playerQuarto.velocidade; }
+        if (teclas["KeyD"] || teclas["ArrowRight"]) { dx += playerQuarto.velocidade; }
+        if (teclas["KeyW"] || teclas["ArrowUp"])    { dy -= playerQuarto.velocidade; playerQuarto.direcao = "tras"; }
+        if (teclas["KeyS"] || teclas["ArrowDown"])  { dy += playerQuarto.velocidade; playerQuarto.direcao = "frente"; }
+
+        if (dx !== 0 || dy !== 0) {
+            playerQuarto.andando = true;
+            playerQuarto.x += dx;
+            playerQuarto.y += dy;
+            // limites aproximados da área andável do quarto (ajuste depois se precisar)
+            const minX = 230, maxX = 560, minY = 200, maxY = 310;
+            if (playerQuarto.x < minX) playerQuarto.x = minX;
+            if (playerQuarto.x > maxX) playerQuarto.x = maxX;
+            if (playerQuarto.y < minY) playerQuarto.y = minY;
+            if (playerQuarto.y > maxY) playerQuarto.y = maxY;
+
+            playerQuarto.tempoAnimacao++;
+            if (playerQuarto.tempoAnimacao >= playerQuarto.tempoPorFrame) {
+                playerQuarto.tempoAnimacao = 0;
+                playerQuarto.walkIndex = (playerQuarto.walkIndex + 1) % playerQuarto.walkSeq.length;
+                playerQuarto.frame = playerQuarto.walkSeq[playerQuarto.walkIndex];
+            }
+        } else {
+            playerQuarto.frame = 1; // parado
+            playerQuarto.walkIndex = 0;
+            playerQuarto.tempoAnimacao = 0;
+        }
     }
 
     if (estadoAtual==="ESPERA_POS_DIALOGO") {
@@ -843,6 +951,52 @@ function desenhar() {
     } else if (estadoAtual==="POSDEM_PISCANDO") {
         ctx.fillStyle=cenaPosDemo.telaEmBranco?"#ffffff":"#000000";
         ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    } else if (estadoAtual === "QUARTO") {
+        // Fundo preto fora do quarto
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const qx = QUARTO_OFFSET_X;
+        const qy = QUARTO_OFFSET_Y;
+        const qw = 256 * QUARTO_ESCALA;
+        const qh = 256 * QUARTO_ESCALA;
+
+        // Camadas do quarto (de trás para frente)
+        const camadas = [
+            imgQuartoVazio,
+            imgQuartoSombra,
+            imgQuartoPorta,
+            imgQuartoPosters,
+            imgQuartoArmario,
+            imgQuartoCama,
+            imgQuartoInterruptor,
+            imgQuartoColoracao
+        ];
+        camadas.forEach((img) => {
+            if (img.complete && img.width > 0) {
+                ctx.drawImage(img, 0, 0, 256, 256, qx, qy, qw, qh);
+            }
+        });
+
+        // Player do quarto
+        {
+            const frames = playerQuarto.direcao === "tras" ? imgPlayerQuartoTras : imgPlayerQuartoFrente;
+            const fi = Math.max(0, Math.min(2, playerQuarto.frame));
+            const fp = frames[fi];
+            if (fp && fp.complete && fp.width > 0) {
+                // sprite original ~68x160 dentro de 256x256; desenha proporcional
+                const pw = playerQuarto.largura;
+                const ph = playerQuarto.altura;
+                const px = playerQuarto.x - pw / 2;
+                const py = playerQuarto.y - ph;
+                ctx.drawImage(fp, px, py, pw, ph);
+            } else {
+                // fallback retângulo se imagem não carregou
+                ctx.fillStyle = "#c04060";
+                ctx.fillRect(playerQuarto.x - 15, playerQuarto.y - 60, 30, 60);
+            }
+        }
 
     } else if (estadoAtual==="TELA_VERMELHA") {
         const cx=canvas.width/2, cy=canvas.height/2;
