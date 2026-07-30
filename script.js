@@ -259,7 +259,6 @@ const imgTituloNovoJogo = new Image();
 imgTituloNovoJogo.src = "img/titulo_do_jogo.png";
 
 // --- QUARTO (camadas) ---
-// Coloque os arquivos na pasta img/ com estes nomes (ou ajuste os caminhos):
 const imgQuartoVazio = new Image();
 imgQuartoVazio.src = "img/quarto_vazio.png";
 const imgQuartoSombra = new Image();
@@ -277,96 +276,82 @@ imgQuartoInterruptor.src = "img/interruptor.png";
 const imgQuartoColoracao = new Image();
 imgQuartoColoracao.src = "img/coloracao_noturna.png";
 
-// Player do quarto – frente (parado = índice 1)
+// Player do quarto - frente (parado = indice 1)
 const nomesPlayerQuartoFrente = [
-    "img/player_quarto_frente_1.png", // (8) andando
-    "img/player_quarto_frente_2.png", // (7) PARADO
-    "img/player_quarto_frente_3.png"  // (6) andando
+    "img/player_quarto_frente_1.png",
+    "img/player_quarto_frente_2.png",
+    "img/player_quarto_frente_3.png"
 ];
 const imgPlayerQuartoFrente = [];
-nomesPlayerQuartoFrente.forEach((src) => {
-    const img = new Image();
-    img.src = src;
-    imgPlayerQuartoFrente.push(img);
-});
+nomesPlayerQuartoFrente.forEach((src) => { const img = new Image(); img.src = src; imgPlayerQuartoFrente.push(img); });
 
-// Player do quarto – costas (parado = índice 1)
+// Player do quarto - costas (parado = indice 1)
 const nomesPlayerQuartoTras = [
-    "img/player_quarto_tras_1.png", // (5) andando
-    "img/player_quarto_tras_2.png", // (4) PARADO
-    "img/player_quarto_tras_3.png"  // (3) andando
+    "img/player_quarto_tras_1.png",
+    "img/player_quarto_tras_2.png",
+    "img/player_quarto_tras_3.png"
 ];
 const imgPlayerQuartoTras = [];
-nomesPlayerQuartoTras.forEach((src) => {
-    const img = new Image();
-    img.src = src;
-    imgPlayerQuartoTras.push(img);
-});
+nomesPlayerQuartoTras.forEach((src) => { const img = new Image(); img.src = src; imgPlayerQuartoTras.push(img); });
 
-// Estado do player no quarto
-// Player no quarto — coordenadas em espaço da arte (0..256), mesma grade do quarto
+// Estado do player no quarto (coordenadas no espaco-fonte da arte, 0..256,
+// igual a grade do PNG do quarto - independe da escala de exibicao)
 const playerQuarto = {
-    x: 100,   // posição dos pés (espaço fonte 256)
-    y: 242,
-    velocidade: 1.2,
-    direcao: "frente", // "frente" | "tras"
-    frame: 1,          // 1 = parado
+    x: 100, y: 200,
+    velocidade: 2,             // inteiro -> passos sempre alinhados ao pixel
+    direcao: "frente",         // "frente" | "tras" | "esquerda" | "direita"
+    frame: 1,                  // 1 = parado (para frente/tras)
     tempoAnimacao: 0,
     tempoPorFrame: 10,
     andando: false,
-    walkSeq: [0, 1, 2, 1], // ping-pong
+    walkSeq: [0, 1, 2, 1],      // ping-pong para frente/tras
     walkIndex: 0,
-    // recorte do personagem dentro do PNG 256x256 (pixels reais do desenho)
+    // recorte do personagem novo (frente/tras) dentro do PNG 256x256
     cropX: 88, cropY: 48, cropW: 68, cropH: 160,
-    // hitbox dos pés (espaço fonte) — menor que o sprite visual
+    // hitbox dos pes (espaco-fonte) - menor que o sprite visual
     hitW: 18, hitH: 8
 };
 
-// Escala INTEIRA = pixels nítidos estilo Undertale / Deltarune / OneShot
-const QUARTO_ESCALA = 2;
-const QUARTO_OFFSET_X = Math.floor((800 - 256 * QUARTO_ESCALA) / 2); // 144
-const QUARTO_OFFSET_Y = 400 - 256 * QUARTO_ESCALA; // -112 (alinha o chão embaixo)
+// Escala INTEIRA para pixels nitidos estilo Undertale/Deltarune.
+// Aumentada de 2 para 4: a cena fica bem maior/mais preenchida na tela,
+// igual ao efeito "chunky pixels" desses jogos. Se quiser mais/menos zoom,
+// mude soh este numero (mantenha inteiro para nao borrar os pixels).
+const QUARTO_ESCALA = 4;
+const QUARTO_OFFSET_X = Math.floor((800 - 256 * QUARTO_ESCALA) / 2);
+const QUARTO_OFFSET_Y = 400 - 256 * QUARTO_ESCALA;
 
-// Limite interno da borda roxa do quarto_vazio (espaço fonte 256)
-const QUARTO_BOUNDS = { minX: 55, maxX: 190, minY: 198, maxY: 248 };
+// Limite exato do CHAO do quarto (espaco-fonte 256x256), medido pixel a
+// pixel direto no arquivo quarto_vazio.png (cor solida do chao = rgb(150,66,83)).
+// Antes estava chutado (minY:198/maxY:248) e cortava o chao de verdade;
+// os valores corretos sao estes:
+const QUARTO_BOUNDS = { minX: 54, maxX: 190, minY: 161, maxY: 243 };
 
-// Objetos sólidos (espaço fonte 256) — player não atravessa
+// Objetos solidos (espaco-fonte 256) - player nao atravessa.
+// Ajuste x/y/w/h aqui se a colisao nao bater com o desenho da cama/armario.
 const QUARTO_SOLIDOS = [
     { nome: "cama",    x: 132, y: 208, w: 59, h: 36 },
     { nome: "armario", x: 138, y: 107, w: 46, h: 118 }
 ];
 
 function quartoPlayerHitbox(px, py) {
-    return {
-        x: px - playerQuarto.hitW / 2,
-        y: py - playerQuarto.hitH,
-        w: playerQuarto.hitW,
-        h: playerQuarto.hitH
-    };
+    return { x: px - playerQuarto.hitW / 2, y: py - playerQuarto.hitH, w: playerQuarto.hitW, h: playerQuarto.hitH };
 }
-
 function quartoColideSolido(hb) {
     for (let i = 0; i < QUARTO_SOLIDOS.length; i++) {
         const s = QUARTO_SOLIDOS[i];
-        if (hb.x < s.x + s.w && hb.x + hb.w > s.x &&
-            hb.y < s.y + s.h && hb.y + hb.h > s.y) {
-            return true;
-        }
+        if (hb.x < s.x + s.w && hb.x + hb.w > s.x && hb.y < s.y + s.h && hb.y + hb.h > s.y) return true;
     }
     return false;
 }
-
 function quartoDentroBounds(hb) {
-    return hb.x >= QUARTO_BOUNDS.minX &&
-           hb.x + hb.w <= QUARTO_BOUNDS.maxX &&
-           hb.y >= QUARTO_BOUNDS.minY &&
-           hb.y + hb.h <= QUARTO_BOUNDS.maxY;
+    return hb.x >= QUARTO_BOUNDS.minX && hb.x + hb.w <= QUARTO_BOUNDS.maxX &&
+           hb.y >= QUARTO_BOUNDS.minY && hb.y + hb.h <= QUARTO_BOUNDS.maxY;
 }
 
 // --- PLAYER ---
 const player = {
     x: 0, y: 100,
-    larguraVisual: 30, alturaVisual: 74,
+    larguraVisual: 25, alturaVisual: 74,
     larguraHitbox: 24, alturaHitbox: 64,
     offsetX: 9, offsetY: 2,
     velocidade: 4, velY: 0,
@@ -641,7 +626,7 @@ window.addEventListener("keydown", (e) => {
         // Vai para o quarto (acordar do sonho) em vez do menu
         estadoAtual = "QUARTO";
         playerQuarto.x = 100;
-        playerQuarto.y = 242;
+        playerQuarto.y = 220; // dentro do chao (161-243)
         playerQuarto.direcao = "frente";
         playerQuarto.frame = 1;
         playerQuarto.andando = false;
@@ -835,32 +820,37 @@ function atualizar() {
     }
 
     // --- MOVIMENTO NO QUARTO ---
+    // Frente/tras usam os sprites novos; esquerda/direita reaproveitam o
+    // sprite antigo (overworld), igual foi pedido - vertical tem prioridade
+    // sobre horizontal quando as duas teclas sao pressionadas juntas.
     if (estadoAtual === "QUARTO") {
         playerQuarto.andando = false;
         let dx = 0, dy = 0;
-        if (teclas["KeyA"] || teclas["ArrowLeft"])  { dx -= playerQuarto.velocidade; }
-        if (teclas["KeyD"] || teclas["ArrowRight"]) { dx += playerQuarto.velocidade; }
-        if (teclas["KeyW"] || teclas["ArrowUp"])    { dy -= playerQuarto.velocidade; playerQuarto.direcao = "tras"; }
-        if (teclas["KeyS"] || teclas["ArrowDown"])  { dy += playerQuarto.velocidade; playerQuarto.direcao = "frente"; }
+        const cima    = teclas["KeyW"] || teclas["ArrowUp"];
+        const baixo   = teclas["KeyS"] || teclas["ArrowDown"];
+        const esquerda= teclas["KeyA"] || teclas["ArrowLeft"];
+        const direita = teclas["KeyD"] || teclas["ArrowRight"];
+
+        if (baixo)  { dy += playerQuarto.velocidade; playerQuarto.direcao = "frente"; }
+        if (cima)   { dy -= playerQuarto.velocidade; playerQuarto.direcao = "tras"; }
+        if (esquerda && dy === 0) { dx -= playerQuarto.velocidade; playerQuarto.direcao = "esquerda"; }
+        if (direita  && dy === 0) { dx += playerQuarto.velocidade; playerQuarto.direcao = "direita"; }
+        // Se so tecla horizontal (sem vertical) mas dy!=0 por outra tecla nao usada aqui, mantem dx tambem quando dy!=0:
+        if (esquerda && dy !== 0) dx -= playerQuarto.velocidade;
+        if (direita  && dy !== 0) dx += playerQuarto.velocidade;
 
         if (dx !== 0 || dy !== 0) {
             playerQuarto.andando = true;
 
-            // Movimento eixo X com colisão (borda roxa + cama + armário)
             if (dx !== 0) {
-                const nx = playerQuarto.x + dx;
+                const nx = Math.round(playerQuarto.x + dx); // arredonda -> sempre pixel inteiro
                 const hbX = quartoPlayerHitbox(nx, playerQuarto.y);
-                if (quartoDentroBounds(hbX) && !quartoColideSolido(hbX)) {
-                    playerQuarto.x = nx;
-                }
+                if (quartoDentroBounds(hbX) && !quartoColideSolido(hbX)) playerQuarto.x = nx;
             }
-            // Movimento eixo Y com colisão
             if (dy !== 0) {
-                const ny = playerQuarto.y + dy;
+                const ny = Math.round(playerQuarto.y + dy);
                 const hbY = quartoPlayerHitbox(playerQuarto.x, ny);
-                if (quartoDentroBounds(hbY) && !quartoColideSolido(hbY)) {
-                    playerQuarto.y = ny;
-                }
+                if (quartoDentroBounds(hbY) && !quartoColideSolido(hbY)) playerQuarto.y = ny;
             }
 
             playerQuarto.tempoAnimacao++;
@@ -870,7 +860,7 @@ function atualizar() {
                 playerQuarto.frame = playerQuarto.walkSeq[playerQuarto.walkIndex];
             }
         } else {
-            playerQuarto.frame = 1; // parado
+            playerQuarto.frame = 1;
             playerQuarto.walkIndex = 0;
             playerQuarto.tempoAnimacao = 0;
         }
@@ -1000,58 +990,87 @@ function desenhar() {
         ctx.fillRect(0,0,canvas.width,canvas.height);
 
     } else if (estadoAtual === "QUARTO") {
-        // Fundo preto fora do quarto
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.imageSmoothingEnabled = false;
 
+        const S  = QUARTO_ESCALA;
         const qx = QUARTO_OFFSET_X;
         const qy = QUARTO_OFFSET_Y;
-        const qw = 256 * QUARTO_ESCALA;
-        const qh = 256 * QUARTO_ESCALA;
+        const qw = 256 * S;
+        const qh = 256 * S;
 
-        // Camadas do quarto (de trás para frente) — mesma escala inteira
+        // Camadas do quarto (de tras para frente), todas na mesma escala
         const camadas = [
-            imgQuartoVazio,
-            imgQuartoSombra,
-            imgQuartoPorta,
-            imgQuartoPosters,
-            imgQuartoArmario,
-            imgQuartoCama,
-            imgQuartoInterruptor,
-            imgQuartoColoracao
+            imgQuartoVazio, imgQuartoSombra, imgQuartoPorta, imgQuartoPosters,
+            imgQuartoArmario, imgQuartoCama, imgQuartoInterruptor, imgQuartoColoracao
         ];
         camadas.forEach((img) => {
-            if (img.complete && img.width > 0) {
-                ctx.drawImage(img, 0, 0, 256, 256, qx, qy, qw, qh);
-            }
+            if (img.complete && img.width > 0) ctx.drawImage(img, 0, 0, 256, 256, qx, qy, qw, qh);
         });
 
-        // Player do quarto — recorte dos pixels reais, mesma escala do quarto
-        {
+        // Posicao dos pes do player na tela (pixel inteiro - sem blur)
+        const pesX = Math.floor(qx + playerQuarto.x * S);
+        const pesY = Math.floor(qy + playerQuarto.y * S);
+
+        if (playerQuarto.direcao === "esquerda" || playerQuarto.direcao === "direita") {
+            // --- Lados: reaproveita o sprite ANTIGO (overworld), escalado
+            // para ter a mesma altura do sprite novo de frente/tras, para
+            // o personagem nao mudar de tamanho ao virar de lado.
+            const alturaAlvo = playerQuarto.cropH * S;
+            const escalaAntigo = alturaAlvo / RECORTE_PLAYER.altura;
+            const larguraAntigo = RECORTE_PLAYER.largura * escalaAntigo;
+
+            // Alterna 2 frames de "andando" (mesmo timer do walkIndex),
+            // ou fica parado (imgPlayerParado) quando nao esta andando.
+            let imgLado = imgPlayerParado;
+            if (playerQuarto.andando) {
+                const fi = playerQuarto.walkIndex % 2;
+                if (imgPlayerCorrendoFrames[fi] && imgPlayerCorrendoFrames[fi].complete && imgPlayerCorrendoFrames[fi].width > 0) {
+                    imgLado = imgPlayerCorrendoFrames[fi];
+                }
+            }
+
+            const px = pesX - larguraAntigo / 2;
+            const py = pesY - alturaAlvo;
+
+            if (imgLado.complete && imgLado.width > 0) {
+                ctx.save();
+                if (playerQuarto.direcao === "esquerda") {
+                    // Sprite antigo olha para a direita por padrao -> espelha para esquerda
+                    ctx.translate(px + larguraAntigo / 2, py + alturaAlvo / 2);
+                    ctx.scale(-1, 1);
+                    ctx.translate(-(px + larguraAntigo / 2), -(py + alturaAlvo / 2));
+                }
+                ctx.drawImage(
+                    imgLado,
+                    RECORTE_PLAYER.x, RECORTE_PLAYER.y, RECORTE_PLAYER.largura, RECORTE_PLAYER.altura,
+                    Math.floor(px), Math.floor(py), Math.round(larguraAntigo), Math.round(alturaAlvo)
+                );
+                ctx.restore();
+            } else {
+                ctx.fillStyle = "#c04060";
+                ctx.fillRect(Math.floor(px), Math.floor(py), Math.round(larguraAntigo), Math.round(alturaAlvo));
+            }
+        } else {
+            // --- Frente/tras: sprites novos do quarto
             const frames = playerQuarto.direcao === "tras" ? imgPlayerQuartoTras : imgPlayerQuartoFrente;
             const fi = Math.max(0, Math.min(2, playerQuarto.frame));
             const fp = frames[fi];
+            const pw = playerQuarto.cropW * S;
+            const ph = playerQuarto.cropH * S;
+            const px = pesX - pw / 2;
+            const py = pesY - ph;
+
             if (fp && fp.complete && fp.width > 0) {
-                const S = QUARTO_ESCALA;
-                const pw = playerQuarto.cropW * S; // 68*2 = 136
-                const ph = playerQuarto.cropH * S; // 160*2 = 320
-                // x/y do player = pés no espaço fonte → tela
-                const px = qx + playerQuarto.x * S - pw / 2;
-                const py = qy + playerQuarto.y * S - ph;
                 ctx.drawImage(
                     fp,
                     playerQuarto.cropX, playerQuarto.cropY, playerQuarto.cropW, playerQuarto.cropH,
                     Math.floor(px), Math.floor(py), pw, ph
                 );
             } else {
-                const S = QUARTO_ESCALA;
                 ctx.fillStyle = "#c04060";
-                ctx.fillRect(
-                    Math.floor(qx + playerQuarto.x * S - 10),
-                    Math.floor(qy + playerQuarto.y * S - 40),
-                    20, 40
-                );
+                ctx.fillRect(Math.floor(px), Math.floor(py), pw, ph);
             }
         }
 
