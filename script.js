@@ -316,9 +316,35 @@ const playerQuarto = {
 // Aumentada de 2 para 4: a cena fica bem maior/mais preenchida na tela,
 // igual ao efeito "chunky pixels" desses jogos. Se quiser mais/menos zoom,
 // mude soh este numero (mantenha inteiro para nao borrar os pixels).
-const QUARTO_ESCALA = 4;
-const QUARTO_OFFSET_X = Math.floor((800 - 256 * QUARTO_ESCALA) / 2);
-const QUARTO_OFFSET_Y = 400 - 256 * QUARTO_ESCALA;
+// Escala INTEIRA para pixels nitidos. Reduzida de 4 para 2: em 4 o player
+// (que tem ~160px de altura no espaco-fonte) ficava maior que a propria
+// tela (160*4=640 > canvas de 400). O efeito "mundo grande" agora vem da
+// CAMERA que segue o player (como no Deltarune), nao de esticar tudo.
+const QUARTO_ESCALA = 2;
+
+// Camera do quarto: guarda, em espaco-fonte (0..256), o canto superior
+// esquerdo que aparece no canto (0,0) da tela. Atualizada a cada frame
+// para seguir o player, com suavizacao leve.
+const quartoCamera = { x: 0, y: 0 };
+
+function quartoAtualizarCamera() {
+    const S = QUARTO_ESCALA;
+    const larguraVisivelFonte = canvas.width / S;
+    const alturaVisivelFonte = canvas.height / S;
+
+    let alvoX = playerQuarto.x - larguraVisivelFonte / 2;
+    let alvoY = playerQuarto.y - alturaVisivelFonte / 2;
+
+    // Trava a camera para nao mostrar além das bordas da imagem do quarto (0..256)
+    const maxX = Math.max(0, 256 - larguraVisivelFonte);
+    const maxY = Math.max(0, 256 - alturaVisivelFonte);
+    alvoX = Math.max(0, Math.min(maxX, alvoX));
+    alvoY = Math.max(0, Math.min(maxY, alvoY));
+
+    // Suavizacao leve (a camera "persegue" o player em vez de grudar 100%)
+    quartoCamera.x += (alvoX - quartoCamera.x) * 0.15;
+    quartoCamera.y += (alvoY - quartoCamera.y) * 0.15;
+}
 
 // Limite exato do CHAO do quarto (espaco-fonte 256x256), medido pixel a
 // pixel direto no arquivo quarto_vazio.png (cor solida do chao = rgb(150,66,83)).
@@ -864,6 +890,8 @@ function atualizar() {
             playerQuarto.walkIndex = 0;
             playerQuarto.tempoAnimacao = 0;
         }
+
+        quartoAtualizarCamera();
     }
 
     if (estadoAtual==="ESPERA_POS_DIALOGO") {
@@ -995,8 +1023,11 @@ function desenhar() {
         ctx.imageSmoothingEnabled = false;
 
         const S  = QUARTO_ESCALA;
-        const qx = QUARTO_OFFSET_X;
-        const qy = QUARTO_OFFSET_Y;
+        // qx/qy agora vem da camera que segue o player (em vez de um
+        // offset fixo) - eh isso que da o efeito "mundo grande" tipo
+        // Deltarune, sem precisar esticar o player alem do tamanho normal.
+        const qx = Math.floor(-quartoCamera.x * S);
+        const qy = Math.floor(-quartoCamera.y * S);
         const qw = 256 * S;
         const qh = 256 * S;
 
