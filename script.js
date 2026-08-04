@@ -379,8 +379,10 @@ const QUARTO_BOUNDS = { minX: 54, maxX: 190, minY: 161, maxY: 243 };
 // "parede invisivel" quando voce tentava atravessar o quarto. Assim que
 // eu tiver o arquivo armario.png, meço o contorno real e reativo certinho.
 const QUARTO_SOLIDOS = [
-    { nome: "cama", x: 132, y: 208, w: 59, h: 36 }
-    // { nome: "armario", x: 138, y: 107, w: 46, h: 118 } <- volta quando tiver o arquivo real
+    { nome: "cama", x: 132, y: 208, w: 59, h: 36 },
+    // Armario: so a base no chao (arte real termina ~y=171). Nao usa a
+    // altura visual inteira senao vira "parede invisivel" no meio do quarto.
+    { nome: "armario", x: 138, y: 155, w: 46, h: 20 }
 ];
 
 // Objetos INTERATIVEIS (espaco-fonte 256) - o player passa por cima
@@ -418,7 +420,7 @@ function quartoDentroBounds(hb) {
 // --- PLAYER ---
 const player = {
     x: 0, y: 100,
-    larguraVisual: 35, alturaVisual: 74,
+    larguraVisual: 25, alturaVisual: 74,
     larguraHitbox: 24, alturaHitbox: 64,
     offsetX: 9, offsetY: 2,
     velocidade: 4, velY: 0,
@@ -597,6 +599,7 @@ window.addEventListener("keydown", (e) => {
                     npc2.estado = "OLHANDO_DIREITA";
                     estadoAtual = "DIALOGO_INICIAL";
                     dialogoInicial.indiceAtual = 0;
+                    typewriterIniciar(dialogoInicial.texto[0], "ini_0");
                 }
                 if (menuOpcaoSelecionada === 1) { saveSlotModo = "LOAD"; saveSlotOpcao = 0; subEstado = "SAVE_SLOT"; }
                 if (menuOpcaoSelecionada === 2) { viewSavesOpcao = 0; subEstado = "VIEW_SAVES"; }
@@ -652,38 +655,57 @@ window.addEventListener("keydown", (e) => {
     }
 
     if (estadoAtual === "CENA_450" && cena450.timerEspera >= cena450.tempoParaDialogo && (e.code === "Space" || e.code === "Enter")) {
+        if (!typewriterCompleto()) { typewriterPular(); return; }
         cena450.indiceAtual++;
         if (cena450.indiceAtual >= cena450.texto.length) {
             estadoAtual = "ESPERA_POS_DIALOGO";
             cena450.timerPausaPos = 0;
             teclas["KeyD"] = false; teclas["KeyA"] = false;
             player.estaAndando = false;
+        } else {
+            typewriterIniciar(cena450.texto[cena450.indiceAtual], "cena450_" + cena450.indiceAtual);
         }
     }
     if (estadoAtual === "DIALOGO_INICIAL" && (e.code === "Space" || e.code === "Enter")) {
+        if (!typewriterCompleto()) { typewriterPular(); return; }
         dialogoInicial.indiceAtual++;
-        if (dialogoInicial.indiceAtual >= dialogoInicial.texto.length) estadoAtual = "JOGANDO";
+        if (dialogoInicial.indiceAtual >= dialogoInicial.texto.length) {
+            estadoAtual = "JOGANDO";
+        } else {
+            typewriterIniciar(dialogoInicial.texto[dialogoInicial.indiceAtual], "ini_" + dialogoInicial.indiceAtual);
+        }
     }
     if (estadoAtual === "DIALOGO_NPC" && (e.code === "Space" || e.code === "Enter")) {
+        if (!typewriterCompleto()) { typewriterPular(); return; }
         npc.indiceAtual++;
-        if (npc.indiceAtual >= npc.dialogo.length) { estadoAtual = "JOGANDO"; npc.jaConversou = true; npc.x = -9999; }
+        if (npc.indiceAtual >= npc.dialogo.length) {
+            estadoAtual = "JOGANDO"; npc.jaConversou = true; npc.x = -9999;
+        } else {
+            typewriterIniciar(npc.dialogo[npc.indiceAtual], "npc_" + npc.indiceAtual);
+        }
     }
     if (estadoAtual === "DESPEDIDA_FALA_PLAYER" && (e.code === "Space" || e.code === "Enter")) {
+        if (!typewriterCompleto()) { typewriterPular(); return; }
         cenaDespedida.indicePlayer++;
         if (cenaDespedida.indicePlayer >= cenaDespedida.falaPlayer.length) {
             estadoAtual = "RAPOSA_VIRANDO_CORPO";
             cenaDespedida.frameVirandoCorpo = 0;
             cenaDespedida.timerVirandoCorpo = 0;
             npc2.estado = "VIRANDO_CORPO";
+        } else {
+            typewriterIniciar(cenaDespedida.falaPlayer[cenaDespedida.indicePlayer], "desp_" + cenaDespedida.indicePlayer);
         }
     }
     if (estadoAtual === "DESPEDIDA_NARRACAO" && (e.code === "Space" || e.code === "Enter")) {
+        if (!typewriterCompleto()) { typewriterPular(); return; }
         cenaDespedida.indiceNarracao++;
         if (cenaDespedida.indiceNarracao >= cenaDespedida.narracao.length) {
             cenaPosDemo.timer = 0; cenaPosDemo.flashIndex = 0; cenaPosDemo.flashTimer = 0;
             cenaPosDemo.telaEmBranco = false; cenaPosDemo.alphaVermelho = 0;
             cenaPosDemo.tituloAlpha = 0; cenaPosDemo.botaoTimer = 0; cenaPosDemo.botaoVisivel = true;
             estadoAtual = "FIM_DEMO";
+        } else {
+            typewriterIniciar(cenaDespedida.narracao[cenaDespedida.indiceNarracao], "narr_" + cenaDespedida.indiceNarracao);
         }
     }
     if (estadoAtual === "TELA_VERMELHA" && cenaPosDemo.tituloAlpha >= 1 && (e.code === "Space" || e.code === "Enter")) {
@@ -877,6 +899,11 @@ function gerenciarChuva() {
 function atualizar() {
     garantirMusicaTocando();
 
+    // Typewriter: avanca letras nos estados de dialogo
+    if (estadoAtual==="DIALOGO_INICIAL"||estadoAtual==="DIALOGO_NPC"||estadoAtual==="DESPEDIDA_NARRACAO"||estadoAtual==="DESPEDIDA_FALA_PLAYER"||(estadoAtual==="CENA_450"&&cena450.timerEspera>=cena450.tempoParaDialogo)) {
+        typewriterAtualizar();
+    }
+
     if (estadoAtual==="JOGANDO") { tempoJogoTimer++; if(tempoJogoTimer>=60){tempoJogo++;tempoJogoTimer=0;} }
     if (estadoAtual==="JOGANDO"||estadoAtual==="DIALOGO_NPC") npc.tempoFlutuar+=0.05;
 
@@ -946,7 +973,7 @@ function atualizar() {
     }
     if (estadoAtual==="RAPOSA_VIRANDO") {
         player.estaAndando=false; npc2.timerAnimacao++;
-        if(npc2.timerAnimacao>=npc2.tempoPorFrame){npc2.timerAnimacao=0;if(npc2.frameAnimacao<imgFoxFrames.length-1){npc2.frameAnimacao++;}else{npc2.estado="OLHANDO_ESQUERDA";cena450.concluida=true;cena450.ativa=false;estadoAtual="DESPEDIDA_FALA_PLAYER";cenaDespedida.indicePlayer=0;}}
+        if(npc2.timerAnimacao>=npc2.tempoPorFrame){npc2.timerAnimacao=0;if(npc2.frameAnimacao<imgFoxFrames.length-1){npc2.frameAnimacao++;}else{npc2.estado="OLHANDO_ESQUERDA";cena450.concluida=true;cena450.ativa=false;estadoAtual="DESPEDIDA_FALA_PLAYER";cenaDespedida.indicePlayer=0;typewriterIniciar(cenaDespedida.falaPlayer[0],"desp_0");}}
     }
     if (estadoAtual==="RAPOSA_VIRANDO_CORPO") {
         cenaDespedida.timerVirandoCorpo++;
@@ -964,7 +991,7 @@ function atualizar() {
     }
     if (estadoAtual==="FECHANDO_OLHO") {
         cenaDespedida.fechamentoOlho+=cenaDespedida.velocidadeFechamento;
-        if(cenaDespedida.fechamentoOlho>=1){cenaDespedida.fechamentoOlho=1;estadoAtual="DESPEDIDA_NARRACAO";cenaDespedida.indiceNarracao=0;}
+        if(cenaDespedida.fechamentoOlho>=1){cenaDespedida.fechamentoOlho=1;estadoAtual="DESPEDIDA_NARRACAO";cenaDespedida.indiceNarracao=0;typewriterIniciar(cenaDespedida.narracao[0],"narr_0");}
     }
 
     // Pos-demo
@@ -993,13 +1020,19 @@ function atualizar() {
         if(teclas["KeyD"]){player.x+=player.velocidade;player.direcao="direita";player.estaAndando=true;}
         if(player.estaAndando&&player.noChao){player.tempoAnimacao++;if(player.tempoAnimacao>=10){player.frameAtual=player.frameAtual===0?1:0;player.tempoAnimacao=0;}}else{player.frameAtual=0;}
         let centroPlayerX=player.x+player.offsetX+(player.larguraHitbox/2);
-        if(!npc.jaConversou&&npc.x!==-9999){let distancia=Math.abs(centroPlayerX-npc.x);if(distancia<npc.distanciaInteracao){estadoAtual="DIALOGO_NPC";teclas["KeyA"]=false;teclas["KeyD"]=false;player.estaAndando=false;}}
+        if(!npc.jaConversou&&npc.x!==-9999){let distancia=Math.abs(centroPlayerX-npc.x);if(distancia<npc.distanciaInteracao){estadoAtual="DIALOGO_NPC";npc.indiceAtual=0;teclas["KeyA"]=false;teclas["KeyD"]=false;player.estaAndando=false;typewriterIniciar(npc.dialogo[0],"npc_0");}}
         camera.x=player.x-150; if(camera.x<0)camera.x=0;
         if((teclas["KeyW"]||teclas["Space"])&&player.noChao){player.velY=player.pulo;player.noChao=false;}
     }
 
     if(estadoAtual==="CENA_450"||estadoAtual==="ESPERA_POS_DIALOGO"||estadoAtual==="RAPOSA_VIRANDO"||estadoAtual==="DESPEDIDA_FALA_PLAYER"||estadoAtual==="RAPOSA_VIRANDO_CORPO"||estadoAtual==="RAPOSA_ANDANDO_SAIDA"||estadoAtual==="PLAYER_CHORANDO_CAINDO"||cena450.concluida){
-        if(estadoAtual==="CENA_450")cena450.timerEspera++;
+        if(estadoAtual==="CENA_450"){
+            cena450.timerEspera++;
+            if(cena450.timerEspera===cena450.tempoParaDialogo){
+                cena450.indiceAtual=0;
+                typewriterIniciar(cena450.texto[0],"cena450_0");
+            }
+        }
         if(cena450.alturaBarras<cena450.maxAlturaBarras)cena450.alturaBarras+=cena450.velocidadeBarras;
         if(camera.y<90)camera.y+=(cena450.velocidadeBarras*0.65);
     } else {
@@ -1011,18 +1044,61 @@ function atualizar() {
     requestAnimationFrame(atualizar);
 }
 
+// --- TYPEWRITER (estilo Deltarune: letras aparecem uma a uma) ---
+const typewriter = {
+    textoCompleto: "",
+    charsVisiveis: 0,
+    timer: 0,
+    framesPorChar: 2, // menor = mais rapido (2 ≈ bem rapido, tipo Deltarune)
+    linhaId: null
+};
+
+function typewriterIniciar(texto, id) {
+    if (typewriter.linhaId === id && typewriter.textoCompleto === texto) return;
+    typewriter.textoCompleto = texto || "";
+    typewriter.charsVisiveis = 0;
+    typewriter.timer = 0;
+    typewriter.linhaId = id;
+}
+
+function typewriterAtualizar() {
+    if (typewriter.charsVisiveis >= typewriter.textoCompleto.length) return;
+    typewriter.timer++;
+    if (typewriter.timer >= typewriter.framesPorChar) {
+        typewriter.timer = 0;
+        typewriter.charsVisiveis++;
+    }
+}
+
+function typewriterTexto() {
+    return typewriter.textoCompleto.slice(0, typewriter.charsVisiveis);
+}
+
+function typewriterCompleto() {
+    return typewriter.charsVisiveis >= typewriter.textoCompleto.length;
+}
+
+function typewriterPular() {
+    typewriter.charsVisiveis = typewriter.textoCompleto.length;
+}
+
 // --- UI ---
 function desenharCaixaTexto(texto) {
     ctx.fillStyle="rgba(0,0,26,0.9)";ctx.fillRect(caixaDialogo.x,caixaDialogo.y,caixaDialogo.largura,caixaDialogo.altura);
     ctx.strokeStyle="#ff0055";ctx.lineWidth=2;ctx.strokeRect(caixaDialogo.x,caixaDialogo.y,caixaDialogo.largura,caixaDialogo.altura);
-    ctx.fillStyle="white";ctx.font="20px 'Courier New', monospace";ctx.textAlign="left";ctx.fillText(texto,caixaDialogo.x+20,caixaDialogo.y+55);
-    ctx.font="12px 'Courier New', monospace";ctx.fillStyle="rgba(0,255,204,0.7)";ctx.fillText("[Espaco / Enter] para continuar",caixaDialogo.x+20,caixaDialogo.y+100);
+    ctx.fillStyle="white";ctx.font="20px 'Courier New', monospace";ctx.textAlign="left";
+    ctx.fillText(typewriterTexto(),caixaDialogo.x+20,caixaDialogo.y+55);
+    if (typewriterCompleto()) {
+        ctx.font="12px 'Courier New', monospace";ctx.fillStyle="rgba(0,255,204,0.7)";
+        ctx.fillText("[Espaco / Enter] para continuar",caixaDialogo.x+20,caixaDialogo.y+100);
+    }
 }
 
 function desenharCaixaPensamento(texto) {
     ctx.fillStyle="rgba(75,0,130,0.9)";ctx.fillRect(caixaDialogo.x,20,caixaDialogo.largura,80);
     ctx.strokeStyle="#ff0000";ctx.lineWidth=3;ctx.strokeRect(caixaDialogo.x,20,caixaDialogo.largura,80);
-    ctx.fillStyle="white";ctx.font="18px 'Courier New', monospace";ctx.textAlign="center";ctx.fillText(texto,canvas.width/2,65);
+    ctx.fillStyle="white";ctx.font="18px 'Courier New', monospace";ctx.textAlign="center";
+    ctx.fillText(typewriterTexto(),canvas.width/2,65);
 }
 
 function desenharBarrasCinematicas() {
