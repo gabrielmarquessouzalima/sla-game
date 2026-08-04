@@ -325,7 +325,15 @@ const QUARTO_ESCALA = 3;
 // (256/64=4). O player NAO usa mais QUARTO_ESCALA/4 - agora tem escala
 // PROPRIA, fixa, desligada da escala do quarto. Assim o tamanho dele (que
 // ja esta perfeito) nao muda mais quando a gente ajusta o zoom do quarto.
-const QUARTO_PLAYER_ESCALA = 1;
+// O ARQUIVO do player (256x256) tem o desenho feito numa grade real de
+// 64x64 - cada "pixel de arte" ocupa um bloco de 4x4 pixels no arquivo
+// (256/64=4). Por isso a escala do player SEMPRE tem que ser a escala do
+// quarto dividida por 4 - assim os dois crescem/encolhem JUNTOS e a
+// proporcao real (player ~1.11x a altura da cama) se mantem, nao importa
+// o valor de QUARTO_ESCALA. (Um valor fixo tipo "1" quebra essa proporcao
+// toda vez que QUARTO_ESCALA muda - foi isso que deixou o player "maior"
+// depois de reduzir o zoom do quarto.)
+const QUARTO_PLAYER_ESCALA = QUARTO_ESCALA / 4;
 
 // Camera do quarto: guarda, em espaco-fonte (0..256), o canto superior
 // esquerdo que aparece no canto (0,0) da tela. Atualizada a cada frame
@@ -364,13 +372,15 @@ function quartoAtualizarCamera() {
 const QUARTO_BOUNDS = { minX: 54, maxX: 190, minY: 161, maxY: 243 };
 
 // Objetos solidos (espaco-fonte 256) - player nao atravessa.
-// Ajuste x/y/w/h aqui se a colisao nao bater com o desenho da cama/armario.
 // cama: medida EXATA direto do arquivo cama.png (confirmada, nao precisa mexer).
-// armario: ainda e um CHUTE do Grok - preciso do arquivo armario.png para medir
-// o contorno real (sem a sombra) e corrigir esses numeros com precisao.
+// armario: DESATIVADO por enquanto. O numero era um CHUTE do Grok que
+// descia ate y=225 - quase no meio do chao (que vai ate y=243), bloqueando
+// uma area enorme que devia estar livre. Era ISSO que estava parecendo
+// "parede invisivel" quando voce tentava atravessar o quarto. Assim que
+// eu tiver o arquivo armario.png, meço o contorno real e reativo certinho.
 const QUARTO_SOLIDOS = [
-    { nome: "cama",    x: 132, y: 208, w: 59, h: 36 },
-    { nome: "armario", x: 138, y: 107, w: 46, h: 118 }
+    { nome: "cama", x: 132, y: 208, w: 59, h: 36 }
+    // { nome: "armario", x: 138, y: 107, w: 46, h: 118 } <- volta quando tiver o arquivo real
 ];
 
 // Objetos INTERATIVEIS (espaco-fonte 256) - o player passa por cima
@@ -408,7 +418,7 @@ function quartoDentroBounds(hb) {
 // --- PLAYER ---
 const player = {
     x: 0, y: 100,
-    larguraVisual: 35, alturaVisual: 74,
+    larguraVisual: 25, alturaVisual: 74,
     larguraHitbox: 24, alturaHitbox: 64,
     offsetX: 9, offsetY: 2,
     velocidade: 4, velY: 0,
