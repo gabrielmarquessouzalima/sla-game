@@ -385,14 +385,152 @@ const QUARTO_SOLIDOS = [
     { nome: "armario", x: 138, y: 155, w: 46, h: 20 }
 ];
 
-// Objetos INTERATIVEIS (espaco-fonte 256) - o player passa por cima
-// normalmente (nao bloqueiam), servem so para detectar quando o player
-// esta perto o suficiente para interagir (ex.: mostrar um "[E] examinar").
-// Os posters ainda sao um CHUTE - preciso do arquivo posters.png para medir
-// o contorno exato dos 3 juntos.
+// Zonas de interacao no CHAO (espaco-fonte 256) - o player precisa estar
+// perto dos pes, nao na parede. Por isso a area fica na faixa do chao.
 const QUARTO_INTERATIVEIS = [
-    { nome: "posters", x: 95, y: 92, w: 55, h: 35 }
+    { nome: "posters", x: 85,  y: 155, w: 70, h: 50 },
+    { nome: "armario", x: 128, y: 150, w: 60, h: 55 },
+    { nome: "cama",    x: 120, y: 200, w: 75, h: 48 }
 ];
+
+// --- DIALOGOS DE INTERACAO DO QUARTO ---
+const quartoDialogo = {
+    ativo: false,
+    objeto: null,
+    // "texto" = so avanca linhas | "escolha" = SIM/NAO | "pensamento" = caixa roxa
+    modo: "texto",
+    linhas: [],
+    indice: 0,
+    escolhaSelecionada: 0, // 0 = SIM, 1 = NAO
+    // fluxo do armario: "intro" | "abrir" | "dentro" | "pegar" | "pensamento"
+    etapa: null
+};
+
+function quartoDialogoFechar() {
+    quartoDialogo.ativo = false;
+    quartoDialogo.objeto = null;
+    quartoDialogo.modo = "texto";
+    quartoDialogo.linhas = [];
+    quartoDialogo.indice = 0;
+    quartoDialogo.escolhaSelecionada = 0;
+    quartoDialogo.etapa = null;
+    estadoAtual = "QUARTO";
+}
+
+function quartoDialogoIniciar(objeto) {
+    quartoDialogo.ativo = true;
+    quartoDialogo.objeto = objeto;
+    quartoDialogo.escolhaSelecionada = 0;
+    estadoAtual = "QUARTO_DIALOGO";
+
+    if (objeto === "posters") {
+        quartoDialogo.modo = "texto";
+        quartoDialogo.etapa = null;
+        quartoDialogo.linhas = [
+            "sao tres posteres desenhados pela sua irma",
+            "um e um desenho de um jogo de escalada e morangos sei la...",
+            "algo do tipo",
+            "outro e um desenho de um jogo de um mecias que tem o sol...",
+            "e o ultimimo e um rpg que voce pode poupar seus oponentes...",
+            "poupar???",
+            "sera que isso existe no mundo real???",
+            "chega ate a ser engraçado"
+        ];
+        quartoDialogo.indice = 0;
+        typewriterIniciar(quartoDialogo.linhas[0], "qd_posters_0");
+    } else if (objeto === "cama") {
+        quartoDialogo.modo = "pensamento";
+        quartoDialogo.etapa = null;
+        quartoDialogo.linhas = [
+            "eu perdi meu sono nao quero dormir agora"
+        ];
+        quartoDialogo.indice = 0;
+        typewriterIniciar(quartoDialogo.linhas[0], "qd_cama_0");
+    } else if (objeto === "armario") {
+        quartoDialogo.modo = "texto";
+        quartoDialogo.etapa = "intro";
+        quartoDialogo.linhas = ["e um armario"];
+        quartoDialogo.indice = 0;
+        typewriterIniciar(quartoDialogo.linhas[0], "qd_arm_intro_0");
+    }
+}
+
+function quartoDialogoAvancar() {
+    // Typewriter ainda digitando -> completa
+    if (!typewriterCompleto()) {
+        typewriterPular();
+        return;
+    }
+
+    // --- ESCOLHA SIM/NAO ---
+    if (quartoDialogo.modo === "escolha") {
+        const escolheuSim = quartoDialogo.escolhaSelecionada === 0;
+        if (quartoDialogo.etapa === "abrir") {
+            if (!escolheuSim) { quartoDialogoFechar(); return; }
+            // Sim -> conteudo do armario
+            quartoDialogo.modo = "texto";
+            quartoDialogo.etapa = "dentro";
+            quartoDialogo.linhas = [
+                "dentro do armario tem uma caixa de plastico transparente com uns bonecos",
+                "sao bonecos de blocos de montar colecionaveis de ninjas coloridos"
+            ];
+            quartoDialogo.indice = 0;
+            typewriterIniciar(quartoDialogo.linhas[0], "qd_arm_dentro_0");
+            return;
+        }
+        if (quartoDialogo.etapa === "pegar") {
+            if (!escolheuSim) { quartoDialogoFechar(); return; }
+            // Sim -> pensamento do player (caixa roxa)
+            quartoDialogo.modo = "pensamento";
+            quartoDialogo.etapa = "pensamento";
+            quartoDialogo.linhas = [
+                "nao vou tiralos dai",
+                "vao quebrar e...",
+                "n-",
+                "nao pegue por favor"
+            ];
+            quartoDialogo.indice = 0;
+            typewriterIniciar(quartoDialogo.linhas[0], "qd_arm_pens_0");
+            return;
+        }
+        return;
+    }
+
+    // --- TEXTO / PENSAMENTO: proxima linha ---
+    quartoDialogo.indice++;
+    if (quartoDialogo.indice < quartoDialogo.linhas.length) {
+        const id = "qd_" + (quartoDialogo.objeto || "x") + "_" + (quartoDialogo.etapa || "t") + "_" + quartoDialogo.indice;
+        typewriterIniciar(quartoDialogo.linhas[quartoDialogo.indice], id);
+        return;
+    }
+
+    // Acabaram as linhas desta etapa
+    if (quartoDialogo.objeto === "armario") {
+        if (quartoDialogo.etapa === "intro") {
+            // Depois de "e um armario" -> pergunta abrir?
+            quartoDialogo.modo = "escolha";
+            quartoDialogo.etapa = "abrir";
+            quartoDialogo.linhas = ["abrir?"];
+            quartoDialogo.indice = 0;
+            quartoDialogo.escolhaSelecionada = 0;
+            typewriterIniciar("abrir?", "qd_arm_abrir");
+            return;
+        }
+        if (quartoDialogo.etapa === "dentro") {
+            // Depois da descricao -> perguntar pegar?
+            quartoDialogo.modo = "escolha";
+            quartoDialogo.etapa = "pegar";
+            quartoDialogo.linhas = ["pegar um?"];
+            quartoDialogo.indice = 0;
+            quartoDialogo.escolhaSelecionada = 0;
+            typewriterIniciar("pegar um?", "qd_arm_pegar");
+            return;
+        }
+    }
+
+    // Fim do dialogo
+    quartoDialogoFechar();
+}
 
 function quartoPlayerHitbox(px, py) {
     return { x: px - playerQuarto.hitW / 2, y: py - playerQuarto.hitH, w: playerQuarto.hitW, h: playerQuarto.hitH };
@@ -726,6 +864,30 @@ window.addEventListener("keydown", (e) => {
     if (estadoAtual === "JOGANDO" && e.code === "Escape") {
         saveSlotModo = "SAVE"; saveSlotOpcao = 0; subEstado = "SAVE_SLOT"; estadoAtual = "TELA_MENU";
     }
+
+    // Interacao no quarto: apertar E perto de um objeto
+    if (estadoAtual === "QUARTO" && (e.code === "KeyE") && playerQuarto.pertoDe) {
+        quartoDialogoIniciar(playerQuarto.pertoDe);
+        return;
+    }
+
+    // Dialogo de interacao do quarto
+    if (estadoAtual === "QUARTO_DIALOGO") {
+        if (quartoDialogo.modo === "escolha" && typewriterCompleto()) {
+            if (e.code === "ArrowUp" || e.code === "ArrowLeft" || e.code === "KeyW" || e.code === "KeyA") {
+                quartoDialogo.escolhaSelecionada = 0; // SIM
+                return;
+            }
+            if (e.code === "ArrowDown" || e.code === "ArrowRight" || e.code === "KeyS" || e.code === "KeyD") {
+                quartoDialogo.escolhaSelecionada = 1; // NAO
+                return;
+            }
+        }
+        if (e.code === "Space" || e.code === "Enter" || e.code === "KeyE") {
+            quartoDialogoAvancar();
+            return;
+        }
+    }
 });
 
 window.addEventListener("keyup", (e) => {
@@ -900,7 +1062,7 @@ function atualizar() {
     garantirMusicaTocando();
 
     // Typewriter: avanca letras nos estados de dialogo
-    if (estadoAtual==="DIALOGO_INICIAL"||estadoAtual==="DIALOGO_NPC"||estadoAtual==="DESPEDIDA_NARRACAO"||estadoAtual==="DESPEDIDA_FALA_PLAYER"||(estadoAtual==="CENA_450"&&cena450.timerEspera>=cena450.tempoParaDialogo)) {
+    if (estadoAtual==="DIALOGO_INICIAL"||estadoAtual==="DIALOGO_NPC"||estadoAtual==="DESPEDIDA_NARRACAO"||estadoAtual==="DESPEDIDA_FALA_PLAYER"||estadoAtual==="QUARTO_DIALOGO"||(estadoAtual==="CENA_450"&&cena450.timerEspera>=cena450.tempoParaDialogo)) {
         typewriterAtualizar();
     }
 
@@ -1139,7 +1301,7 @@ function desenhar() {
         ctx.fillStyle=cenaPosDemo.telaEmBranco?"#ffffff":"#000000";
         ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    } else if (estadoAtual === "QUARTO") {
+    } else if (estadoAtual === "QUARTO" || estadoAtual === "QUARTO_DIALOGO") {
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.imageSmoothingEnabled = false;
@@ -1247,12 +1409,49 @@ function desenhar() {
             ctx.strokeRect(Math.floor(qx + hb.x * S), Math.floor(qy + hb.y * S), hb.w * S, hb.h * S);
         }
 
-        // Dica de interacao (a acao em si ainda precisa ser definida por voce)
-        if (playerQuarto.pertoDe) {
+        // Dica de interacao (so quando nao esta em dialogo)
+        if (estadoAtual === "QUARTO" && playerQuarto.pertoDe) {
             ctx.fillStyle = "#ffffff";
             ctx.font = "bold 12px 'Courier New', monospace";
             ctx.textAlign = "center";
             ctx.fillText("[ E ]  examinar", canvas.width / 2, canvas.height - 14);
+        }
+
+        // Caixa de dialogo / escolha / pensamento da interacao
+        if (estadoAtual === "QUARTO_DIALOGO") {
+            if (quartoDialogo.modo === "pensamento") {
+                desenharCaixaPensamento(typewriterTexto());
+            } else {
+                // Caixa normal de texto (e escolha)
+                ctx.fillStyle = "rgba(0,0,26,0.9)";
+                ctx.fillRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
+                ctx.strokeStyle = "#ff0055";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
+                ctx.fillStyle = "white";
+                ctx.font = "20px 'Courier New', monospace";
+                ctx.textAlign = "left";
+                ctx.fillText(typewriterTexto(), caixaDialogo.x + 20, caixaDialogo.y + 40);
+
+                if (typewriterCompleto()) {
+                    if (quartoDialogo.modo === "escolha") {
+                        const opcoes = ["SIM", "NAO"];
+                        opcoes.forEach((op, i) => {
+                            const sel = i === quartoDialogo.escolhaSelecionada;
+                            ctx.fillStyle = sel ? "#ff00ff" : "rgba(255,255,255,0.55)";
+                            ctx.font = sel ? "bold 18px 'Courier New', monospace" : "16px 'Courier New', monospace";
+                            ctx.fillText((sel ? "> " : "  ") + op, caixaDialogo.x + 40, caixaDialogo.y + 72 + i * 22);
+                        });
+                        ctx.fillStyle = "rgba(0,255,204,0.6)";
+                        ctx.font = "11px 'Courier New', monospace";
+                        ctx.fillText("[UP/DOWN] escolher   [ENTER] confirmar", caixaDialogo.x + 20, caixaDialogo.y + 112);
+                    } else {
+                        ctx.fillStyle = "rgba(0,255,204,0.7)";
+                        ctx.font = "12px 'Courier New', monospace";
+                        ctx.fillText("[Espaco / Enter] para continuar", caixaDialogo.x + 20, caixaDialogo.y + 100);
+                    }
+                }
+            }
         }
 
     } else if (estadoAtual==="TELA_VERMELHA") {
