@@ -156,9 +156,318 @@ let subEstado = "NICKNAME";
 const menuOpcoes = ["START NEW GAME", "LOAD GAME", "VIEW SAVES", "SETTINGS", "SAIR"];
 
 let settingsOpcaoSelecionada = 0;
-const settingsOpcoes = ["MÚSICA", "HITBOX", "COORDENADAS", "VOLTAR"];
+// indices: 0 musica, 1 hitbox, 2 coordenadas, 3 idioma, 4 voltar
 let mostrarHitbox = false;
 let mostrarCoordenadas = true;
+
+// --- IDIOMA ---
+let idiomaAtual = "pt"; // pt | en | ja | es
+const IDIOMAS_LISTA = ["pt", "en", "ja", "es"];
+const IDIOMA_LABEL = { pt: "PORTUGUES", en: "ENGLISH", ja: "日本語", es: "ESPANOL" };
+
+const TEXTOS = {
+pt: {
+    posters: [
+        "são três pôsteres desenhados pela sua irmã",
+        "um é um desenho de um jogo de escalada e morangos sei lá...",
+        "algo do tipo",
+        "outro é um desenho de um jogo de um messias que tem o sol...",
+        "e o último é um rpg que você pode poupar seus oponentes...",
+        "poupar???",
+        "será que isso existe no mundo real???",
+        "chega até a ser engraçado"
+    ],
+    cama: ["eu perdi meu sono não quero dormir agora"],
+    armarioIntro: ["é um armário"],
+    armarioAbrir: "abrir?",
+    armarioDentro: [
+        "dentro do armário tem uma caixa de plástico transparente com uns bonecos",
+        "são bonecos de blocos de montar colecionáveis de ninjas coloridos"
+    ],
+    armarioPegar: "pegar um?",
+    armarioPensamento: [
+        "não vou tirá-los daí",
+        "vão quebrar e...",
+        "n-",
+        "não pegue por favor"
+    ],
+    sim: "SIM", nao: "NÃO",
+    dialogoInicial: [
+        "Desperte...",
+        "você não se lembra do que aconteceu lá...",
+        "você se perdeu neste mundo depois daquilo",
+        "o ódio que você sente...",
+        "é inigualável, um ódio sobre você mesmo...",
+        "você se prende em sua própria mente...",
+        "pensando por que fez aquilo...",
+        "mas talvez...",
+        "você nunca encontre a resposta..."
+    ],
+    dialogoNpc: [
+        "Hum?",
+        "O que você está fazendo aqui?",
+        "Você não deveria estar aqui.",
+        "normalmente você acorda mais cedo.",
+        "não isso não está certo!",
+        "desperte! você tem que acordar!"
+    ],
+    cena450: [
+        "hey sou eu...",
+        "vc se lembra de mim?",
+        "não tenha medo, sei que cometi um erro m-mas...",
+        "por favor me perdoe eu, eu não queria..."
+    ],
+    falaPlayer: [
+        "Não por favor não vá embora!",
+        "Fique... Por favor..."
+    ],
+    narracao: [
+        "Agora você finalmente percebeu...",
+        "Seus atos sempre vão mudar seu próprio destino",
+        "Infelizmente você é só uma criança",
+        "Este mundo",
+        "Pode ser muito cruel..."
+    ],
+    settingsTitulo: "--- CONFIGURAÇÕES ---",
+    settingsMusica: "MÚSICA",
+    settingsHitbox: "HITBOX",
+    settingsCoords: "COORDENADAS",
+    settingsIdioma: "IDIOMA",
+    settingsVoltar: "VOLTAR",
+    examinar: "[ E ]  examinar",
+    continuar: "[Espaço / Enter] para continuar",
+    escolhaDica: "[UP/DOWN] escolher   [ENTER] confirmar"
+},
+en: {
+    posters: [
+        "they're three posters drawn by your sister",
+        "one is a drawing of a climbing and strawberries game or something...",
+        "something like that",
+        "another is a drawing of a game about a messiah with the sun...",
+        "and the last one is an rpg where you can spare your opponents...",
+        "spare???",
+        "does that even exist in the real world???",
+        "it's almost funny"
+    ],
+    cama: ["i lost my sleep i don't want to sleep right now"],
+    armarioIntro: ["it's a wardrobe"],
+    armarioAbrir: "open it?",
+    armarioDentro: [
+        "inside the wardrobe there's a clear plastic box with some figures",
+        "they're collectible building-block ninja figures"
+    ],
+    armarioPegar: "take one?",
+    armarioPensamento: [
+        "i won't take them out",
+        "they'll break and...",
+        "n-",
+        "please don't take them"
+    ],
+    sim: "YES", nao: "NO",
+    dialogoInicial: [
+        "Wake up...",
+        "you don't remember what happened there...",
+        "you got lost in this world after that",
+        "the hatred you feel...",
+        "is unmatched, a hatred toward yourself...",
+        "you trap yourself inside your own mind...",
+        "wondering why you did that...",
+        "but maybe...",
+        "you'll never find the answer..."
+    ],
+    dialogoNpc: [
+        "Huh?",
+        "What are you doing here?",
+        "You shouldn't be here.",
+        "normally you wake up earlier.",
+        "no this isn't right!",
+        "wake up! you have to wake up!"
+    ],
+    cena450: [
+        "hey it's me...",
+        "do you remember me?",
+        "don't be afraid, i know i made a m-mistake...",
+        "please forgive me i, i didn't mean to..."
+    ],
+    falaPlayer: [
+        "No please don't go away!",
+        "Stay... Please..."
+    ],
+    narracao: [
+        "Now you finally realized...",
+        "Your actions will always change your own destiny",
+        "Unfortunately you are just a child",
+        "This world",
+        "Can be very cruel..."
+    ],
+    settingsTitulo: "--- SETTINGS ---",
+    settingsMusica: "MUSIC",
+    settingsHitbox: "HITBOX",
+    settingsCoords: "COORDINATES",
+    settingsIdioma: "LANGUAGE",
+    settingsVoltar: "BACK",
+    examinar: "[ E ]  examine",
+    continuar: "[Space / Enter] to continue",
+    escolhaDica: "[UP/DOWN] choose   [ENTER] confirm"
+},
+ja: {
+    posters: [
+        "妹が描いたポスターが三枚ある",
+        "一つは登るゲームとイチゴの絵…かな",
+        "そんな感じ",
+        "もう一つは太陽を持つ救世主のゲームの絵…",
+        "最後は敵を見逃せるRPGの絵…",
+        "見逃す？？？",
+        "現実にもそんなことあるの？？？",
+        "なんだか面白い"
+    ],
+    cama: ["眠れなくなった 今は寝たくない"],
+    armarioIntro: ["これはたんすだ"],
+    armarioAbrir: "開ける？",
+    armarioDentro: [
+        "たんすの中に透明なプラスチックの箱がある フィギュアが入ってる",
+        "カラフルな忍者のブロック人形コレクションだ"
+    ],
+    armarioPegar: "一つ取る？",
+    armarioPensamento: [
+        "取り出さない",
+        "壊れちゃうし…",
+        "だ、",
+        "取らないで"
+    ],
+    sim: "はい", nao: "いいえ",
+    dialogoInicial: [
+        "目を覚まして…",
+        "あそこで何が起きたか覚えていない…",
+        "あれ以来 この世界で迷っている",
+        "あなたが感じている憎しみは…",
+        "比類ない 自分自身への憎しみ…",
+        "自分の心に閉じ込もって…",
+        "なぜあんなことをしたのか考えて…",
+        "でもたぶん…",
+        "答えは見つからない…"
+    ],
+    dialogoNpc: [
+        "ん？",
+        "ここで何をしてるの？",
+        "ここにいるべきじゃない。",
+        "普通はもっと早く起きるのに。",
+        "違う おかしい！",
+        "目を覚まして！起きなきゃ！"
+    ],
+    cena450: [
+        "ねえ 私だよ…",
+        "覚えてる？",
+        "怖がらないで 間違えたのはわかってる…",
+        "許して したくなかったの…"
+    ],
+    falaPlayer: [
+        "行かないで！",
+        "いて…お願い…"
+    ],
+    narracao: [
+        "やっと気づいたね…",
+        "自分の行動が運命を変える",
+        "残念だけど 君はまだ子供だ",
+        "この世界は",
+        "とても残酷になりうる…"
+    ],
+    settingsTitulo: "--- 設定 ---",
+    settingsMusica: "音楽",
+    settingsHitbox: "ヒットボックス",
+    settingsCoords: "座標",
+    settingsIdioma: "言語",
+    settingsVoltar: "戻る",
+    examinar: "[ E ]  調べる",
+    continuar: "[Space / Enter] で続ける",
+    escolhaDica: "[UP/DOWN] 選択   [ENTER] 決定"
+},
+es: {
+    posters: [
+        "son tres pósters dibujados por tu hermana",
+        "uno es un dibujo de un juego de escalar y fresas o algo así...",
+        "algo por el estilo",
+        "otro es un dibujo de un juego de un mesías que tiene el sol...",
+        "y el último es un rpg donde puedes perdonar a tus oponentes...",
+        "¿perdonar???",
+        "¿eso existe en el mundo real???",
+        "hasta resulta gracioso"
+    ],
+    cama: ["perdí el sueño no quiero dormir ahora"],
+    armarioIntro: ["es un armario"],
+    armarioAbrir: "¿abrir?",
+    armarioDentro: [
+        "dentro del armario hay una caja de plástico transparente con unos muñecos",
+        "son muñecos de bloques de construir coleccionables de ninjas de colores"
+    ],
+    armarioPegar: "¿tomar uno?",
+    armarioPensamento: [
+        "no voy a sacarlos de ahí",
+        "se van a romper y...",
+        "n-",
+        "no los tomes por favor"
+    ],
+    sim: "SÍ", nao: "NO",
+    dialogoInicial: [
+        "Despierta...",
+        "no recuerdas lo que pasó allá...",
+        "te perdiste en este mundo después de eso",
+        "el odio que sientes...",
+        "es inigualable, un odio hacia ti mismo...",
+        "te encerras en tu propia mente...",
+        "pensando por qué hiciste eso...",
+        "pero tal vez...",
+        "nunca encuentres la respuesta..."
+    ],
+    dialogoNpc: [
+        "¿Hum?",
+        "¿Qué haces aquí?",
+        "No deberías estar aquí.",
+        "normalmente despiertas más temprano.",
+        "¡no esto no está bien!",
+        "¡despierta! ¡tienes que despertar!"
+    ],
+    cena450: [
+        "hey soy yo...",
+        "¿te acuerdas de mí?",
+        "no tengas miedo, sé que cometí un e-error...",
+        "por favor perdóname yo, yo no quería..."
+    ],
+    falaPlayer: [
+        "¡No por favor no te vayas!",
+        "Quédate... Por favor..."
+    ],
+    narracao: [
+        "Ahora finalmente te diste cuenta...",
+        "Tus actos siempre van a cambiar tu propio destino",
+        "Desafortunadamente solo eres un niño",
+        "Este mundo",
+        "Puede ser muy cruel..."
+    ],
+    settingsTitulo: "--- AJUSTES ---",
+    settingsMusica: "MÚSICA",
+    settingsHitbox: "HITBOX",
+    settingsCoords: "COORDENADAS",
+    settingsIdioma: "IDIOMA",
+    settingsVoltar: "VOLVER",
+    examinar: "[ E ]  examinar",
+    continuar: "[Espacio / Enter] para continuar",
+    escolhaDica: "[UP/DOWN] elegir   [ENTER] confirmar"
+}
+};
+
+function t() {
+    return TEXTOS[idiomaAtual] || TEXTOS.pt;
+}
+
+function aplicarIdioma() {
+    const tx = t();
+    dialogoInicial.texto = tx.dialogoInicial.slice();
+    npc.dialogo = tx.dialogoNpc.slice();
+    cena450.texto = tx.cena450.slice();
+    cenaDespedida.falaPlayer = tx.falaPlayer.slice();
+    cenaDespedida.narracao = tx.narracao.slice();
+}
 
 let viewSavesOpcao = 0;
 let saveSlotOpcao = 0;
@@ -385,12 +694,12 @@ const QUARTO_SOLIDOS = [
     { nome: "armario", x: 138, y: 155, w: 46, h: 20 }
 ];
 
-// Zonas de interacao no CHAO (espaco-fonte 256) - o player precisa estar
-// perto dos pes, nao na parede. Por isso a area fica na faixa do chao.
+// interagir* = zona no chao onde o player precisa estar (pes)
+// x,y,w,h = hitbox visual (debug) - posters = so o quadrado em volta dos 3
 const QUARTO_INTERATIVEIS = [
-    { nome: "posters", x: 85,  y: 155, w: 70, h: 50 },
-    { nome: "armario", x: 128, y: 150, w: 60, h: 55 },
-    { nome: "cama",    x: 120, y: 200, w: 75, h: 48 }
+    { nome: "posters", x: 104, y: 111, w: 35, h: 37, interagirX: 95,  interagirY: 155, interagirW: 55, interagirH: 50 },
+    { nome: "armario", x: 138, y: 155, w: 46, h: 20, interagirX: 128, interagirY: 150, interagirW: 60, interagirH: 55 },
+    { nome: "cama",    x: 132, y: 208, w: 59, h: 36, interagirX: 120, interagirY: 200, interagirW: 75, interagirH: 48 }
 ];
 
 // --- DIALOGOS DE INTERACAO DO QUARTO ---
@@ -423,33 +732,23 @@ function quartoDialogoIniciar(objeto) {
     quartoDialogo.escolhaSelecionada = 0;
     estadoAtual = "QUARTO_DIALOGO";
 
+    const tx = t();
     if (objeto === "posters") {
         quartoDialogo.modo = "texto";
         quartoDialogo.etapa = null;
-        quartoDialogo.linhas = [
-            "sao tres posteres desenhados pela sua irma",
-            "um e um desenho de um jogo de escalada e morangos sei la...",
-            "algo do tipo",
-            "outro e um desenho de um jogo de um mecias que tem o sol...",
-            "e o ultimimo e um rpg que voce pode poupar seus oponentes...",
-            "poupar???",
-            "sera que isso existe no mundo real???",
-            "chega ate a ser engraçado"
-        ];
+        quartoDialogo.linhas = tx.posters.slice();
         quartoDialogo.indice = 0;
         typewriterIniciar(quartoDialogo.linhas[0], "qd_posters_0");
     } else if (objeto === "cama") {
         quartoDialogo.modo = "pensamento";
         quartoDialogo.etapa = null;
-        quartoDialogo.linhas = [
-            "eu perdi meu sono nao quero dormir agora"
-        ];
+        quartoDialogo.linhas = tx.cama.slice();
         quartoDialogo.indice = 0;
         typewriterIniciar(quartoDialogo.linhas[0], "qd_cama_0");
     } else if (objeto === "armario") {
         quartoDialogo.modo = "texto";
         quartoDialogo.etapa = "intro";
-        quartoDialogo.linhas = ["e um armario"];
+        quartoDialogo.linhas = tx.armarioIntro.slice();
         quartoDialogo.indice = 0;
         typewriterIniciar(quartoDialogo.linhas[0], "qd_arm_intro_0");
     }
@@ -467,28 +766,20 @@ function quartoDialogoAvancar() {
         const escolheuSim = quartoDialogo.escolhaSelecionada === 0;
         if (quartoDialogo.etapa === "abrir") {
             if (!escolheuSim) { quartoDialogoFechar(); return; }
-            // Sim -> conteudo do armario
+            const tx = t();
             quartoDialogo.modo = "texto";
             quartoDialogo.etapa = "dentro";
-            quartoDialogo.linhas = [
-                "dentro do armario tem uma caixa de plastico transparente com uns bonecos",
-                "sao bonecos de blocos de montar colecionaveis de ninjas coloridos"
-            ];
+            quartoDialogo.linhas = tx.armarioDentro.slice();
             quartoDialogo.indice = 0;
             typewriterIniciar(quartoDialogo.linhas[0], "qd_arm_dentro_0");
             return;
         }
         if (quartoDialogo.etapa === "pegar") {
             if (!escolheuSim) { quartoDialogoFechar(); return; }
-            // Sim -> pensamento do player (caixa roxa)
+            const tx = t();
             quartoDialogo.modo = "pensamento";
             quartoDialogo.etapa = "pensamento";
-            quartoDialogo.linhas = [
-                "nao vou tiralos dai",
-                "vao quebrar e...",
-                "n-",
-                "nao pegue por favor"
-            ];
+            quartoDialogo.linhas = tx.armarioPensamento.slice();
             quartoDialogo.indice = 0;
             typewriterIniciar(quartoDialogo.linhas[0], "qd_arm_pens_0");
             return;
@@ -507,23 +798,23 @@ function quartoDialogoAvancar() {
     // Acabaram as linhas desta etapa
     if (quartoDialogo.objeto === "armario") {
         if (quartoDialogo.etapa === "intro") {
-            // Depois de "e um armario" -> pergunta abrir?
+            const tx = t();
             quartoDialogo.modo = "escolha";
             quartoDialogo.etapa = "abrir";
-            quartoDialogo.linhas = ["abrir?"];
+            quartoDialogo.linhas = [tx.armarioAbrir];
             quartoDialogo.indice = 0;
             quartoDialogo.escolhaSelecionada = 0;
-            typewriterIniciar("abrir?", "qd_arm_abrir");
+            typewriterIniciar(tx.armarioAbrir, "qd_arm_abrir");
             return;
         }
         if (quartoDialogo.etapa === "dentro") {
-            // Depois da descricao -> perguntar pegar?
+            const tx = t();
             quartoDialogo.modo = "escolha";
             quartoDialogo.etapa = "pegar";
-            quartoDialogo.linhas = ["pegar um?"];
+            quartoDialogo.linhas = [tx.armarioPegar];
             quartoDialogo.indice = 0;
             quartoDialogo.escolhaSelecionada = 0;
-            typewriterIniciar("pegar um?", "qd_arm_pegar");
+            typewriterIniciar(tx.armarioPegar, "qd_arm_pegar");
             return;
         }
     }
@@ -542,11 +833,15 @@ function quartoColideSolido(hb) {
     }
     return false;
 }
-// Retorna o nome do objeto interativo que o player esta tocando, ou null.
+// Retorna o nome do objeto interativo perto do player (usa zona de chao).
 function quartoObjetoInterativoProximo(hb) {
     for (let i = 0; i < QUARTO_INTERATIVEIS.length; i++) {
         const o = QUARTO_INTERATIVEIS[i];
-        if (hb.x < o.x + o.w && hb.x + hb.w > o.x && hb.y < o.y + o.h && hb.y + hb.h > o.y) return o.nome;
+        const ix = o.interagirX != null ? o.interagirX : o.x;
+        const iy = o.interagirY != null ? o.interagirY : o.y;
+        const iw = o.interagirW != null ? o.interagirW : o.w;
+        const ih = o.interagirH != null ? o.interagirH : o.h;
+        if (hb.x < ix + iw && hb.x + hb.w > ix && hb.y < iy + ih && hb.y + hb.h > iy) return o.nome;
     }
     return null;
 }
@@ -755,13 +1050,22 @@ window.addEventListener("keydown", (e) => {
             return;
         }
         if (subEstado === "SETTINGS") {
-            if (e.code === "ArrowUp") settingsOpcaoSelecionada = (settingsOpcaoSelecionada - 1 + settingsOpcoes.length) % settingsOpcoes.length;
-            if (e.code === "ArrowDown") settingsOpcaoSelecionada = (settingsOpcaoSelecionada + 1) % settingsOpcoes.length;
+            const numSettings = 5; // musica, hitbox, coords, idioma, voltar
+            if (e.code === "ArrowUp") settingsOpcaoSelecionada = (settingsOpcaoSelecionada - 1 + numSettings) % numSettings;
+            if (e.code === "ArrowDown") settingsOpcaoSelecionada = (settingsOpcaoSelecionada + 1) % numSettings;
             if (e.code === "Enter" || e.code === "Space" || e.code === "ArrowLeft" || e.code === "ArrowRight") {
                 if (settingsOpcaoSelecionada === 0) { musicaAtivada = !musicaAtivada; if (musicaAtivada) { falhasConsecutivas = 0; musicaIndisponivel = false; tocarProximaMusica(); } else pararMusica(); }
                 if (settingsOpcaoSelecionada === 1) mostrarHitbox = !mostrarHitbox;
                 if (settingsOpcaoSelecionada === 2) mostrarCoordenadas = !mostrarCoordenadas;
-                if (settingsOpcaoSelecionada === 3) subEstado = "OPCOES";
+                if (settingsOpcaoSelecionada === 3) {
+                    // esquerda/direita (ou enter) troca idioma
+                    let idx = IDIOMAS_LISTA.indexOf(idiomaAtual);
+                    if (e.code === "ArrowLeft") idx = (idx - 1 + IDIOMAS_LISTA.length) % IDIOMAS_LISTA.length;
+                    else idx = (idx + 1) % IDIOMAS_LISTA.length;
+                    idiomaAtual = IDIOMAS_LISTA[idx];
+                    aplicarIdioma();
+                }
+                if (settingsOpcaoSelecionada === 4) subEstado = "OPCOES";
             }
             if (e.code === "Escape") subEstado = "OPCOES";
             return;
@@ -1023,10 +1327,17 @@ function desenharMenu() {
         ctx.fillStyle="rgba(255,255,255,0.3)";ctx.font="11px 'Courier New', monospace";ctx.fillText("[UP/DOWN] navegar  [ENTER] confirmar",cx,340);
     }
     if (subEstado==="SETTINGS") {
-        ctx.fillStyle="#00ffcc";ctx.font="bold 18px 'Courier New', monospace";ctx.fillText("--- SETTINGS ---",cx,110);
-        const itens=[`MUSICA: ${musicaAtivada?"ON":"OFF"}`,`HITBOX: ${mostrarHitbox?"ON":"OFF"}`,`COORDENADAS: ${mostrarCoordenadas?"ON":"OFF"}`,"VOLTAR"];
-        itens.forEach((op,i)=>{const y=150+i*40;const sel=i===settingsOpcaoSelecionada;if(sel){ctx.fillStyle="rgba(255,0,255,0.15)";ctx.fillRect(cx-180,y-18,360,26);ctx.fillStyle="#ff00ff";ctx.font="bold 16px 'Courier New', monospace";ctx.fillText(`> ${op} <`,cx,y);}else{ctx.fillStyle="rgba(255,255,255,0.55)";ctx.font="14px 'Courier New', monospace";ctx.fillText(op,cx,y);}});
-        ctx.fillStyle="rgba(255,255,255,0.3)";ctx.font="11px 'Courier New', monospace";ctx.fillText("[UP/DOWN] navegar  [ENTER] alternar  [ESC] voltar",cx,340);
+        const tx = t();
+        ctx.fillStyle="#00ffcc";ctx.font="bold 18px 'Courier New', monospace";ctx.fillText(tx.settingsTitulo,cx,110);
+        const itens=[
+            `${tx.settingsMusica}: ${musicaAtivada?"ON":"OFF"}`,
+            `${tx.settingsHitbox}: ${mostrarHitbox?"ON":"OFF"}`,
+            `${tx.settingsCoords}: ${mostrarCoordenadas?"ON":"OFF"}`,
+            `${tx.settingsIdioma}:  < ${IDIOMA_LABEL[idiomaAtual]} >`,
+            tx.settingsVoltar
+        ];
+        itens.forEach((op,i)=>{const y=145+i*36;const sel=i===settingsOpcaoSelecionada;if(sel){ctx.fillStyle="rgba(255,0,255,0.15)";ctx.fillRect(cx-200,y-18,400,26);ctx.fillStyle="#ff00ff";ctx.font="bold 15px 'Courier New', monospace";ctx.fillText(`> ${op} <`,cx,y);}else{ctx.fillStyle="rgba(255,255,255,0.55)";ctx.font="13px 'Courier New', monospace";ctx.fillText(op,cx,y);}});
+        ctx.fillStyle="rgba(255,255,255,0.3)";ctx.font="11px 'Courier New', monospace";ctx.fillText("[UP/DOWN]  [LEFT/RIGHT] idioma  [ENTER]  [ESC]",cx,345);
     }
     if (subEstado==="VIEW_SAVES"||subEstado==="SAVE_SLOT") {
         const titulo=subEstado==="VIEW_SAVES"?"--- VIEW SAVES ---":saveSlotModo==="LOAD"?"--- LOAD GAME ---":"--- SAVE GAME ---";
@@ -1252,7 +1563,7 @@ function desenharCaixaTexto(texto) {
     ctx.fillText(typewriterTexto(),caixaDialogo.x+20,caixaDialogo.y+55);
     if (typewriterCompleto()) {
         ctx.font="12px 'Courier New', monospace";ctx.fillStyle="rgba(0,255,204,0.7)";
-        ctx.fillText("[Espaco / Enter] para continuar",caixaDialogo.x+20,caixaDialogo.y+100);
+        ctx.fillText(t().continuar,caixaDialogo.x+20,caixaDialogo.y+100);
     }
 }
 
@@ -1414,7 +1725,7 @@ function desenhar() {
             ctx.fillStyle = "#ffffff";
             ctx.font = "bold 12px 'Courier New', monospace";
             ctx.textAlign = "center";
-            ctx.fillText("[ E ]  examinar", canvas.width / 2, canvas.height - 14);
+            ctx.fillText(t().examinar, canvas.width / 2, canvas.height - 14);
         }
 
         // Caixa de dialogo / escolha / pensamento da interacao
@@ -1434,8 +1745,9 @@ function desenhar() {
                 ctx.fillText(typewriterTexto(), caixaDialogo.x + 20, caixaDialogo.y + 40);
 
                 if (typewriterCompleto()) {
+                    const tx = t();
                     if (quartoDialogo.modo === "escolha") {
-                        const opcoes = ["SIM", "NAO"];
+                        const opcoes = [tx.sim, tx.nao];
                         opcoes.forEach((op, i) => {
                             const sel = i === quartoDialogo.escolhaSelecionada;
                             ctx.fillStyle = sel ? "#ff00ff" : "rgba(255,255,255,0.55)";
@@ -1444,11 +1756,11 @@ function desenhar() {
                         });
                         ctx.fillStyle = "rgba(0,255,204,0.6)";
                         ctx.font = "11px 'Courier New', monospace";
-                        ctx.fillText("[UP/DOWN] escolher   [ENTER] confirmar", caixaDialogo.x + 20, caixaDialogo.y + 112);
+                        ctx.fillText(tx.escolhaDica, caixaDialogo.x + 20, caixaDialogo.y + 112);
                     } else {
                         ctx.fillStyle = "rgba(0,255,204,0.7)";
                         ctx.font = "12px 'Courier New', monospace";
-                        ctx.fillText("[Espaco / Enter] para continuar", caixaDialogo.x + 20, caixaDialogo.y + 100);
+                        ctx.fillText(tx.continuar, caixaDialogo.x + 20, caixaDialogo.y + 100);
                     }
                 }
             }
@@ -1577,4 +1889,5 @@ function desenhar() {
     }
 }
 
+aplicarIdioma();
 atualizar();
