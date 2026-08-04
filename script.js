@@ -694,13 +694,12 @@ const QUARTO_SOLIDOS = [
     { nome: "armario", x: 138, y: 155, w: 46, h: 20 }
 ];
 
-// x,y,w,h = hitbox visual (debug) E zona real de interacao (mesma caixa).
-// posters: desenho na parede -> interagir desce ate o chao com a MESMA
-// largura dos 3 posters, sem invadir armario nem cama.
+// Zona VERMELHA de interacao (um pouco maior que o solido, nao enorme).
+// O probe azul-escuro na frente do player precisa tocar esta caixa.
 const QUARTO_INTERATIVEIS = [
-    { nome: "posters", x: 104, y: 111, w: 35, h: 37, interagirX: 104, interagirY: 155, interagirW: 35, interagirH: 45 },
-    { nome: "armario", x: 138, y: 155, w: 46, h: 20 },
-    { nome: "cama",    x: 132, y: 208, w: 59, h: 36 }
+    { nome: "posters", x: 100, y: 108, w: 43, h: 55 },
+    { nome: "armario", x: 132, y: 148, w: 58, h: 36 },
+    { nome: "cama",    x: 126, y: 200, w: 71, h: 48 }
 ];
 
 // --- DIALOGOS DE INTERACAO DO QUARTO ---
@@ -827,6 +826,25 @@ function quartoDialogoAvancar() {
 function quartoPlayerHitbox(px, py) {
     return { x: px - playerQuarto.hitW / 2, y: py - playerQuarto.hitH, w: playerQuarto.hitW, h: playerQuarto.hitH };
 }
+
+// Probe azul-escuro: quadrado na FRENTE do player (vira com a direcao).
+// Fica meio dentro / meio fora da hitbox verde dos pes.
+function quartoPlayerProbe(px, py, dir) {
+    const pw = 14, ph = 14;
+    let cx = px;
+    let cy = py - playerQuarto.hitH / 2;
+    const shift = 10; // empurra o centro do probe na direcao que o player olha
+    if (dir === "frente")   cy += shift;
+    else if (dir === "tras") cy -= shift;
+    else if (dir === "esquerda") cx -= shift;
+    else if (dir === "direita")  cx += shift;
+    return { x: cx - pw / 2, y: cy - ph / 2, w: pw, h: ph };
+}
+
+function quartoRectsOverlap(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
 function quartoColideSolido(hb) {
     for (let i = 0; i < QUARTO_SOLIDOS.length; i++) {
         const s = QUARTO_SOLIDOS[i];
@@ -834,19 +852,16 @@ function quartoColideSolido(hb) {
     }
     return false;
 }
-// Retorna o objeto cuja zona o player esta tocando.
-// Se duas zonas se sobrepuserem, escolhe a MENOR (mais precisa).
-function quartoObjetoInterativoProximo(hb) {
+
+// Interacao: o probe da frente do player precisa tocar a zona VERMELHA.
+// Se tocar mais de uma, escolhe a menor (mais precisa).
+function quartoObjetoInterativoProximo(probe) {
     let melhor = null;
     let melhorArea = Infinity;
     for (let i = 0; i < QUARTO_INTERATIVEIS.length; i++) {
         const o = QUARTO_INTERATIVEIS[i];
-        const ix = o.interagirX != null ? o.interagirX : o.x;
-        const iy = o.interagirY != null ? o.interagirY : o.y;
-        const iw = o.interagirW != null ? o.interagirW : o.w;
-        const ih = o.interagirH != null ? o.interagirH : o.h;
-        if (hb.x < ix + iw && hb.x + hb.w > ix && hb.y < iy + ih && hb.y + hb.h > iy) {
-            const area = iw * ih;
+        if (quartoRectsOverlap(probe, o)) {
+            const area = o.w * o.h;
             if (area < melhorArea) {
                 melhorArea = area;
                 melhor = o.nome;
@@ -1447,7 +1462,9 @@ function atualizar() {
         // Detecta se o player esta perto de algo interativo (posters etc.)
         // - so guarda o nome para mostrar uma dica na tela; a interacao em
         // si (o que acontece ao apertar) ainda nao esta implementada.
-        playerQuarto.pertoDe = quartoObjetoInterativoProximo(quartoPlayerHitbox(playerQuarto.x, playerQuarto.y));
+        // Probe na frente do player (vira com a direcao) vs zona vermelha
+        const probe = quartoPlayerProbe(playerQuarto.x, playerQuarto.y, playerQuarto.direcao);
+        playerQuarto.pertoDe = quartoObjetoInterativoProximo(probe);
     }
 
     if (estadoAtual==="ESPERA_POS_DIALOGO") {
@@ -1710,24 +1727,31 @@ function desenhar() {
             }
         }
 
-        // Hitboxes de depuracao (liga/desliga em SETTINGS > HITBOX).
-        // Vermelho = solido (bloqueia). Ciano = interativo (nao bloqueia,
-        // so serve pra detectar proximidade). Ajuda a conferir se os
-        // numeros batem com o desenho de verdade antes de travar tudo.
+        // Hitboxes de depuracao (SETTINGS > HITBOX):
+        // AZUL      = colisao dos objetos (solido)
+        // VERMELHO  = zona de interacao dos objetos
+        // VERDE     = colisao do player (pes)
+        // AZUL ESCURO = probe na frente do player (precisa tocar o vermelho)
         if (mostrarHitbox) {
-            ctx.strokeStyle = "#ff3030";
             ctx.lineWidth = 1;
+            // Colisao dos objetos (azul)
+            ctx.strokeStyle = "#3080ff";
             QUARTO_SOLIDOS.forEach((s) => {
                 ctx.strokeRect(Math.floor(qx + s.x * S), Math.floor(qy + s.y * S), s.w * S, s.h * S);
             });
-            ctx.strokeStyle = "#30e0ff";
+            // Zona de interacao (vermelho)
+            ctx.strokeStyle = "#ff3030";
             QUARTO_INTERATIVEIS.forEach((o) => {
                 ctx.strokeRect(Math.floor(qx + o.x * S), Math.floor(qy + o.y * S), o.w * S, o.h * S);
             });
-            // Hitbox do proprio player (pes)
+            // Colisao do player (verde)
             const hb = quartoPlayerHitbox(playerQuarto.x, playerQuarto.y);
             ctx.strokeStyle = "#30ff60";
             ctx.strokeRect(Math.floor(qx + hb.x * S), Math.floor(qy + hb.y * S), hb.w * S, hb.h * S);
+            // Probe na frente (azul escuro) — vira com a direcao
+            const pr = quartoPlayerProbe(playerQuarto.x, playerQuarto.y, playerQuarto.direcao);
+            ctx.strokeStyle = "#1040a0";
+            ctx.strokeRect(Math.floor(qx + pr.x * S), Math.floor(qy + pr.y * S), pr.w * S, pr.h * S);
         }
 
         // Dica de interacao (so quando nao esta em dialogo)
