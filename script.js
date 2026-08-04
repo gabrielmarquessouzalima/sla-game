@@ -689,16 +689,16 @@ const QUARTO_BOUNDS = { minX: 54, maxX: 190, minY: 161, maxY: 243 };
 // eu tiver o arquivo armario.png, meço o contorno real e reativo certinho.
 const QUARTO_SOLIDOS = [
     { nome: "cama", x: 132, y: 208, w: 59, h: 36 },
-    // Armario: so a base no chao (arte real termina ~y=171). Nao usa a
-    // altura visual inteira senao vira "parede invisivel" no meio do quarto.
-    { nome: "armario", x: 138, y: 155, w: 46, h: 20 }
+    // Armario: SO o corpo do movel (sem a sombra da direita). Medido no PNG.
+    { nome: "armario", x: 140, y: 155, w: 34, h: 16 }
 ];
 
-// Zona VERMELHA de interacao (um pouco maior que o solido, nao enorme).
-// O probe azul-escuro na frente do player precisa tocar esta caixa.
+// Zona VERMELHA de interacao.
+// Armario: DENTRO da azul e um pouco para a FRENTE (esquerda / centro do quarto)
+// pra nao roubar a interacao dos posters.
 const QUARTO_INTERATIVEIS = [
     { nome: "posters", x: 100, y: 108, w: 43, h: 55 },
-    { nome: "armario", x: 132, y: 148, w: 58, h: 36 },
+    { nome: "armario", x: 138, y: 157, w: 28, h: 12 },
     { nome: "cama",    x: 126, y: 200, w: 71, h: 48 }
 ];
 
@@ -830,10 +830,10 @@ function quartoPlayerHitbox(px, py) {
 // Probe azul-escuro: quadrado na FRENTE do player (vira com a direcao).
 // Fica meio dentro / meio fora da hitbox verde dos pes.
 function quartoPlayerProbe(px, py, dir) {
-    const pw = 14, ph = 14;
+    const pw = 10, ph = 10; // um pouco menor
     let cx = px;
     let cy = py - playerQuarto.hitH / 2;
-    const shift = 10; // empurra o centro do probe na direcao que o player olha
+    const shift = 8; // empurra o centro do probe na direcao que o player olha
     if (dir === "frente")   cy += shift;
     else if (dir === "tras") cy -= shift;
     else if (dir === "esquerda") cx -= shift;
@@ -1653,10 +1653,11 @@ function desenhar() {
         const qw = 256 * S;
         const qh = 256 * S;
 
-        // Camadas do quarto (de tras para frente), todas na mesma escala
+        // Camadas do quarto (de tras para frente). Coloracao noturna vem
+        // DEPOIS do player, pra escurecer tudo inclusive o personagem.
         const camadas = [
             imgQuartoVazio, imgQuartoSombra, imgQuartoPorta, imgQuartoPosters,
-            imgQuartoArmario, imgQuartoCama, imgQuartoInterruptor, imgQuartoColoracao
+            imgQuartoArmario, imgQuartoCama, imgQuartoInterruptor
         ];
         camadas.forEach((img) => {
             if (img.complete && img.width > 0) ctx.drawImage(img, 0, 0, 256, 256, qx, qy, qw, qh);
@@ -1725,6 +1726,11 @@ function desenhar() {
                 ctx.fillStyle = "#c04060";
                 ctx.fillRect(Math.floor(px), Math.floor(py), pw, ph);
             }
+        }
+
+        // Coloracao noturna por cima de TUDO (incluindo o player)
+        if (imgQuartoColoracao.complete && imgQuartoColoracao.width > 0) {
+            ctx.drawImage(imgQuartoColoracao, 0, 0, 256, 256, qx, qy, qw, qh);
         }
 
         // Hitboxes de depuracao (SETTINGS > HITBOX):
