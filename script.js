@@ -312,24 +312,20 @@ const playerQuarto = {
     hitW: 18, hitH: 8
 };
 
-// Escala INTEIRA para pixels nitidos estilo Undertale/Deltarune.
-// Aumentada de 2 para 4: a cena fica bem maior/mais preenchida na tela,
-// igual ao efeito "chunky pixels" desses jogos. Se quiser mais/menos zoom,
-// mude soh este numero (mantenha inteiro para nao borrar os pixels).
-// Escala INTEIRA para pixels nitidos. Reduzida de 4 para 2: em 4 o player
-// (que tem ~160px de altura no espaco-fonte) ficava maior que a propria
-// tela (160*4=640 > canvas de 400). O efeito "mundo grande" agora vem da
-// CAMERA que segue o player (como no Deltarune), nao de esticar tudo.
-const QUARTO_ESCALA = 4;
+// Escala INTEIRA para pixels nitidos. Em 4, o player ficava perfeito, mas a
+// "janela" visivel pela camera (canvas/S = 200x100 unidades-fonte) era menor
+// que a parede+chao juntos (~136x154 unidades) - por isso a camera sempre
+// cortava algo (posters, porta) ou travava (clamp) antes de chegar na
+// parede da direita, dando a sensacao de "parede invisivel". Reduzido para
+// 3 (janela visivel = 266x133) o suficiente pra resolver isso.
+const QUARTO_ESCALA = 3;
 
 // O ARQUIVO do player (256x256) tem o desenho feito numa grade real de
-// 64x64 - ou seja, cada "pixel de arte" ocupa um bloco de 4x4 pixels no
-// arquivo (256/64=4). Ja a cama e o resto do quarto sao nativos 256x256
-// (1 pixel de arte = 1 pixel de arquivo). Por isso o player NAO pode
-// usar a mesma escala do quarto (senao fica 4x maior do que deveria) -
-// ele usa QUARTO_ESCALA/4 para compensar esse "zoom" ja embutido no
-// proprio arquivo dele.
-const QUARTO_PLAYER_ESCALA = QUARTO_ESCALA / 4;
+// 64x64 - cada "pixel de arte" ocupa um bloco de 4x4 pixels no arquivo
+// (256/64=4). O player NAO usa mais QUARTO_ESCALA/4 - agora tem escala
+// PROPRIA, fixa, desligada da escala do quarto. Assim o tamanho dele (que
+// ja esta perfeito) nao muda mais quando a gente ajusta o zoom do quarto.
+const QUARTO_PLAYER_ESCALA = 1;
 
 // Camera do quarto: guarda, em espaco-fonte (0..256), o canto superior
 // esquerdo que aparece no canto (0,0) da tela. Atualizada a cada frame
@@ -342,7 +338,13 @@ function quartoAtualizarCamera() {
     const alturaVisivelFonte = canvas.height / S;
 
     let alvoX = playerQuarto.x - larguraVisivelFonte / 2;
-    let alvoY = playerQuarto.y - alturaVisivelFonte / 2;
+    // Vies vertical: em vez de centralizar exatamente no player, desloca o
+    // "centro" da camera um pouco para CIMA. Assim, quando o player esta
+    // perto da parede (posters/porta), a camera mostra mais da parede em
+    // vez de sobrar chao vazio embaixo - eh isso que evita cortar os
+    // posters/porta quando o player se aproxima deles.
+    const VIES_VERTICAL = 30; // em unidades-fonte; aumente se ainda cortar
+    let alvoY = (playerQuarto.y - VIES_VERTICAL) - alturaVisivelFonte / 2;
 
     // Trava a camera para nao mostrar além das bordas da imagem do quarto (0..256)
     const maxX = Math.max(0, 256 - larguraVisivelFonte);
@@ -363,9 +365,21 @@ const QUARTO_BOUNDS = { minX: 54, maxX: 190, minY: 161, maxY: 243 };
 
 // Objetos solidos (espaco-fonte 256) - player nao atravessa.
 // Ajuste x/y/w/h aqui se a colisao nao bater com o desenho da cama/armario.
+// cama: medida EXATA direto do arquivo cama.png (confirmada, nao precisa mexer).
+// armario: ainda e um CHUTE do Grok - preciso do arquivo armario.png para medir
+// o contorno real (sem a sombra) e corrigir esses numeros com precisao.
 const QUARTO_SOLIDOS = [
     { nome: "cama",    x: 132, y: 208, w: 59, h: 36 },
     { nome: "armario", x: 138, y: 107, w: 46, h: 118 }
+];
+
+// Objetos INTERATIVEIS (espaco-fonte 256) - o player passa por cima
+// normalmente (nao bloqueiam), servem so para detectar quando o player
+// esta perto o suficiente para interagir (ex.: mostrar um "[E] examinar").
+// Os posters ainda sao um CHUTE - preciso do arquivo posters.png para medir
+// o contorno exato dos 3 juntos.
+const QUARTO_INTERATIVEIS = [
+    { nome: "posters", x: 95, y: 92, w: 55, h: 35 }
 ];
 
 function quartoPlayerHitbox(px, py) {
@@ -377,6 +391,14 @@ function quartoColideSolido(hb) {
         if (hb.x < s.x + s.w && hb.x + hb.w > s.x && hb.y < s.y + s.h && hb.y + hb.h > s.y) return true;
     }
     return false;
+}
+// Retorna o nome do objeto interativo que o player esta tocando, ou null.
+function quartoObjetoInterativoProximo(hb) {
+    for (let i = 0; i < QUARTO_INTERATIVEIS.length; i++) {
+        const o = QUARTO_INTERATIVEIS[i];
+        if (hb.x < o.x + o.w && hb.x + hb.w > o.x && hb.y < o.y + o.h && hb.y + hb.h > o.y) return o.nome;
+    }
+    return null;
 }
 function quartoDentroBounds(hb) {
     return hb.x >= QUARTO_BOUNDS.minX && hb.x + hb.w <= QUARTO_BOUNDS.maxX &&
@@ -661,7 +683,7 @@ window.addEventListener("keydown", (e) => {
         // Vai para o quarto (acordar do sonho) em vez do menu
         estadoAtual = "QUARTO";
         playerQuarto.x = 100;
-        playerQuarto.y = 220; // dentro do chao (161-243)
+        playerQuarto.y = 180; // livre - fora da faixa vertical da cama (208-243)
         playerQuarto.direcao = "frente";
         playerQuarto.frame = 1;
         playerQuarto.andando = false;
@@ -901,6 +923,11 @@ function atualizar() {
         }
 
         quartoAtualizarCamera();
+
+        // Detecta se o player esta perto de algo interativo (posters etc.)
+        // - so guarda o nome para mostrar uma dica na tela; a interacao em
+        // si (o que acontece ao apertar) ainda nao esta implementada.
+        playerQuarto.pertoDe = quartoObjetoInterativoProximo(quartoPlayerHitbox(playerQuarto.x, playerQuarto.y));
     }
 
     if (estadoAtual==="ESPERA_POS_DIALOGO") {
@@ -1112,6 +1139,34 @@ function desenhar() {
                 ctx.fillStyle = "#c04060";
                 ctx.fillRect(Math.floor(px), Math.floor(py), pw, ph);
             }
+        }
+
+        // Hitboxes de depuracao (liga/desliga em SETTINGS > HITBOX).
+        // Vermelho = solido (bloqueia). Ciano = interativo (nao bloqueia,
+        // so serve pra detectar proximidade). Ajuda a conferir se os
+        // numeros batem com o desenho de verdade antes de travar tudo.
+        if (mostrarHitbox) {
+            ctx.strokeStyle = "#ff3030";
+            ctx.lineWidth = 1;
+            QUARTO_SOLIDOS.forEach((s) => {
+                ctx.strokeRect(Math.floor(qx + s.x * S), Math.floor(qy + s.y * S), s.w * S, s.h * S);
+            });
+            ctx.strokeStyle = "#30e0ff";
+            QUARTO_INTERATIVEIS.forEach((o) => {
+                ctx.strokeRect(Math.floor(qx + o.x * S), Math.floor(qy + o.y * S), o.w * S, o.h * S);
+            });
+            // Hitbox do proprio player (pes)
+            const hb = quartoPlayerHitbox(playerQuarto.x, playerQuarto.y);
+            ctx.strokeStyle = "#30ff60";
+            ctx.strokeRect(Math.floor(qx + hb.x * S), Math.floor(qy + hb.y * S), hb.w * S, hb.h * S);
+        }
+
+        // Dica de interacao (a acao em si ainda precisa ser definida por voce)
+        if (playerQuarto.pertoDe) {
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 12px 'Courier New', monospace";
+            ctx.textAlign = "center";
+            ctx.fillText("[ E ]  examinar", canvas.width / 2, canvas.height - 14);
         }
 
     } else if (estadoAtual==="TELA_VERMELHA") {
