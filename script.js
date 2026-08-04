@@ -320,7 +320,16 @@ const playerQuarto = {
 // (que tem ~160px de altura no espaco-fonte) ficava maior que a propria
 // tela (160*4=640 > canvas de 400). O efeito "mundo grande" agora vem da
 // CAMERA que segue o player (como no Deltarune), nao de esticar tudo.
-const QUARTO_ESCALA = 2;
+const QUARTO_ESCALA = 4;
+
+// O ARQUIVO do player (256x256) tem o desenho feito numa grade real de
+// 64x64 - ou seja, cada "pixel de arte" ocupa um bloco de 4x4 pixels no
+// arquivo (256/64=4). Ja a cama e o resto do quarto sao nativos 256x256
+// (1 pixel de arte = 1 pixel de arquivo). Por isso o player NAO pode
+// usar a mesma escala do quarto (senao fica 4x maior do que deveria) -
+// ele usa QUARTO_ESCALA/4 para compensar esse "zoom" ja embutido no
+// proprio arquivo dele.
+const QUARTO_PLAYER_ESCALA = QUARTO_ESCALA / 4;
 
 // Camera do quarto: guarda, em espaco-fonte (0..256), o canto superior
 // esquerdo que aparece no canto (0,0) da tela. Atualizada a cada frame
@@ -1048,7 +1057,7 @@ function desenhar() {
             // --- Lados: reaproveita o sprite ANTIGO (overworld), escalado
             // para ter a mesma altura do sprite novo de frente/tras, para
             // o personagem nao mudar de tamanho ao virar de lado.
-            const alturaAlvo = playerQuarto.cropH * S;
+            const alturaAlvo = playerQuarto.cropH * QUARTO_PLAYER_ESCALA;
             const escalaAntigo = alturaAlvo / RECORTE_PLAYER.altura;
             const larguraAntigo = RECORTE_PLAYER.largura * escalaAntigo;
 
@@ -1088,8 +1097,8 @@ function desenhar() {
             const frames = playerQuarto.direcao === "tras" ? imgPlayerQuartoTras : imgPlayerQuartoFrente;
             const fi = Math.max(0, Math.min(2, playerQuarto.frame));
             const fp = frames[fi];
-            const pw = playerQuarto.cropW * S;
-            const ph = playerQuarto.cropH * S;
+            const pw = playerQuarto.cropW * QUARTO_PLAYER_ESCALA;
+            const ph = playerQuarto.cropH * QUARTO_PLAYER_ESCALA;
             const px = pesX - pw / 2;
             const py = pesY - ph;
 
