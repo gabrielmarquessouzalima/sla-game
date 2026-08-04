@@ -694,12 +694,13 @@ const QUARTO_SOLIDOS = [
     { nome: "armario", x: 138, y: 155, w: 46, h: 20 }
 ];
 
-// interagir* = zona no chao onde o player precisa estar (pes)
-// x,y,w,h = hitbox visual (debug) - posters = so o quadrado em volta dos 3
+// x,y,w,h = hitbox visual (debug) E zona real de interacao (mesma caixa).
+// posters: desenho na parede -> interagir desce ate o chao com a MESMA
+// largura dos 3 posters, sem invadir armario nem cama.
 const QUARTO_INTERATIVEIS = [
-    { nome: "posters", x: 104, y: 111, w: 35, h: 37, interagirX: 95,  interagirY: 155, interagirW: 55, interagirH: 50 },
-    { nome: "armario", x: 138, y: 155, w: 46, h: 20, interagirX: 128, interagirY: 150, interagirW: 60, interagirH: 55 },
-    { nome: "cama",    x: 132, y: 208, w: 59, h: 36, interagirX: 120, interagirY: 200, interagirW: 75, interagirH: 48 }
+    { nome: "posters", x: 104, y: 111, w: 35, h: 37, interagirX: 104, interagirY: 155, interagirW: 35, interagirH: 45 },
+    { nome: "armario", x: 138, y: 155, w: 46, h: 20 },
+    { nome: "cama",    x: 132, y: 208, w: 59, h: 36 }
 ];
 
 // --- DIALOGOS DE INTERACAO DO QUARTO ---
@@ -833,17 +834,26 @@ function quartoColideSolido(hb) {
     }
     return false;
 }
-// Retorna o nome do objeto interativo perto do player (usa zona de chao).
+// Retorna o objeto cuja zona o player esta tocando.
+// Se duas zonas se sobrepuserem, escolhe a MENOR (mais precisa).
 function quartoObjetoInterativoProximo(hb) {
+    let melhor = null;
+    let melhorArea = Infinity;
     for (let i = 0; i < QUARTO_INTERATIVEIS.length; i++) {
         const o = QUARTO_INTERATIVEIS[i];
         const ix = o.interagirX != null ? o.interagirX : o.x;
         const iy = o.interagirY != null ? o.interagirY : o.y;
         const iw = o.interagirW != null ? o.interagirW : o.w;
         const ih = o.interagirH != null ? o.interagirH : o.h;
-        if (hb.x < ix + iw && hb.x + hb.w > ix && hb.y < iy + ih && hb.y + hb.h > iy) return o.nome;
+        if (hb.x < ix + iw && hb.x + hb.w > ix && hb.y < iy + ih && hb.y + hb.h > iy) {
+            const area = iw * ih;
+            if (area < melhorArea) {
+                melhorArea = area;
+                melhor = o.nome;
+            }
+        }
     }
-    return null;
+    return melhor;
 }
 function quartoDentroBounds(hb) {
     return hb.x >= QUARTO_BOUNDS.minX && hb.x + hb.w <= QUARTO_BOUNDS.maxX &&
