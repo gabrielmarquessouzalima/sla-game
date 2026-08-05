@@ -1329,13 +1329,31 @@ function desenharCenario() {
     pocas.forEach(p=>{let px2=(p.x-camera.x*0.15)%canvas.width;if(px2<0)px2+=canvas.width;ctx.fillStyle="rgba(20,0,40,0.8)";ctx.fillRect(Math.floor(px2),chaoPixY+4,p.largura,2);ctx.fillStyle="rgba(200,60,160,0.25)";ctx.fillRect(Math.floor(px2)+2,chaoPixY+4,p.largura-4,1);ctx.fillStyle="rgba(200,200,255,0.15)";ctx.fillRect(Math.floor(px2),chaoPixY+3,p.largura,1);});
 }
 
+// Desenha o titulo do jogo (imagem Guiltame) centralizado em (cx, cy).
+// maxLarg = largura maxima em pixels. Fallback texto se a imagem nao carregar.
+function desenharTituloJogo(cx, cy, maxLarg) {
+    if (imgTituloNovoJogo.complete && imgTituloNovoJogo.width > 0) {
+        const escala = maxLarg / imgTituloNovoJogo.width;
+        const larg = imgTituloNovoJogo.width * escala;
+        const alt = imgTituloNovoJogo.height * escala;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(imgTituloNovoJogo, cx - larg / 2, cy - alt / 2, larg, alt);
+        return alt;
+    }
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 36px 'Courier New', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("GUILTAME", cx, cy + 10);
+    return 40;
+}
+
 // --- MENU ---
 function desenharMenu() {
     desenharCenario();
     ctx.fillStyle="rgba(0,0,10,0.72)";ctx.fillRect(0,0,canvas.width,canvas.height);
     const cx=canvas.width/2;
-    ctx.fillStyle="#00ffcc";ctx.font="bold 32px 'Courier New', monospace";ctx.textAlign="center";ctx.fillText("CIDADE INFINITA",cx,55);
-    ctx.fillStyle="#ff00ff";ctx.fillRect(cx-180,65,360,2);
+    const altTitulo = desenharTituloJogo(cx, 48, canvas.width * 0.55);
+    ctx.fillStyle="#ff00ff";ctx.fillRect(cx-180, 48 + altTitulo / 2 + 6, 360, 2);
 
     if (subEstado==="NICKNAME") {
         ctx.fillStyle="rgba(255,255,255,0.7)";ctx.font="14px 'Courier New', monospace";ctx.fillText("digite seu nickname para continuar",cx,110);
@@ -1622,8 +1640,8 @@ function desenhar() {
 
     if (estadoAtual==="TELA_INICIAL") {
         ctx.fillStyle="#050010";ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle="#00ffcc";ctx.font="40px 'Courier New', monospace";ctx.textAlign="center";ctx.fillText("CIDADE INFINITA",canvas.width/2,150);
-        ctx.fillStyle="rgba(255,255,255,0.4)";ctx.font="14px 'Courier New', monospace";ctx.fillText("pressione START para continuar",canvas.width/2,210);
+        desenharTituloJogo(canvas.width/2, 150, canvas.width * 0.7);
+        ctx.fillStyle="rgba(255,255,255,0.4)";ctx.font="14px 'Courier New', monospace";ctx.textAlign="center";ctx.fillText("pressione START para continuar",canvas.width/2,230);
 
     } else if (estadoAtual==="TELA_MENU") {
         desenharMenu();
