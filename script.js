@@ -191,6 +191,15 @@ pt: {
         "n-",
         "não pegue por favor"
     ],
+    armarioCede: [
+        "ok ok",
+        "mas, isso só me faz gostar menos de você"
+    ],
+    armarioGanhou: "você conseguiu um boneco de ninja de {tipo}!",
+    ninjaTipos: {
+        agua: "água", vida: "vida", gelo: "gelo", terra: "terra",
+        raio: "raio", oni: "oni", sensei: "sensei", marrom: "marrom"
+    },
     sim: "SIM", nao: "NÃO",
     dialogoInicial: [
         "Desperte...",
@@ -263,6 +272,15 @@ en: {
         "n-",
         "please don't take them"
     ],
+    armarioCede: [
+        "ok ok",
+        "but that only makes me like you less"
+    ],
+    armarioGanhou: "you got a {tipo} ninja figure!",
+    ninjaTipos: {
+        agua: "water", vida: "life", gelo: "ice", terra: "earth",
+        raio: "lightning", oni: "oni", sensei: "sensei", marrom: "brown"
+    },
     sim: "YES", nao: "NO",
     dialogoInicial: [
         "Wake up...",
@@ -335,6 +353,15 @@ ja: {
         "だ、",
         "取らないで"
     ],
+    armarioCede: [
+        "わかったわかった",
+        "でも、それであなたのことがもっと嫌いになった"
+    ],
+    armarioGanhou: "{tipo}の忍者フィギュアを手に入れた！",
+    ninjaTipos: {
+        agua: "水", vida: "命", gelo: "氷", terra: "土",
+        raio: "雷", oni: "鬼", sensei: "先生", marrom: "茶色"
+    },
     sim: "はい", nao: "いいえ",
     dialogoInicial: [
         "目を覚まして…",
@@ -407,6 +434,15 @@ es: {
         "n-",
         "no los tomes por favor"
     ],
+    armarioCede: [
+        "ok ok",
+        "pero eso solo hace que me caigas peor"
+    ],
+    armarioGanhou: "¡conseguiste un muñeco ninja de {tipo}!",
+    ninjaTipos: {
+        agua: "agua", vida: "vida", gelo: "hielo", terra: "tierra",
+        raio: "rayo", oni: "oni", sensei: "sensei", marrom: "marrón"
+    },
     sim: "SÍ", nao: "NO",
     dialogoInicial: [
         "Despierta...",
@@ -607,7 +643,7 @@ nomesPlayerQuartoTras.forEach((src) => { const img = new Image(); img.src = src;
 // igual a grade do PNG do quarto - independe da escala de exibicao)
 const playerQuarto = {
     x: 100, y: 200,
-    velocidade: 2,             // inteiro -> passos sempre alinhados ao pixel
+    velocidade: 1,             // mais devagar no quarto
     direcao: "frente",         // "frente" | "tras" | "esquerda" | "direita"
     frame: 1,                  // 1 = parado (para frente/tras)
     tempoAnimacao: 0,
@@ -711,9 +747,36 @@ const quartoDialogo = {
     linhas: [],
     indice: 0,
     escolhaSelecionada: 0, // 0 = SIM, 1 = NAO
-    // fluxo do armario: "intro" | "abrir" | "dentro" | "pegar" | "pensamento"
+    // fluxo do armario: "intro" | "abrir" | "dentro" | "pegar" | "pensamento" | "cede" | "ganhou"
     etapa: null
 };
+
+// Contador de vezes que o player tentou pegar um boneco (SIM em "pegar um?")
+let armarioTentativasPegar = 0;
+let armarioBonecos = []; // inventario dos ninjas obtidos
+
+// Pesos: 5 elementos iguais e altos; oni/sensei menores; marrom o menor
+const NINJA_PESOS = [
+    { id: "agua", peso: 18 },
+    { id: "vida", peso: 18 },
+    { id: "gelo", peso: 18 },
+    { id: "terra", peso: 18 },
+    { id: "raio", peso: 18 },
+    { id: "oni", peso: 6 },
+    { id: "sensei", peso: 6 },
+    { id: "marrom", peso: 2 }
+];
+
+function sortearNinja() {
+    let total = 0;
+    for (let i = 0; i < NINJA_PESOS.length; i++) total += NINJA_PESOS[i].peso;
+    let r = Math.random() * total;
+    for (let i = 0; i < NINJA_PESOS.length; i++) {
+        r -= NINJA_PESOS[i].peso;
+        if (r <= 0) return NINJA_PESOS[i].id;
+    }
+    return NINJA_PESOS[0].id;
+}
 
 function quartoDialogoFechar() {
     quartoDialogo.ativo = false;
@@ -734,8 +797,9 @@ function quartoDialogoIniciar(objeto) {
 
     const tx = t();
     if (objeto === "posters") {
+        // 3 ultimas falas = pensamento do player (caixa roxa)
         quartoDialogo.modo = "texto";
-        quartoDialogo.etapa = null;
+        quartoDialogo.etapa = "posters";
         quartoDialogo.linhas = tx.posters.slice();
         quartoDialogo.indice = 0;
         typewriterIniciar(quartoDialogo.linhas[0], "qd_posters_0");
@@ -777,11 +841,22 @@ function quartoDialogoAvancar() {
         if (quartoDialogo.etapa === "pegar") {
             if (!escolheuSim) { quartoDialogoFechar(); return; }
             const tx = t();
-            quartoDialogo.modo = "pensamento";
-            quartoDialogo.etapa = "pensamento";
-            quartoDialogo.linhas = tx.armarioPensamento.slice();
-            quartoDialogo.indice = 0;
-            typewriterIniciar(quartoDialogo.linhas[0], "qd_arm_pens_0");
+            armarioTentativasPegar++;
+            // Depois de ~10 tentativas o personagem cede
+            if (armarioTentativasPegar >= 10) {
+                armarioTentativasPegar = 0;
+                quartoDialogo.modo = "pensamento";
+                quartoDialogo.etapa = "cede";
+                quartoDialogo.linhas = tx.armarioCede.slice();
+                quartoDialogo.indice = 0;
+                typewriterIniciar(quartoDialogo.linhas[0], "qd_arm_cede_0");
+            } else {
+                quartoDialogo.modo = "pensamento";
+                quartoDialogo.etapa = "pensamento";
+                quartoDialogo.linhas = tx.armarioPensamento.slice();
+                quartoDialogo.indice = 0;
+                typewriterIniciar(quartoDialogo.linhas[0], "qd_arm_pens_0");
+            }
             return;
         }
         return;
@@ -790,6 +865,11 @@ function quartoDialogoAvancar() {
     // --- TEXTO / PENSAMENTO: proxima linha ---
     quartoDialogo.indice++;
     if (quartoDialogo.indice < quartoDialogo.linhas.length) {
+        // Posters: 3 ultimas linhas (indices 5,6,7) = pensamento do player
+        if (quartoDialogo.objeto === "posters") {
+            const total = quartoDialogo.linhas.length;
+            quartoDialogo.modo = (quartoDialogo.indice >= total - 3) ? "pensamento" : "texto";
+        }
         const id = "qd_" + (quartoDialogo.objeto || "x") + "_" + (quartoDialogo.etapa || "t") + "_" + quartoDialogo.indice;
         typewriterIniciar(quartoDialogo.linhas[quartoDialogo.indice], id);
         return;
@@ -815,6 +895,20 @@ function quartoDialogoAvancar() {
             quartoDialogo.indice = 0;
             quartoDialogo.escolhaSelecionada = 0;
             typewriterIniciar(tx.armarioPegar, "qd_arm_pegar");
+            return;
+        }
+        // Depois de ceder: mostra o boneco sorteado na caixa normal
+        if (quartoDialogo.etapa === "cede") {
+            const tx = t();
+            const tipo = sortearNinja();
+            armarioBonecos.push(tipo);
+            const nomeTipo = (tx.ninjaTipos && tx.ninjaTipos[tipo]) ? tx.ninjaTipos[tipo] : tipo;
+            const msg = (tx.armarioGanhou || "ninja: {tipo}").replace("{tipo}", nomeTipo);
+            quartoDialogo.modo = "texto";
+            quartoDialogo.etapa = "ganhou";
+            quartoDialogo.linhas = [msg];
+            quartoDialogo.indice = 0;
+            typewriterIniciar(msg, "qd_arm_ganhou_0");
             return;
         }
     }
@@ -1601,11 +1695,50 @@ function typewriterPular() {
 }
 
 // --- UI ---
+// Quebra texto longo em varias linhas para nao atravessar a borda da caixa
+function quebrarTexto(texto, maxWidth, font) {
+    ctx.font = font;
+    const linhas = [];
+    if (!texto) return linhas;
+    let atual = "";
+    for (let i = 0; i < texto.length; i++) {
+        const ch = texto[i];
+        const teste = atual + ch;
+        if (ctx.measureText(teste).width > maxWidth && atual.length > 0) {
+            // se quebrou no meio de palavra apos espaco, tenta voltar ao ultimo espaco
+            const ultEsp = atual.lastIndexOf(" ");
+            if (ultEsp > 0 && ch !== " ") {
+                linhas.push(atual.slice(0, ultEsp));
+                atual = atual.slice(ultEsp + 1) + ch;
+            } else {
+                linhas.push(atual);
+                atual = (ch === " ") ? "" : ch;
+            }
+        } else {
+            atual = teste;
+        }
+    }
+    if (atual) linhas.push(atual);
+    return linhas;
+}
+
+function desenharTextoQuebrado(texto, x, y, maxWidth, lineHeight, font, align) {
+    ctx.font = font;
+    if (align) ctx.textAlign = align;
+    const linhas = quebrarTexto(texto, maxWidth, font);
+    for (let i = 0; i < linhas.length; i++) {
+        ctx.fillText(linhas[i], x, y + i * lineHeight);
+    }
+    return linhas.length;
+}
+
 function desenharCaixaTexto(texto) {
     ctx.fillStyle="rgba(0,0,26,0.9)";ctx.fillRect(caixaDialogo.x,caixaDialogo.y,caixaDialogo.largura,caixaDialogo.altura);
     ctx.strokeStyle="#ff0055";ctx.lineWidth=2;ctx.strokeRect(caixaDialogo.x,caixaDialogo.y,caixaDialogo.largura,caixaDialogo.altura);
-    ctx.fillStyle="white";ctx.font="20px 'Courier New', monospace";ctx.textAlign="left";
-    ctx.fillText(typewriterTexto(),caixaDialogo.x+20,caixaDialogo.y+55);
+    const font = "20px 'Courier New', monospace";
+    ctx.fillStyle="white";ctx.textAlign="left";
+    const maxW = caixaDialogo.largura - 40;
+    desenharTextoQuebrado(typewriterTexto(), caixaDialogo.x+20, caixaDialogo.y+40, maxW, 24, font, "left");
     if (typewriterCompleto()) {
         ctx.font="12px 'Courier New', monospace";ctx.fillStyle="rgba(0,255,204,0.7)";
         ctx.fillText(t().continuar,caixaDialogo.x+20,caixaDialogo.y+100);
@@ -1613,10 +1746,16 @@ function desenharCaixaTexto(texto) {
 }
 
 function desenharCaixaPensamento(texto) {
-    ctx.fillStyle="rgba(75,0,130,0.9)";ctx.fillRect(caixaDialogo.x,20,caixaDialogo.largura,80);
-    ctx.strokeStyle="#ff0000";ctx.lineWidth=3;ctx.strokeRect(caixaDialogo.x,20,caixaDialogo.largura,80);
-    ctx.fillStyle="white";ctx.font="18px 'Courier New', monospace";ctx.textAlign="center";
-    ctx.fillText(typewriterTexto(),canvas.width/2,65);
+    const font = "18px 'Courier New', monospace";
+    const maxW = caixaDialogo.largura - 40;
+    const linhas = quebrarTexto(typewriterTexto(), maxW, font);
+    const lineH = 22;
+    const pad = 16;
+    const altCaixa = Math.max(80, pad * 2 + linhas.length * lineH);
+    ctx.fillStyle="rgba(75,0,130,0.9)";ctx.fillRect(caixaDialogo.x,20,caixaDialogo.largura,altCaixa);
+    ctx.strokeStyle="#ff0000";ctx.lineWidth=3;ctx.strokeRect(caixaDialogo.x,20,caixaDialogo.largura,altCaixa);
+    ctx.fillStyle="white";
+    desenharTextoQuebrado(typewriterTexto(), canvas.width/2, 20 + pad + 14, maxW, lineH, font, "center");
 }
 
 function desenharBarrasCinematicas() {
@@ -1791,16 +1930,22 @@ function desenhar() {
             if (quartoDialogo.modo === "pensamento") {
                 desenharCaixaPensamento(typewriterTexto());
             } else {
-                // Caixa normal de texto (e escolha)
+                // Caixa normal de texto (e escolha) com quebra de linha
+                const font = "20px 'Courier New', monospace";
+                const maxW = caixaDialogo.largura - 40;
+                const nLinhas = quebrarTexto(typewriterTexto(), maxW, font).length;
+                const lineH = 24;
+                const altExtra = Math.max(0, (nLinhas - 1) * lineH);
+                const altCaixa = caixaDialogo.altura + altExtra;
+                const boxY = Math.min(caixaDialogo.y, canvas.height - altCaixa - 8);
                 ctx.fillStyle = "rgba(0,0,26,0.9)";
-                ctx.fillRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
+                ctx.fillRect(caixaDialogo.x, boxY, caixaDialogo.largura, altCaixa);
                 ctx.strokeStyle = "#ff0055";
                 ctx.lineWidth = 2;
-                ctx.strokeRect(caixaDialogo.x, caixaDialogo.y, caixaDialogo.largura, caixaDialogo.altura);
+                ctx.strokeRect(caixaDialogo.x, boxY, caixaDialogo.largura, altCaixa);
                 ctx.fillStyle = "white";
-                ctx.font = "20px 'Courier New', monospace";
                 ctx.textAlign = "left";
-                ctx.fillText(typewriterTexto(), caixaDialogo.x + 20, caixaDialogo.y + 40);
+                desenharTextoQuebrado(typewriterTexto(), caixaDialogo.x + 20, boxY + 32, maxW, lineH, font, "left");
 
                 if (typewriterCompleto()) {
                     const tx = t();
@@ -1810,15 +1955,15 @@ function desenhar() {
                             const sel = i === quartoDialogo.escolhaSelecionada;
                             ctx.fillStyle = sel ? "#ff00ff" : "rgba(255,255,255,0.55)";
                             ctx.font = sel ? "bold 18px 'Courier New', monospace" : "16px 'Courier New', monospace";
-                            ctx.fillText((sel ? "> " : "  ") + op, caixaDialogo.x + 40, caixaDialogo.y + 72 + i * 22);
+                            ctx.fillText((sel ? "> " : "  ") + op, caixaDialogo.x + 40, boxY + 72 + altExtra + i * 22);
                         });
                         ctx.fillStyle = "rgba(0,255,204,0.6)";
                         ctx.font = "11px 'Courier New', monospace";
-                        ctx.fillText(tx.escolhaDica, caixaDialogo.x + 20, caixaDialogo.y + 112);
+                        ctx.fillText(tx.escolhaDica, caixaDialogo.x + 20, boxY + altCaixa - 10);
                     } else {
                         ctx.fillStyle = "rgba(0,255,204,0.7)";
                         ctx.font = "12px 'Courier New', monospace";
-                        ctx.fillText(tx.continuar, caixaDialogo.x + 20, caixaDialogo.y + 100);
+                        ctx.fillText(tx.continuar, caixaDialogo.x + 20, boxY + altCaixa - 12);
                     }
                 }
             }
