@@ -200,6 +200,12 @@ pt: {
         agua: "água", vida: "vida", gelo: "gelo", terra: "terra",
         raio: "raio", oni: "oni", sensei: "sensei", marrom: "marrom"
     },
+    inventarioTitulo: "BOLSOS",
+    inventarioVazio: "(vazio)",
+    inventarioCheio: "não cabe mais nada no meu bolso",
+    inventarioGrande: "isso aí é muito grande não cabe no meu bolso",
+    inventarioDica: "[ G ] fechar",
+    portaTexto: ["é uma porta"],
     sim: "SIM", nao: "NÃO",
     dialogoInicial: [
         "Desperte...",
@@ -281,6 +287,12 @@ en: {
         agua: "water", vida: "life", gelo: "ice", terra: "earth",
         raio: "lightning", oni: "oni", sensei: "sensei", marrom: "brown"
     },
+    inventarioTitulo: "POCKETS",
+    inventarioVazio: "(empty)",
+    inventarioCheio: "there's no more room in my pocket",
+    inventarioGrande: "that's too big it won't fit in my pocket",
+    inventarioDica: "[ G ] close",
+    portaTexto: ["it's a door"],
     sim: "YES", nao: "NO",
     dialogoInicial: [
         "Wake up...",
@@ -362,6 +374,12 @@ ja: {
         agua: "水", vida: "命", gelo: "氷", terra: "土",
         raio: "雷", oni: "鬼", sensei: "先生", marrom: "茶色"
     },
+    inventarioTitulo: "ポケット",
+    inventarioVazio: "（空）",
+    inventarioCheio: "もうポケットに入らない",
+    inventarioGrande: "大きすぎてポケットに入らない",
+    inventarioDica: "[ G ] 閉じる",
+    portaTexto: ["ドアだ"],
     sim: "はい", nao: "いいえ",
     dialogoInicial: [
         "目を覚まして…",
@@ -443,6 +461,12 @@ es: {
         agua: "agua", vida: "vida", gelo: "hielo", terra: "tierra",
         raio: "rayo", oni: "oni", sensei: "sensei", marrom: "marrón"
     },
+    inventarioTitulo: "BOLSILLOS",
+    inventarioVazio: "(vacío)",
+    inventarioCheio: "no cabe nada más en mi bolsillo",
+    inventarioGrande: "eso es demasiado grande no cabe en mi bolsillo",
+    inventarioDica: "[ G ] cerrar",
+    portaTexto: ["es una puerta"],
     sim: "SÍ", nao: "NO",
     dialogoInicial: [
         "Despierta...",
@@ -735,7 +759,9 @@ const QUARTO_SOLIDOS = [
 const QUARTO_INTERATIVEIS = [
     { nome: "posters", x: 100, y: 108, w: 43, h: 55 },
     { nome: "armario", x: 138, y: 157, w: 28, h: 12 },
-    { nome: "cama",    x: 126, y: 200, w: 71, h: 48 }
+    { nome: "cama",    x: 126, y: 200, w: 71, h: 48 },
+    // Porta: visual + zona no chao em frente (jaja sera mais interagivel)
+    { nome: "porta",   x: 67,  y: 107, w: 28, h: 53, interagirX: 60, interagirY: 155, interagirW: 42, interagirH: 40 }
 ];
 
 // --- DIALOGOS DE INTERACAO DO QUARTO ---
@@ -753,7 +779,29 @@ const quartoDialogo = {
 
 // Contador de vezes que o player tentou pegar um boneco (SIM em "pegar um?")
 let armarioTentativasPegar = 0;
-let armarioBonecos = []; // inventario dos ninjas obtidos
+
+// --- INVENTARIO (bolsos do personagem) ---
+const INVENTARIO_MAX = 8;
+const inventario = []; // lista de { id, nome }
+let inventarioAberto = false;
+
+// tenta adicionar item. retorna true se coube, false se bolso cheio.
+// grande = true -> item grande demais (mensagem diferente)
+function inventarioAdicionar(id, nome, grande) {
+    if (grande) return "grande";
+    if (inventario.length >= INVENTARIO_MAX) return "cheio";
+    inventario.push({ id: id, nome: nome });
+    return "ok";
+}
+
+function inventarioNomeNinja(tipo) {
+    const tx = t();
+    const nomeTipo = (tx.ninjaTipos && tx.ninjaTipos[tipo]) ? tx.ninjaTipos[tipo] : tipo;
+    if (idiomaAtual === "en") return nomeTipo + " ninja";
+    if (idiomaAtual === "ja") return "忍者・" + nomeTipo;
+    if (idiomaAtual === "es") return "ninja de " + nomeTipo;
+    return "ninja de " + nomeTipo;
+}
 
 // Pesos: 5 elementos iguais e altos; oni/sensei menores; marrom o menor
 const NINJA_PESOS = [
@@ -815,6 +863,12 @@ function quartoDialogoIniciar(objeto) {
         quartoDialogo.linhas = tx.armarioIntro.slice();
         quartoDialogo.indice = 0;
         typewriterIniciar(quartoDialogo.linhas[0], "qd_arm_intro_0");
+    } else if (objeto === "porta") {
+        quartoDialogo.modo = "texto";
+        quartoDialogo.etapa = null;
+        quartoDialogo.linhas = (tx.portaTexto || ["é uma porta"]).slice();
+        quartoDialogo.indice = 0;
+        typewriterIniciar(quartoDialogo.linhas[0], "qd_porta_0");
     }
 }
 
@@ -897,14 +951,24 @@ function quartoDialogoAvancar() {
             typewriterIniciar(tx.armarioPegar, "qd_arm_pegar");
             return;
         }
-        // Depois de ceder: mostra o boneco sorteado na caixa normal
+        // Depois de ceder: tenta guardar o boneco no bolso
         if (quartoDialogo.etapa === "cede") {
             const tx = t();
             const tipo = sortearNinja();
-            armarioBonecos.push(tipo);
-            const nomeTipo = (tx.ninjaTipos && tx.ninjaTipos[tipo]) ? tx.ninjaTipos[tipo] : tipo;
-            const msg = (tx.armarioGanhou || "ninja: {tipo}").replace("{tipo}", nomeTipo);
-            quartoDialogo.modo = "texto";
+            const nomeItem = inventarioNomeNinja(tipo);
+            const resultado = inventarioAdicionar("ninja_" + tipo, nomeItem, false);
+            let msg;
+            if (resultado === "cheio") {
+                msg = tx.inventarioCheio || "não cabe mais nada no meu bolso";
+                quartoDialogo.modo = "pensamento";
+            } else if (resultado === "grande") {
+                msg = tx.inventarioGrande || "isso aí é muito grande não cabe no meu bolso";
+                quartoDialogo.modo = "pensamento";
+            } else {
+                const nomeTipo = (tx.ninjaTipos && tx.ninjaTipos[tipo]) ? tx.ninjaTipos[tipo] : tipo;
+                msg = (tx.armarioGanhou || "ninja: {tipo}").replace("{tipo}", nomeTipo);
+                quartoDialogo.modo = "texto";
+            }
             quartoDialogo.etapa = "ganhou";
             quartoDialogo.linhas = [msg];
             quartoDialogo.indice = 0;
@@ -1286,6 +1350,23 @@ window.addEventListener("keydown", (e) => {
     }
     if (estadoAtual === "JOGANDO" && e.code === "Escape") {
         saveSlotModo = "SAVE"; saveSlotOpcao = 0; subEstado = "SAVE_SLOT"; estadoAtual = "TELA_MENU";
+    }
+
+    // Inventario: G abre/fecha (bolsos do personagem)
+    if ((estadoAtual === "QUARTO" || estadoAtual === "QUARTO_INVENTARIO") && e.code === "KeyG") {
+        if (inventarioAberto) {
+            inventarioAberto = false;
+            estadoAtual = "QUARTO";
+        } else if (estadoAtual === "QUARTO") {
+            inventarioAberto = true;
+            estadoAtual = "QUARTO_INVENTARIO";
+        }
+        return;
+    }
+    if (estadoAtual === "QUARTO_INVENTARIO" && e.code === "Escape") {
+        inventarioAberto = false;
+        estadoAtual = "QUARTO";
+        return;
     }
 
     // Interacao no quarto: apertar E perto de um objeto
@@ -1796,7 +1877,7 @@ function desenhar() {
         ctx.fillStyle=cenaPosDemo.telaEmBranco?"#ffffff":"#000000";
         ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    } else if (estadoAtual === "QUARTO" || estadoAtual === "QUARTO_DIALOGO") {
+    } else if (estadoAtual === "QUARTO" || estadoAtual === "QUARTO_DIALOGO" || estadoAtual === "QUARTO_INVENTARIO") {
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.imageSmoothingEnabled = false;
@@ -1967,6 +2048,47 @@ function desenhar() {
                     }
                 }
             }
+        }
+
+        // Inventario (bolsos) — so nomes dos itens, max 8 slots
+        if (estadoAtual === "QUARTO_INVENTARIO" && inventarioAberto) {
+            const tx = t();
+            const iw = 280, ih = 260;
+            const ix = (canvas.width - iw) / 2;
+            const iy = (canvas.height - ih) / 2;
+            ctx.fillStyle = "rgba(0,0,0,0.55)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "rgba(0,0,20,0.95)";
+            ctx.fillRect(ix, iy, iw, ih);
+            ctx.strokeStyle = "#00ffcc";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(ix, iy, iw, ih);
+            ctx.fillStyle = "#00ffcc";
+            ctx.font = "bold 16px 'Courier New', monospace";
+            ctx.textAlign = "center";
+            ctx.fillText(tx.inventarioTitulo || "BOLSOS", canvas.width / 2, iy + 28);
+            ctx.fillStyle = "rgba(255,255,255,0.35)";
+            ctx.font = "11px 'Courier New', monospace";
+            ctx.fillText(inventario.length + " / " + INVENTARIO_MAX, canvas.width / 2, iy + 48);
+            ctx.textAlign = "left";
+            for (let i = 0; i < INVENTARIO_MAX; i++) {
+                const sy = iy + 68 + i * 22;
+                ctx.fillStyle = "rgba(255,255,255,0.12)";
+                ctx.fillRect(ix + 20, sy - 14, iw - 40, 20);
+                if (i < inventario.length) {
+                    ctx.fillStyle = "#ffffff";
+                    ctx.font = "14px 'Courier New', monospace";
+                    ctx.fillText((i + 1) + ". " + inventario[i].nome, ix + 28, sy);
+                } else {
+                    ctx.fillStyle = "rgba(255,255,255,0.25)";
+                    ctx.font = "13px 'Courier New', monospace";
+                    ctx.fillText((i + 1) + ". " + (tx.inventarioVazio || "(vazio)"), ix + 28, sy);
+                }
+            }
+            ctx.fillStyle = "rgba(0,255,204,0.6)";
+            ctx.font = "11px 'Courier New', monospace";
+            ctx.textAlign = "center";
+            ctx.fillText(tx.inventarioDica || "[ G ] fechar", canvas.width / 2, iy + ih - 14);
         }
 
     } else if (estadoAtual==="TELA_VERMELHA") {
