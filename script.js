@@ -1515,8 +1515,16 @@ window.addEventListener("keydown", (e) => {
                     opacidade: 0.35 + p * 0.45
                 });
             }
-            player.x = 100;
+            // Volta pro comeco da cidade (igual inicio do jogo), sem barras cortando
+            player.x = 0;
+            player.y = 100;
+            player.velY = 0;
+            player.estaAndando = false;
             camera.x = 0;
+            if (typeof camera.y !== "undefined") camera.y = 0;
+            cena450.alturaBarras = 0;
+            cena450.ativa = false;
+            // concluida fica true pra nao repetir a cena da raposa
             estadoAtual = "JOGANDO";
         } else {
             typewriterIniciar(linhas[cenaEspirito.indiceDialogo], "esp_" + cenaEspirito.indiceDialogo);
@@ -1633,30 +1641,30 @@ function desenharCenario() {
     const luaX = cidadePosSonho
         ? Math.floor(canvas.width / 2 - 50)
         : Math.floor(canvas.width - 140 - (camera.x * 0.003) % 6);
-    const luaY = cidadePosSonho ? 40 : 28;
-    for(let y=luaY-30;y<=luaY+90;y+=2){for(let x=luaX-30;x<=luaX+110;x+=2){let dx=x-(luaX+50),dy=y-(luaY+50);let dist=Math.sqrt(dx*dx+dy*dy);if(dist<80&&dist>42){let a=(1-(dist-42)/38)*(cidadePosSonho?0.04:0.055);if(a>0.005){ctx.fillStyle=`rgba(160,200,255,${a.toFixed(3)})`;ctx.fillRect(x,y,2,2);}}}}
+    const luaY = cidadePosSonho ? 36 : 28;
+    for(let y=luaY-30;y<=luaY+90;y+=2){for(let x=luaX-30;x<=luaX+110;x+=2){let dx=x-(luaX+50),dy=y-(luaY+50);let dist=Math.sqrt(dx*dx+dy*dy);if(dist<80&&dist>42){let a=(1-(dist-42)/38)*(cidadePosSonho?0.035:0.055);if(a>0.005){ctx.fillStyle=`rgba(160,200,255,${a.toFixed(3)})`;ctx.fillRect(x,y,2,2);}}}}
     ctx.drawImage(luaCanvas,luaX,luaY,100,100);
-    // Nuvens rapidas + overlay escuro apos o sonho
+
+    // Nuvens rapidas so no ceu (nao cobrem a cidade)
     if (cidadePosSonho) {
         const tNuv = Date.now() * 0.001;
-        for (let n = 0; n < 8; n++) {
-            const base = (n * 220 - tNuv * (80 + n * 18)) % (canvas.width + 280);
-            const nx = base < 0 ? base + canvas.width + 280 : base;
-            const ny = 18 + (n % 4) * 22;
-            ctx.fillStyle = `rgba(20,15,40,${0.35 + (n % 3) * 0.08})`;
-            // nuvem em blobs
+        for (let n = 0; n < 10; n++) {
+            const span = canvas.width + 320;
+            let nx = (n * 200 - tNuv * (100 + n * 22)) % span;
+            if (nx < 0) nx += span;
+            nx -= 80;
+            const ny = 12 + (n % 5) * 18;
+            ctx.fillStyle = `rgba(18,12,35,${0.4 + (n % 3) * 0.1})`;
             ctx.beginPath();
-            ctx.ellipse(nx, ny, 70 + n * 5, 16 + (n % 3) * 4, 0, 0, Math.PI * 2);
+            ctx.ellipse(nx, ny, 75 + n * 4, 14 + (n % 3) * 5, 0, 0, Math.PI * 2);
             ctx.fill();
             ctx.beginPath();
-            ctx.ellipse(nx + 40, ny + 4, 50, 14, 0, 0, Math.PI * 2);
+            ctx.ellipse(nx + 42, ny + 3, 55, 13, 0, 0, Math.PI * 2);
             ctx.fill();
             ctx.beginPath();
-            ctx.ellipse(nx - 35, ny + 2, 45, 12, 0, 0, Math.PI * 2);
+            ctx.ellipse(nx - 38, ny + 2, 48, 11, 0, 0, Math.PI * 2);
             ctx.fill();
         }
-        ctx.fillStyle = "rgba(0,0,15,0.45)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
     const chaoTela=chaoY-camera.y;
@@ -1678,6 +1686,12 @@ function desenharCenario() {
     for(let i=0;i<8;i++){ctx.fillStyle=coresCalcada[i%coresCalcada.length];ctx.fillRect(0,chaoPixY+2+i*4,canvas.width,4);}
     const pocas=[{x:80,largura:40},{x:200,largura:25},{x:350,largura:55},{x:500,largura:30},{x:650,largura:45},{x:750,largura:20}];
     pocas.forEach(p=>{let px2=(p.x-camera.x*0.15)%canvas.width;if(px2<0)px2+=canvas.width;ctx.fillStyle="rgba(20,0,40,0.8)";ctx.fillRect(Math.floor(px2),chaoPixY+4,p.largura,2);ctx.fillStyle="rgba(200,60,160,0.25)";ctx.fillRect(Math.floor(px2)+2,chaoPixY+4,p.largura-4,1);ctx.fillStyle="rgba(200,200,255,0.15)";ctx.fillRect(Math.floor(px2),chaoPixY+3,p.largura,1);});
+
+    // Escurece a cena INTEIRA no final (cidade completa, so mais escura)
+    if (cidadePosSonho) {
+        ctx.fillStyle = "rgba(0,0,12,0.38)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 }
 
 // Desenha o titulo do jogo (imagem Guiltame) centralizado em (cx, cy).
@@ -1952,7 +1966,8 @@ function atualizar() {
         if((teclas["KeyW"]||teclas["Space"])&&player.noChao){player.velY=player.pulo;player.noChao=false;}
     }
 
-    if(estadoAtual==="CENA_450"||estadoAtual==="ESPERA_POS_DIALOGO"||estadoAtual==="RAPOSA_VIRANDO"||estadoAtual==="DESPEDIDA_FALA_PLAYER"||estadoAtual==="RAPOSA_VIRANDO_CORPO"||estadoAtual==="RAPOSA_ANDANDO_SAIDA"||estadoAtual==="PLAYER_CHORANDO_CAINDO"||cena450.concluida){
+    // Depois do sonho (cidadePosSonho) nao mantem barras pretas cortando a cidade
+    if((estadoAtual==="CENA_450"||estadoAtual==="ESPERA_POS_DIALOGO"||estadoAtual==="RAPOSA_VIRANDO"||estadoAtual==="DESPEDIDA_FALA_PLAYER"||estadoAtual==="RAPOSA_VIRANDO_CORPO"||estadoAtual==="RAPOSA_ANDANDO_SAIDA"||estadoAtual==="PLAYER_CHORANDO_CAINDO"||(cena450.concluida&&!cidadePosSonho))){
         if(estadoAtual==="CENA_450"){
             cena450.timerEspera++;
             if(cena450.timerEspera===cena450.tempoParaDialogo){
