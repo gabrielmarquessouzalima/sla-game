@@ -210,6 +210,12 @@ pt: {
     inventarioCheio: "não cabe mais nada no meu bolso",
     inventarioGrande: "isso aí é muito grande não cabe no meu bolso",
     inventarioDica: "[ G ] fechar",
+    dialogoEspirito: [
+        "bem-vindo de volta, garoto.",
+        "vamos ver se você ficará tanto tempo aqui novamente",
+        "quem sabe se você ficar...",
+        "eu não te dê um presentinho"
+    ],
     sim: "SIM", nao: "NÃO",
     dialogoInicial: [
         "Desperte...",
@@ -301,6 +307,12 @@ en: {
     inventarioCheio: "there's no more room in my pocket",
     inventarioGrande: "that's too big it won't fit in my pocket",
     inventarioDica: "[ G ] close",
+    dialogoEspirito: [
+        "welcome back, kid.",
+        "let's see if you'll stay this long here again",
+        "who knows if you stay...",
+        "I might not give you a little gift"
+    ],
     sim: "YES", nao: "NO",
     dialogoInicial: [
         "Wake up...",
@@ -392,6 +404,12 @@ ja: {
     inventarioCheio: "もうポケットに入らない",
     inventarioGrande: "大きすぎてポケットに入らない",
     inventarioDica: "[ G ] 閉じる",
+    dialogoEspirito: [
+        "おかえり、坊主。",
+        "またこんなに長くいられるか見てみよう",
+        "もし残るなら…",
+        "プレゼントをあげないかもしれない"
+    ],
     sim: "はい", nao: "いいえ",
     dialogoInicial: [
         "目を覚まして…",
@@ -483,6 +501,12 @@ es: {
     inventarioCheio: "no cabe nada más en mi bolsillo",
     inventarioGrande: "eso es demasiado grande no cabe en mi bolsillo",
     inventarioDica: "[ G ] cerrar",
+    dialogoEspirito: [
+        "bienvenido de nuevo, chico.",
+        "vamos a ver si te quedas tanto tiempo aquí otra vez",
+        "quién sabe si te quedas...",
+        "puede que no te dé un regalito"
+    ],
     sim: "SÍ", nao: "NO",
     dialogoInicial: [
         "Despierta...",
@@ -569,6 +593,31 @@ nomesArquivosPlayerCorrendo.forEach((src) => {
 
 const imgNpcEspirito = new Image();
 imgNpcEspirito.src = "img/pixel-art-blue-spirit-character-png.png";
+
+// Frames do espirito (pos-sono) — 00 a 29
+const imgEspiritoFrames = [];
+for (let i = 0; i < 30; i++) {
+    const img = new Image();
+    const num = i < 10 ? "0" + i : "" + i;
+    img.src = "img/espirito_frame_" + num + ".png";
+    imgEspiritoFrames.push(img);
+}
+
+const cenaEspirito = {
+    timerPreto: 0,
+    tempoPreto: 300, // ~5s a 60fps
+    alpha: 0,
+    frame: 0,
+    timerFrame: 0,
+    tempoPorFrame: 4,
+    x: 400,
+    y: 180,
+    tempoFlutuar: 0,
+    dialogoAtivo: false,
+    indiceDialogo: 0,
+    glitchTimer: 0,
+    glitchAtivo: false
+};
 
 const nomesArquivosFox = [
     "img/Untitled 05-25-2026 03-13-21 (1).png",
@@ -851,8 +900,15 @@ function quartoDialogoFechar() {
     quartoDialogo.indice = 0;
     quartoDialogo.escolhaSelecionada = 0;
     quartoDialogo.etapa = null;
-    // Deitar na cama → tela preta (por enquanto)
-    estadoAtual = eraCama ? "TELA_PRETA" : "QUARTO";
+    // Deitar na cama → tela preta, depois espirito
+    if (eraCama) {
+        cenaEspirito.timerPreto = 0;
+        cenaEspirito.alpha = 0;
+        cenaEspirito.dialogoAtivo = false;
+        estadoAtual = "TELA_PRETA";
+    } else {
+        estadoAtual = "QUARTO";
+    }
 }
 
 function quartoDialogoIniciar(objeto) {
@@ -1398,6 +1454,20 @@ window.addEventListener("keydown", (e) => {
         return;
     }
 
+    // Dialogo do espirito
+    if (estadoAtual === "CENA_ESPIRITO" && cenaEspirito.dialogoAtivo && (e.code === "Space" || e.code === "Enter")) {
+        if (!typewriterCompleto()) { typewriterPular(); return; }
+        const linhas = t().dialogoEspirito || [];
+        cenaEspirito.indiceDialogo++;
+        if (cenaEspirito.indiceDialogo >= linhas.length) {
+            // Fim do dialogo do espirito (por enquanto fica na cena)
+            cenaEspirito.dialogoAtivo = false;
+        } else {
+            typewriterIniciar(linhas[cenaEspirito.indiceDialogo], "esp_" + cenaEspirito.indiceDialogo);
+        }
+        return;
+    }
+
     // Dialogo de interacao do quarto
     if (estadoAtual === "QUARTO_DIALOGO") {
         if (quartoDialogo.modo === "escolha" && typewriterCompleto()) {
@@ -1614,8 +1684,63 @@ function atualizar() {
     garantirMusicaTocando();
 
     // Typewriter: avanca letras nos estados de dialogo
-    if (estadoAtual==="DIALOGO_INICIAL"||estadoAtual==="DIALOGO_NPC"||estadoAtual==="DESPEDIDA_NARRACAO"||estadoAtual==="DESPEDIDA_FALA_PLAYER"||estadoAtual==="QUARTO_DIALOGO"||(estadoAtual==="CENA_450"&&cena450.timerEspera>=cena450.tempoParaDialogo)) {
+    if (estadoAtual==="DIALOGO_INICIAL"||estadoAtual==="DIALOGO_NPC"||estadoAtual==="DESPEDIDA_NARRACAO"||estadoAtual==="DESPEDIDA_FALA_PLAYER"||estadoAtual==="QUARTO_DIALOGO"||estadoAtual==="CENA_ESPIRITO"||(estadoAtual==="CENA_450"&&cena450.timerEspera>=cena450.tempoParaDialogo)) {
         typewriterAtualizar();
+    }
+
+    // --- TELA PRETA → CENA ESPIRITO ---
+    if (estadoAtual === "TELA_PRETA") {
+        cenaEspirito.timerPreto++;
+        if (cenaEspirito.timerPreto >= cenaEspirito.tempoPreto) {
+            estadoAtual = "CENA_ESPIRITO";
+            cenaEspirito.alpha = 0;
+            cenaEspirito.frame = 0;
+            cenaEspirito.timerFrame = 0;
+            cenaEspirito.tempoFlutuar = 0;
+            cenaEspirito.dialogoAtivo = false;
+            cenaEspirito.indiceDialogo = 0;
+            cenaEspirito.x = canvas.width / 2;
+            cenaEspirito.y = canvas.height / 2 - 20;
+        }
+    }
+
+    if (estadoAtual === "CENA_ESPIRITO") {
+        // Fade-in lento do espirito
+        if (cenaEspirito.alpha < 1) {
+            cenaEspirito.alpha = Math.min(1, cenaEspirito.alpha + 0.008);
+        } else if (!cenaEspirito.dialogoAtivo) {
+            // Quando terminou de aparecer, inicia dialogo
+            cenaEspirito.dialogoAtivo = true;
+            cenaEspirito.indiceDialogo = 0;
+            const linhas = t().dialogoEspirito || [];
+            if (linhas.length > 0) typewriterIniciar(linhas[0], "esp_0");
+        }
+
+        // Animacao dos frames
+        cenaEspirito.timerFrame++;
+        if (cenaEspirito.timerFrame >= cenaEspirito.tempoPorFrame) {
+            cenaEspirito.timerFrame = 0;
+            cenaEspirito.frame = (cenaEspirito.frame + 1) % imgEspiritoFrames.length;
+        }
+
+        // Flutua pela tela como uma alma
+        cenaEspirito.tempoFlutuar += 0.02;
+        const baseX = canvas.width / 2;
+        const baseY = canvas.height / 2 - 30;
+        cenaEspirito.x = baseX + Math.sin(cenaEspirito.tempoFlutuar) * 90;
+        cenaEspirito.y = baseY + Math.cos(cenaEspirito.tempoFlutuar * 0.7) * 40;
+
+        // Glitch ocasional na caixa
+        cenaEspirito.glitchTimer++;
+        if (cenaEspirito.glitchAtivo) {
+            if (cenaEspirito.glitchTimer > 8) {
+                cenaEspirito.glitchAtivo = false;
+                cenaEspirito.glitchTimer = 0;
+            }
+        } else if (cenaEspirito.glitchTimer > 90 + Math.random() * 120) {
+            cenaEspirito.glitchAtivo = true;
+            cenaEspirito.glitchTimer = 0;
+        }
     }
 
     if (estadoAtual==="JOGANDO") { tempoJogoTimer++; if(tempoJogoTimer>=60){tempoJogo++;tempoJogoTimer=0;} }
@@ -1903,6 +2028,61 @@ function desenhar() {
     } else if (estadoAtual === "TELA_PRETA") {
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    } else if (estadoAtual === "CENA_ESPIRITO") {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.imageSmoothingEnabled = true; // espirito tem glow suave
+
+        // Espirito grande flutuando
+        const fr = imgEspiritoFrames[cenaEspirito.frame];
+        if (fr && fr.complete && fr.width > 0) {
+            const tam = 280; // bem grande na tela
+            const dx = cenaEspirito.x - tam / 2;
+            const dy = cenaEspirito.y - tam / 2;
+            ctx.globalAlpha = cenaEspirito.alpha;
+            ctx.drawImage(fr, dx, dy, tam, tam);
+            ctx.globalAlpha = 1;
+        }
+
+        // Caixa de dialogo azul clara com glitches
+        if (cenaEspirito.dialogoAtivo) {
+            const bx = caixaDialogo.x;
+            let by = caixaDialogo.y;
+            const bw = caixaDialogo.largura;
+            const bh = caixaDialogo.altura;
+            // Glitch: desloca um pouco e muda cor
+            let ox = 0, oy = 0;
+            if (cenaEspirito.glitchAtivo) {
+                ox = (Math.random() - 0.5) * 12;
+                oy = (Math.random() - 0.5) * 6;
+            }
+            ctx.fillStyle = cenaEspirito.glitchAtivo
+                ? "rgba(100,180,255,0.85)"
+                : "rgba(40,90,140,0.92)";
+            ctx.fillRect(bx + ox, by + oy, bw, bh);
+            ctx.strokeStyle = cenaEspirito.glitchAtivo ? "#ffffff" : "#7ec8ff";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(bx + ox, by + oy, bw, bh);
+            // Linhas de glitch ocasionais
+            if (cenaEspirito.glitchAtivo) {
+                ctx.fillStyle = "rgba(180,220,255,0.4)";
+                for (let g = 0; g < 3; g++) {
+                    const gy = by + oy + 10 + Math.random() * (bh - 20);
+                    ctx.fillRect(bx + ox, gy, bw, 2 + Math.random() * 3);
+                }
+            }
+            const font = "20px 'Courier New', monospace";
+            ctx.fillStyle = "#e8f6ff";
+            ctx.textAlign = "left";
+            const maxW = bw - 40;
+            desenharTextoQuebrado(typewriterTexto(), bx + 20 + ox, by + 40 + oy, maxW, 24, font, "left");
+            if (typewriterCompleto()) {
+                ctx.font = "12px 'Courier New', monospace";
+                ctx.fillStyle = "rgba(126,200,255,0.8)";
+                ctx.fillText(t().continuar || "[Espaço / Enter]", bx + 20 + ox, by + bh - 16 + oy);
+            }
+        }
 
     } else if (estadoAtual === "QUARTO" || estadoAtual === "QUARTO_DIALOGO" || estadoAtual === "QUARTO_INVENTARIO") {
         ctx.fillStyle = "#000";
