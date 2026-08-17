@@ -177,12 +177,7 @@ pt: {
         "será que isso existe no mundo real???",
         "chega até a ser engraçado"
     ],
-    cama: ["tá bom... vou deitar um pouco"],
-    portaTexto: [
-        "na verdade",
-        "se eu não dormir minha irmã vai ficar brava",
-        "vamos para a cama vai"
-    ],
+    cama: ["eu perdi meu sono não quero dormir agora"],
     armarioIntro: ["é um armário"],
     armarioAbrir: "abrir?",
     armarioDentro: [
@@ -210,6 +205,7 @@ pt: {
     inventarioCheio: "não cabe mais nada no meu bolso",
     inventarioGrande: "isso aí é muito grande não cabe no meu bolso",
     inventarioDica: "[ G ] fechar",
+    portaTexto: ["é uma porta"],
     sim: "SIM", nao: "NÃO",
     dialogoInicial: [
         "Desperte...",
@@ -268,12 +264,7 @@ en: {
         "does that even exist in the real world???",
         "it's almost funny"
     ],
-    cama: ["alright... i'll lie down for a bit"],
-    portaTexto: [
-        "actually",
-        "if i don't sleep my sister is gonna get mad",
-        "let's go to bed"
-    ],
+    cama: ["i lost my sleep i don't want to sleep right now"],
     armarioIntro: ["it's a wardrobe"],
     armarioAbrir: "open it?",
     armarioDentro: [
@@ -301,6 +292,7 @@ en: {
     inventarioCheio: "there's no more room in my pocket",
     inventarioGrande: "that's too big it won't fit in my pocket",
     inventarioDica: "[ G ] close",
+    portaTexto: ["it's a door"],
     sim: "YES", nao: "NO",
     dialogoInicial: [
         "Wake up...",
@@ -359,12 +351,7 @@ ja: {
         "現実にもそんなことあるの？？？",
         "なんだか面白い"
     ],
-    cama: ["わかった…ちょっと横になる"],
-    portaTexto: [
-        "本当は",
-        "寝ないと妹が怒る",
-        "ベッドに行こう"
-    ],
+    cama: ["眠れなくなった 今は寝たくない"],
     armarioIntro: ["これはたんすだ"],
     armarioAbrir: "開ける？",
     armarioDentro: [
@@ -392,6 +379,7 @@ ja: {
     inventarioCheio: "もうポケットに入らない",
     inventarioGrande: "大きすぎてポケットに入らない",
     inventarioDica: "[ G ] 閉じる",
+    portaTexto: ["ドアだ"],
     sim: "はい", nao: "いいえ",
     dialogoInicial: [
         "目を覚まして…",
@@ -450,12 +438,7 @@ es: {
         "¿eso existe en el mundo real???",
         "hasta resulta gracioso"
     ],
-    cama: ["está bien... me voy a acostar un poco"],
-    portaTexto: [
-        "en realidad",
-        "si no duermo mi hermana se va a enfadar",
-        "vamos a la cama"
-    ],
+    cama: ["perdí el sueño no quiero dormir ahora"],
     armarioIntro: ["es un armario"],
     armarioAbrir: "¿abrir?",
     armarioDentro: [
@@ -483,6 +466,7 @@ es: {
     inventarioCheio: "no cabe nada más en mi bolsillo",
     inventarioGrande: "eso es demasiado grande no cabe en mi bolsillo",
     inventarioDica: "[ G ] cerrar",
+    portaTexto: ["es una puerta"],
     sim: "SÍ", nao: "NO",
     dialogoInicial: [
         "Despierta...",
@@ -843,7 +827,6 @@ function sortearNinja() {
 }
 
 function quartoDialogoFechar() {
-    const eraCama = quartoDialogo.objeto === "cama";
     quartoDialogo.ativo = false;
     quartoDialogo.objeto = null;
     quartoDialogo.modo = "texto";
@@ -851,8 +834,7 @@ function quartoDialogoFechar() {
     quartoDialogo.indice = 0;
     quartoDialogo.escolhaSelecionada = 0;
     quartoDialogo.etapa = null;
-    // Deitar na cama → tela preta (por enquanto)
-    estadoAtual = eraCama ? "TELA_PRETA" : "QUARTO";
+    estadoAtual = "QUARTO";
 }
 
 function quartoDialogoIniciar(objeto) {
@@ -882,14 +864,9 @@ function quartoDialogoIniciar(objeto) {
         quartoDialogo.indice = 0;
         typewriterIniciar(quartoDialogo.linhas[0], "qd_arm_intro_0");
     } else if (objeto === "porta") {
-        // Pensamento do player: decide ir dormir
-        quartoDialogo.modo = "pensamento";
+        quartoDialogo.modo = "texto";
         quartoDialogo.etapa = null;
-        quartoDialogo.linhas = (tx.portaTexto || [
-            "na verdade",
-            "se eu não dormir minha irmã vai ficar brava",
-            "vamos para a cama vai"
-        ]).slice();
+        quartoDialogo.linhas = (tx.portaTexto || ["é uma porta"]).slice();
         quartoDialogo.indice = 0;
         typewriterIniciar(quartoDialogo.linhas[0], "qd_porta_0");
     }
@@ -1899,10 +1876,6 @@ function desenhar() {
     } else if (estadoAtual==="POSDEM_PISCANDO") {
         ctx.fillStyle=cenaPosDemo.telaEmBranco?"#ffffff":"#000000";
         ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    } else if (estadoAtual === "TELA_PRETA") {
-        ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     } else if (estadoAtual === "QUARTO" || estadoAtual === "QUARTO_DIALOGO" || estadoAtual === "QUARTO_INVENTARIO") {
         ctx.fillStyle = "#000";
