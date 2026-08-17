@@ -177,7 +177,11 @@ pt: {
         "será que isso existe no mundo real???",
         "chega até a ser engraçado"
     ],
-    cama: ["tá bom... vou deitar um pouco"],
+    cama: ["eu perdi meu sono, não quero dormir agora"],
+    camaDepoisPorta: [
+        "pensando direito...",
+        "acho melhor eu ir dormir mesmo"
+    ],
     portaTexto: [
         "na verdade",
         "se eu não dormir minha irmã vai ficar brava",
@@ -274,7 +278,11 @@ en: {
         "does that even exist in the real world???",
         "it's almost funny"
     ],
-    cama: ["alright... i'll lie down for a bit"],
+    cama: ["i lost my sleep, i don't want to sleep right now"],
+    camaDepoisPorta: [
+        "thinking it over...",
+        "i guess i better go to sleep after all"
+    ],
     portaTexto: [
         "actually",
         "if i don't sleep my sister is gonna get mad",
@@ -371,7 +379,11 @@ ja: {
         "現実にもそんなことあるの？？？",
         "なんだか面白い"
     ],
-    cama: ["わかった…ちょっと横になる"],
+    cama: ["眠れなくなった、今は寝たくない"],
+    camaDepoisPorta: [
+        "よく考えたら…",
+        "やっぱり寝た方がいいかも"
+    ],
     portaTexto: [
         "本当は",
         "寝ないと妹が怒る",
@@ -468,7 +480,11 @@ es: {
         "¿eso existe en el mundo real???",
         "hasta resulta gracioso"
     ],
-    cama: ["está bien... me voy a acostar un poco"],
+    cama: ["perdí el sueño, no quiero dormir ahora"],
+    camaDepoisPorta: [
+        "pensándolo bien...",
+        "mejor voy a dormir de verdad"
+    ],
     portaTexto: [
         "en realidad",
         "si no duermo mi hermana se va a enfadar",
@@ -891,8 +907,14 @@ function sortearNinja() {
     return NINJA_PESOS[0].id;
 }
 
+let portaJaInteragida = false;
+let cidadePosSonho = false; // cidade mais escura, lua no meio
+
 function quartoDialogoFechar() {
     const eraCama = quartoDialogo.objeto === "cama";
+    const eraPorta = quartoDialogo.objeto === "porta";
+    const deveDormir = eraCama && portaJaInteragida;
+    if (eraPorta) portaJaInteragida = true;
     quartoDialogo.ativo = false;
     quartoDialogo.objeto = null;
     quartoDialogo.modo = "texto";
@@ -900,8 +922,8 @@ function quartoDialogoFechar() {
     quartoDialogo.indice = 0;
     quartoDialogo.escolhaSelecionada = 0;
     quartoDialogo.etapa = null;
-    // Deitar na cama → tela preta, depois espirito
-    if (eraCama) {
+    // So dorme (tela preta + espirito) se ja interagiu com a porta
+    if (deveDormir) {
         cenaEspirito.timerPreto = 0;
         cenaEspirito.alpha = 0;
         cenaEspirito.dialogoAtivo = false;
@@ -928,7 +950,12 @@ function quartoDialogoIniciar(objeto) {
     } else if (objeto === "cama") {
         quartoDialogo.modo = "pensamento";
         quartoDialogo.etapa = null;
-        quartoDialogo.linhas = tx.cama.slice();
+        // Depois da porta: decide dormir; antes: nao tem sono
+        if (portaJaInteragida) {
+            quartoDialogo.linhas = (tx.camaDepoisPorta || tx.cama).slice();
+        } else {
+            quartoDialogo.linhas = tx.cama.slice();
+        }
         quartoDialogo.indice = 0;
         typewriterIniciar(quartoDialogo.linhas[0], "qd_cama_0");
     } else if (objeto === "armario") {
@@ -1460,8 +1487,12 @@ window.addEventListener("keydown", (e) => {
         const linhas = t().dialogoEspirito || [];
         cenaEspirito.indiceDialogo++;
         if (cenaEspirito.indiceDialogo >= linhas.length) {
-            // Fim do dialogo do espirito (por enquanto fica na cena)
+            // Fim do dialogo → volta pra cidade (mais escura, lua no meio)
             cenaEspirito.dialogoAtivo = false;
+            cidadePosSonho = true;
+            player.x = 100;
+            camera.x = 0;
+            estadoAtual = "JOGANDO";
         } else {
             typewriterIniciar(linhas[cenaEspirito.indiceDialogo], "esp_" + cenaEspirito.indiceDialogo);
         }
@@ -1545,7 +1576,9 @@ gerarLua();
 // --- CENÁRIO ---
 function desenharCenario() {
     const tempoAgora = Date.now() * 0.001;
-    const coresCeu = ["#03000c","#04000f","#050011","#060014","#070016","#080018","#07001a","#06001c"];
+    const coresCeu = cidadePosSonho
+        ? ["#010005","#020008","#02000a","#03000c","#04000e","#040010","#03000e","#02000c"]
+        : ["#03000c","#04000f","#050011","#060014","#070016","#080018","#07001a","#06001c"];
     const alturaFaixa = Math.floor(chaoY / coresCeu.length);
     coresCeu.forEach((cor, i) => { ctx.fillStyle=cor; ctx.fillRect(0,i*alturaFaixa,canvas.width,alturaFaixa+1); });
 
@@ -1571,10 +1604,18 @@ function desenharCenario() {
 
     for(let i=0;i<50;i++){let sx=((i*197+43)-camera.x*0.006)%canvas.width;if(sx<0)sx+=canvas.width;let sy=(i*83+17)%130;let b=0.08+0.1*Math.abs(Math.sin(i*4.7));ctx.fillStyle=`rgba(80,120,255,${b.toFixed(2)})`;ctx.fillRect(Math.floor(sx),sy,1,1);}
 
-    const luaX=Math.floor(canvas.width-140-(camera.x*0.003)%6);
-    const luaY=28;
-    for(let y=luaY-30;y<=luaY+90;y+=2){for(let x=luaX-30;x<=luaX+110;x+=2){let dx=x-(luaX+50),dy=y-(luaY+50);let dist=Math.sqrt(dx*dx+dy*dy);if(dist<80&&dist>42){let a=(1-(dist-42)/38)*0.055;if(a>0.005){ctx.fillStyle=`rgba(160,200,255,${a.toFixed(3)})`;ctx.fillRect(x,y,2,2);}}}}
+    // Lua: no meio apos o sonho; canto direito antes
+    const luaX = cidadePosSonho
+        ? Math.floor(canvas.width / 2 - 50)
+        : Math.floor(canvas.width - 140 - (camera.x * 0.003) % 6);
+    const luaY = cidadePosSonho ? 40 : 28;
+    for(let y=luaY-30;y<=luaY+90;y+=2){for(let x=luaX-30;x<=luaX+110;x+=2){let dx=x-(luaX+50),dy=y-(luaY+50);let dist=Math.sqrt(dx*dx+dy*dy);if(dist<80&&dist>42){let a=(1-(dist-42)/38)*(cidadePosSonho?0.04:0.055);if(a>0.005){ctx.fillStyle=`rgba(160,200,255,${a.toFixed(3)})`;ctx.fillRect(x,y,2,2);}}}}
     ctx.drawImage(luaCanvas,luaX,luaY,100,100);
+    // Overlay escuro apos o sonho
+    if (cidadePosSonho) {
+        ctx.fillStyle = "rgba(0,0,20,0.35)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 
     const chaoTela=chaoY-camera.y;
     for(let y=chaoTela-80;y<chaoTela;y+=2){let p=(y-(chaoTela-80))/80;let a=p*p*0.18;ctx.fillStyle=`rgba(100,0,160,${a.toFixed(3)})`;ctx.fillRect(0,Math.floor(y),canvas.width,2);}
