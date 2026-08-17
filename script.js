@@ -218,7 +218,8 @@ pt: {
         "bem-vindo de volta, garoto.",
         "vamos ver se você ficará tanto tempo aqui novamente",
         "quem sabe se você ficar...",
-        "eu não te dê um presentinho"
+        "eu não te dê um presentinho",
+        "hehehe"
     ],
     sim: "SIM", nao: "NÃO",
     dialogoInicial: [
@@ -319,7 +320,8 @@ en: {
         "welcome back, kid.",
         "let's see if you'll stay this long here again",
         "who knows if you stay...",
-        "I might not give you a little gift"
+        "I might not give you a little gift",
+        "hehehe"
     ],
     sim: "YES", nao: "NO",
     dialogoInicial: [
@@ -420,7 +422,8 @@ ja: {
         "おかえり、坊主。",
         "またこんなに長くいられるか見てみよう",
         "もし残るなら…",
-        "プレゼントをあげないかもしれない"
+        "プレゼントをあげないかもしれない",
+        "へへへ"
     ],
     sim: "はい", nao: "いいえ",
     dialogoInicial: [
@@ -521,7 +524,8 @@ es: {
         "bienvenido de nuevo, chico.",
         "vamos a ver si te quedas tanto tiempo aquí otra vez",
         "quién sabe si te quedas...",
-        "puede que no te dé un regalito"
+        "puede que no te dé un regalito",
+        "jejeje"
     ],
     sim: "SÍ", nao: "NO",
     dialogoInicial: [
@@ -630,6 +634,8 @@ const cenaEspirito = {
     y: 180,
     tempoFlutuar: 0,
     dialogoAtivo: false,
+    dialogoJaIniciado: false,
+    concluido: false,
     indiceDialogo: 0,
     glitchTimer: 0,
     glitchAtivo: false
@@ -1487,9 +1493,28 @@ window.addEventListener("keydown", (e) => {
         const linhas = t().dialogoEspirito || [];
         cenaEspirito.indiceDialogo++;
         if (cenaEspirito.indiceDialogo >= linhas.length) {
-            // Fim do dialogo → volta pra cidade (mais escura, lua no meio)
+            // Fim do dialogo → cidade mais escura, chuva forte, lua no meio
             cenaEspirito.dialogoAtivo = false;
+            cenaEspirito.concluido = true;
             cidadePosSonho = true;
+            // Chuva mais forte
+            for (let i = 0; i < chuva.length; i++) {
+                chuva[i].velocidade = 12 + Math.random() * 14;
+                chuva[i].opacidade = 0.35 + Math.random() * 0.45;
+                chuva[i].tamanho = 4 + Math.random() * 10;
+            }
+            // Mais pingos
+            while (chuva.length < 220) {
+                let p = Math.random();
+                chuva.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    velocidade: 12 + p * 14,
+                    tamanho: 4 + p * 10,
+                    fatorParallax: 0.1 + p * 0.9,
+                    opacidade: 0.35 + p * 0.45
+                });
+            }
             player.x = 100;
             camera.x = 0;
             estadoAtual = "JOGANDO";
@@ -1611,9 +1636,26 @@ function desenharCenario() {
     const luaY = cidadePosSonho ? 40 : 28;
     for(let y=luaY-30;y<=luaY+90;y+=2){for(let x=luaX-30;x<=luaX+110;x+=2){let dx=x-(luaX+50),dy=y-(luaY+50);let dist=Math.sqrt(dx*dx+dy*dy);if(dist<80&&dist>42){let a=(1-(dist-42)/38)*(cidadePosSonho?0.04:0.055);if(a>0.005){ctx.fillStyle=`rgba(160,200,255,${a.toFixed(3)})`;ctx.fillRect(x,y,2,2);}}}}
     ctx.drawImage(luaCanvas,luaX,luaY,100,100);
-    // Overlay escuro apos o sonho
+    // Nuvens rapidas + overlay escuro apos o sonho
     if (cidadePosSonho) {
-        ctx.fillStyle = "rgba(0,0,20,0.35)";
+        const tNuv = Date.now() * 0.001;
+        for (let n = 0; n < 8; n++) {
+            const base = (n * 220 - tNuv * (80 + n * 18)) % (canvas.width + 280);
+            const nx = base < 0 ? base + canvas.width + 280 : base;
+            const ny = 18 + (n % 4) * 22;
+            ctx.fillStyle = `rgba(20,15,40,${0.35 + (n % 3) * 0.08})`;
+            // nuvem em blobs
+            ctx.beginPath();
+            ctx.ellipse(nx, ny, 70 + n * 5, 16 + (n % 3) * 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(nx + 40, ny + 4, 50, 14, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(nx - 35, ny + 2, 45, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.fillStyle = "rgba(0,0,15,0.45)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
@@ -1739,6 +1781,8 @@ function atualizar() {
             cenaEspirito.timerFrame = 0;
             cenaEspirito.tempoFlutuar = 0;
             cenaEspirito.dialogoAtivo = false;
+            cenaEspirito.dialogoJaIniciado = false;
+            cenaEspirito.concluido = false;
             cenaEspirito.indiceDialogo = 0;
             cenaEspirito.x = canvas.width / 2;
             cenaEspirito.y = canvas.height / 2 - 20;
@@ -1749,8 +1793,9 @@ function atualizar() {
         // Fade-in lento do espirito
         if (cenaEspirito.alpha < 1) {
             cenaEspirito.alpha = Math.min(1, cenaEspirito.alpha + 0.008);
-        } else if (!cenaEspirito.dialogoAtivo) {
-            // Quando terminou de aparecer, inicia dialogo
+        } else if (!cenaEspirito.dialogoJaIniciado && !cenaEspirito.concluido) {
+            // Inicia o dialogo UMA vez so (sem loop)
+            cenaEspirito.dialogoJaIniciado = true;
             cenaEspirito.dialogoAtivo = true;
             cenaEspirito.indiceDialogo = 0;
             const linhas = t().dialogoEspirito || [];
