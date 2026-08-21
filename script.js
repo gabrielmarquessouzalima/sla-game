@@ -100,6 +100,10 @@ audio.addEventListener("error", () => {
     tocarProximaMusica();
 });
 
+// --- SOM DO RUGIDO ---
+const somRugido = new Audio("sons/rugido.mp3");
+somRugido.volume = 0.7;
+
 // --- SISTEMA DE SAVE ---
 const MAX_SAVES = 3;
 
@@ -221,6 +225,28 @@ pt: {
         "eu não te dê um presentinho",
         "hehehe"
     ],
+    dialogoEspiritoCaptura: [
+        "você foi bem garoto...",
+        "gostaria de tentar novamente?",
+        "ou prefere acordar?"
+    ],
+    capturaTentar: "TENTAR NOVAMENTE",
+    capturaAcordar: "ACORDAR",
+    posSonhoFala1: "não estou gostando disso...",
+    posSonhoFala2: "quero acordar logo...",
+    posSonhoFala3: "antes que.",
+    posSonhoFala4: "Ok, eu quero sair daqui AGORA!",
+    posSonhoFala5: [
+        "Você???",
+        "Eu já te vi"
+    ],
+    corraTitulo: "CORRA",
+    corraDica: "aperte SHIFT para correr",
+    pesadeloPosChase: [
+        "Ahhhh!",
+        "Que pesadelo",
+        "Eu já sonhei com ele antes"
+    ],
     sim: "SIM", nao: "NÃO",
     dialogoInicial: [
         "Desperte...",
@@ -322,6 +348,28 @@ en: {
         "who knows if you stay...",
         "I might not give you a little gift",
         "hehehe"
+    ],
+    dialogoEspiritoCaptura: [
+        "you did well, kid...",
+        "would you like to try again?",
+        "or would you rather wake up?"
+    ],
+    capturaTentar: "TRY AGAIN",
+    capturaAcordar: "WAKE UP",
+    posSonhoFala1: "i'm not liking this...",
+    posSonhoFala2: "i want to wake up soon...",
+    posSonhoFala3: "before.",
+    posSonhoFala4: "Ok, I want to get out of here NOW!",
+    posSonhoFala5: [
+        "You???",
+        "I've seen you before"
+    ],
+    corraTitulo: "RUN",
+    corraDica: "press SHIFT to run",
+    pesadeloPosChase: [
+        "Ahhhh!",
+        "What a nightmare",
+        "I've dreamed about him before"
     ],
     sim: "YES", nao: "NO",
     dialogoInicial: [
@@ -425,6 +473,28 @@ ja: {
         "プレゼントをあげないかもしれない",
         "へへへ"
     ],
+    dialogoEspiritoCaptura: [
+        "よくやったね、坊主…",
+        "もう一度挑戦する？",
+        "それとも目を覚ます？"
+    ],
+    capturaTentar: "もう一度",
+    capturaAcordar: "目を覚ます",
+    posSonhoFala1: "これは気に入らない…",
+    posSonhoFala2: "早く目を覚ましたい…",
+    posSonhoFala3: "その前に。",
+    posSonhoFala4: "わかった、今すぐここから出たい！",
+    posSonhoFala5: [
+        "お前…？？？",
+        "前に見たことがある"
+    ],
+    corraTitulo: "逃げろ",
+    corraDica: "SHIFTで走る",
+    pesadeloPosChase: [
+        "あああっ！",
+        "悪夢だ",
+        "前にも彼の夢を見た"
+    ],
     sim: "はい", nao: "いいえ",
     dialogoInicial: [
         "目を覚まして…",
@@ -526,6 +596,28 @@ es: {
         "quién sabe si te quedas...",
         "puede que no te dé un regalito",
         "jejeje"
+    ],
+    dialogoEspiritoCaptura: [
+        "lo hiciste bien, chico...",
+        "¿quieres intentarlo de nuevo?",
+        "¿o prefieres despertar?"
+    ],
+    capturaTentar: "INTENTAR DE NUEVO",
+    capturaAcordar: "DESPERTAR",
+    posSonhoFala1: "no me está gustando esto...",
+    posSonhoFala2: "quiero despertar pronto...",
+    posSonhoFala3: "antes de que.",
+    posSonhoFala4: "Ok, ¡quiero salir de aquí AHORA!",
+    posSonhoFala5: [
+        "¿Tú???",
+        "Ya te he visto"
+    ],
+    corraTitulo: "CORRE",
+    corraDica: "pulsa SHIFT para correr",
+    pesadeloPosChase: [
+        "¡Ahhhh!",
+        "Qué pesadilla",
+        "Ya soñé con él antes"
     ],
     sim: "SÍ", nao: "NO",
     dialogoInicial: [
@@ -639,6 +731,21 @@ const cenaEspirito = {
     indiceDialogo: 0,
     glitchTimer: 0,
     glitchAtivo: false
+};
+
+// Cena do espirito apos o player ser capturado na perseguicao
+const cenaEspiritoCaptura = {
+    alpha: 0,
+    frame: 0,
+    timerFrame: 0,
+    tempoFlutuar: 0,
+    dialogoAtivo: false,
+    dialogoJaIniciado: false,
+    indiceDialogo: 0,
+    escolhaAtiva: false,
+    escolhaSelecionada: 0,
+    x: 400,
+    y: 180
 };
 
 const nomesArquivosFox = [
@@ -915,6 +1022,536 @@ function sortearNinja() {
 
 let portaJaInteragida = false;
 let cidadePosSonho = false; // cidade mais escura, lua no meio
+
+// Progressao pos-sonho (coords de TELA = player.x/10, entao mundo = tela*10)
+// tela 30,50,60,70,100  →  mundo 300,500,600,700,1000
+const POS_SONHO_MARCOS = {
+    fala1: 300,
+    chuva: 500,
+    fala2: 600,
+    fala3: 700,
+    campo: 1000,
+    fala4: 1500 // coord tela 150
+};
+const posSonho = {
+    fala1: false,
+    fala2: false,
+    fala3: false,
+    fala4: false,
+    chuvaBoost: false,
+    campo: false,
+    dialogoAtivo: false,
+    dialogoTexto: "",
+    encontroEtapa: null,
+    encontroLinhas: [],
+    encontroIndice: 0
+};
+
+// Sprites do misterioso
+const imgMisteriosoParado = new Image();
+imgMisteriosoParado.src = "img/misterioso_parado.png";
+const imgMisteriosoAndando = [];
+for (let i = 1; i <= 2; i++) {
+    const img = new Image();
+    img.src = "img/misterioso_andando_" + i + ".png";
+    imgMisteriosoAndando.push(img);
+}
+const imgMisteriosoCorrendo = [];
+for (let i = 1; i <= 3; i++) {
+    const img = new Image();
+    img.src = "img/misterioso_correndo_" + i + ".png";
+    imgMisteriosoCorrendo.push(img);
+}
+const misterioso = {
+    ativo: false,
+    x: 0,
+    y: 100,
+    velocidade: 0.7, // aproximacao lenta
+    frame: 0,
+    timerFrame: 0,
+    tempoPorFrame: 12,
+    largura: 28,
+    altura: 74,
+    alvoX: 0,
+    modo: "andando", // parado | andando | correndo
+    cropX: 88, cropY: 40, cropW: 80, cropH: 172,
+    sombraForte: 0,
+    tentaculosAura: [],
+    orbsRugido: []
+};
+
+// --- PERSEGUICAO (chase) ---
+// Coords de TELA = player.x/10  →  mundo = tela*10
+// A perseguicao acontece das coordenadas de tela 150 ate 1500.
+const PERSEGUICAO = {
+    ativa: false,
+    avisouCorra: false,
+    timerAviso: 0,
+    tempoAviso: 120,
+    screenShake: 0,
+    ondas: [],
+    orbs: [],
+    tentaculos: [],
+    avisosTentaculo: [],
+    pedras: [],
+    disparados: {},
+    playerCaindo: false,
+    npcOffset: 80,
+    npcRapido: false,
+    timerLentidao: 0,
+    capturado: false,
+    xInicioChase: 1500,
+    timerPreto: 0,
+    timerPretoCaptura: 0
+};
+
+const PERSEGUICAO_ATAQUES = [
+    { id: "orb_200", x: 200, tipo: "orb" },
+    { id: "tent_280", x: 280, tipo: "tentaculo" },
+    { id: "orbs_350", x: 350, tipo: "orbs", n: 2 },
+    { id: "tent_450", x: 450, tipo: "tentaculo" },
+    { id: "orbs_450b", x: 450, tipo: "orbs", n: 2 },
+    { id: "tent_600", x: 600, tipo: "tentaculo" },
+    { id: "tent_620", x: 620, tipo: "tentaculo" },
+    { id: "tent_640", x: 640, tipo: "tentaculo" },
+    { id: "tent_660", x: 660, tipo: "tentaculo" },
+    { id: "tent_680", x: 680, tipo: "tentaculo" },
+    { id: "orb_700", x: 700, tipo: "orb" },
+    { id: "tent_750", x: 750, tipo: "tentaculo" },
+    { id: "orb_800", x: 800, tipo: "orb" },
+    { id: "tent_850", x: 850, tipo: "tentaculo" },
+    { id: "orb_900", x: 900, tipo: "orb" },
+    { id: "grito_950", x: 950, tipo: "grito_final" },
+    { id: "fim_1500", x: 1500, tipo: "fim_chase" }
+];
+
+// Sprites de corrida do player (SHIFT na perseguicao)
+const imgPlayerCorrendoChase = [];
+for (let i = 1; i <= 3; i++) {
+    const img = new Image();
+    img.src = "img/player_correndo_" + i + ".png";
+    imgPlayerCorrendoChase.push(img);
+}
+const RECORTE_PLAYER_CORRENDO = { x: 88, y: 28, largura: 100, altura: 160 };
+
+function atualizarOrbsRugido() {
+    if (!misterioso.orbsRugido) return;
+    for (let i = 0; i < misterioso.orbsRugido.length; i++) {
+        misterioso.orbsRugido[i].ang += misterioso.orbsRugido[i].vel;
+    }
+}
+
+function iniciarRugidoMisterioso() {
+    estadoAtual = "RUGIDO_MISTERIOSO";
+    PERSEGUICAO.screenShake = 40;
+    PERSEGUICAO.ondas = [];
+    for (let i = 0; i < 6; i++) {
+        PERSEGUICAO.ondas.push({ raio: 10 + i * 8, max: 220 + i * 30, alpha: 0.7 - i * 0.08 });
+    }
+    misterioso.sombraForte = 1;
+    misterioso.tentaculosAura = [];
+    for (let i = 0; i < 8; i++) {
+        misterioso.tentaculosAura.push({
+            ang: (Math.PI * 2 * i) / 8 + Math.random() * 0.3,
+            len: 20 + Math.random() * 40,
+            fase: Math.random() * Math.PI * 2,
+            w: 4 + Math.random() * 4
+        });
+    }
+    // 8 orbs escuras saem do chao e passam a orbitar o npc
+    misterioso.orbsRugido = [];
+    for (let i = 0; i < 8; i++) {
+        misterioso.orbsRugido.push({
+            ang: (Math.PI * 2 * i) / 8,
+            raio: 45 + Math.random() * 10,
+            vel: 0.02 + Math.random() * 0.015,
+            r: 5 + Math.random() * 3
+        });
+    }
+    misterioso.modo = "parado";
+    PERSEGUICAO.timerRugido = 0;
+    try { somRugido.currentTime = 0; somRugido.play().catch(() => {}); } catch (e) {}
+}
+
+function iniciarPerseguicao() {
+    PERSEGUICAO.ativa = true;
+    PERSEGUICAO.avisouCorra = true;
+    PERSEGUICAO.timerAviso = PERSEGUICAO.tempoAviso;
+    PERSEGUICAO.disparados = {};
+    PERSEGUICAO.orbs = [];
+    PERSEGUICAO.tentaculos = [];
+    PERSEGUICAO.avisosTentaculo = [];
+    PERSEGUICAO.pedras = [];
+    PERSEGUICAO.capturado = false;
+    PERSEGUICAO.playerCaindo = false;
+    PERSEGUICAO.timerLentidao = 0;
+    PERSEGUICAO.npcRapido = false;
+    PERSEGUICAO.npcOffset = 80;
+    PERSEGUICAO.xInicioChase = player.x;
+    estadoAtual = "PERSEGUICAO";
+    misterioso.ativo = true;
+    misterioso.modo = "andando";
+    misterioso.x = player.x - PERSEGUICAO.npcOffset;
+    misterioso.y = player.y;
+}
+
+function reiniciarPerseguicaoAposCaptura() {
+    player.x = PERSEGUICAO.xInicioChase;
+    player.y = 100;
+    player.velY = 0;
+    player.noChao = true;
+    player.estaAndando = false;
+    camera.x = player.x - 150; if (camera.x < 0) camera.x = 0;
+    iniciarPerseguicao();
+}
+
+function acordarDoPesadelo() {
+    pararMusica();
+    playerQuarto.x = 160;
+    playerQuarto.y = 200;
+    playerQuarto.direcao = "frente";
+    playerQuarto.frame = 1;
+    playerQuarto.andando = false;
+    playerQuarto.walkIndex = 0;
+    playerQuarto.tempoAnimacao = 0;
+    playerQuarto.pertoDe = null;
+    const linhas = (t().pesadeloPosChase || [
+        "Ahhhh!",
+        "Que pesadelo",
+        "Eu já sonhei com ele antes"
+    ]).slice();
+    quartoDialogo.ativo = true;
+    quartoDialogo.objeto = "pesadelo";
+    quartoDialogo.modo = "texto";
+    quartoDialogo.linhas = linhas;
+    quartoDialogo.indice = 0;
+    quartoDialogo.escolhaSelecionada = 0;
+    quartoDialogo.etapa = null;
+    typewriterIniciar(linhas[0], "pesadelo_0");
+    estadoAtual = "QUARTO_DIALOGO";
+}
+
+function iniciarCaptura() {
+    if (PERSEGUICAO.capturado) return;
+    PERSEGUICAO.capturado = true;
+    PERSEGUICAO.ativa = false;
+    misterioso.ativo = false;
+    PERSEGUICAO.screenShake = 30;
+    estadoAtual = "TELA_PRETA_CAPTURA";
+    PERSEGUICAO.timerPretoCaptura = 0;
+}
+
+function spawnOrb(fromX, fromY) {
+    PERSEGUICAO.orbs.push({ x: fromX, y: fromY, vx: 6.5, r: 10, viva: true });
+}
+
+function spawnAvisoTentaculo(worldX, segundos) {
+    PERSEGUICAO.avisosTentaculo.push({
+        x: worldX, w: 28,
+        timer: Math.floor(segundos * 60),
+        maxTimer: Math.floor(segundos * 60)
+    });
+}
+
+function spawnTentaculo(worldX) {
+    const h = player.alturaVisual + 20;
+    PERSEGUICAO.tentaculos.push({ x: worldX, h: 0, hMax: h, fase: "subindo", timer: 0, w: 22 });
+    // 3 a 5 pedras pequenas lancadas para cima
+    const nPedras = 3 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < nPedras; i++) {
+        PERSEGUICAO.pedras.push({
+            x: worldX + (Math.random() - 0.5) * 30,
+            y: chaoY - 4,
+            vx: (Math.random() - 0.5) * 4,
+            vy: -2 - Math.random() * 5,
+            vida: 40 + Math.random() * 30,
+            s: 2 + Math.random() * 3
+        });
+    }
+}
+
+function dispararAtaquePerseguicao(atk) {
+    const fromX = misterioso.x + 20;
+    const fromY = player.y + player.alturaVisual * 0.35;
+    if (atk.tipo === "orb") {
+        spawnOrb(fromX, fromY);
+    } else if (atk.tipo === "orbs") {
+        for (let i = 0; i < (atk.n || 1); i++) {
+            PERSEGUICAO.orbs.push({
+                x: fromX, y: fromY, vx: 6.5, r: 10, viva: true,
+                delay: i * 18 // frames de atraso entre orbs
+            });
+        }
+    } else if (atk.tipo === "tentaculo") {
+        // aviso (hitbox vermelha) 20 unidades de tela a frente do gatilho, por 2 segundos
+        const avisoWorldX = (atk.x + 20) * 10;
+        spawnAvisoTentaculo(avisoWorldX, 2);
+    } else if (atk.tipo === "grito_final") {
+        // grito de agonia: ondas sonoras + player fica lento por 2s, depois o npc corre mais rapido
+        PERSEGUICAO.screenShake = 50;
+        PERSEGUICAO.ondas = [];
+        for (let i = 0; i < 8; i++) {
+            PERSEGUICAO.ondas.push({ raio: 8 + i * 10, max: 260 + i * 25, alpha: 0.75 - i * 0.07 });
+        }
+        misterioso.sombraForte = 1;
+        PERSEGUICAO.timerLentidao = 120;
+        PERSEGUICAO.npcRapido = true;
+        PERSEGUICAO.npcOffset = 50;
+        try { somRugido.currentTime = 0; somRugido.play().catch(() => {}); } catch (e) {}
+    } else if (atk.tipo === "fim_chase") {
+        // Tela preta → volta pro quarto (escapou com sucesso)
+        PERSEGUICAO.ativa = false;
+        PERSEGUICAO.orbs = [];
+        PERSEGUICAO.tentaculos = [];
+        PERSEGUICAO.avisosTentaculo = [];
+        misterioso.ativo = false;
+        estadoAtual = "TELA_PRETA_CHASE";
+        PERSEGUICAO.timerPreto = 0;
+    }
+}
+
+function playerHitboxMundo() {
+    return {
+        x: player.x + player.offsetX,
+        y: player.y + player.offsetY,
+        w: player.larguraHitbox,
+        h: player.alturaHitbox
+    };
+}
+
+function atualizarPerseguicao() {
+    if (PERSEGUICAO.capturado) return;
+
+    const alvoNpc = player.x - PERSEGUICAO.npcOffset;
+    const velNpc = PERSEGUICAO.npcRapido ? 3.6 : 2.2;
+    if (Math.abs(misterioso.x - alvoNpc) > 2) {
+        misterioso.x += Math.sign(alvoNpc - misterioso.x) * Math.min(velNpc, Math.abs(alvoNpc - misterioso.x));
+        misterioso.modo = PERSEGUICAO.npcRapido ? "correndo" : "andando";
+    }
+    misterioso.y = player.y;
+    misterioso.timerFrame++;
+    const framesAnim = PERSEGUICAO.npcRapido ? imgMisteriosoCorrendo : imgMisteriosoAndando;
+    const tempoFrame = PERSEGUICAO.npcRapido ? 8 : misterioso.tempoPorFrame;
+    if (misterioso.timerFrame >= tempoFrame) {
+        misterioso.timerFrame = 0;
+        misterioso.frame = (misterioso.frame + 1) % Math.max(1, framesAnim.length);
+    }
+
+    const xTela = Math.floor(player.x / 10);
+    for (let i = 0; i < PERSEGUICAO_ATAQUES.length; i++) {
+        const atk = PERSEGUICAO_ATAQUES[i];
+        if (!PERSEGUICAO.disparados[atk.id] && xTela >= atk.x) {
+            PERSEGUICAO.disparados[atk.id] = true;
+            dispararAtaquePerseguicao(atk);
+        }
+    }
+
+    for (let i = PERSEGUICAO.avisosTentaculo.length - 1; i >= 0; i--) {
+        const a = PERSEGUICAO.avisosTentaculo[i];
+        a.timer--;
+        if (a.timer <= 0) {
+            spawnTentaculo(a.x);
+            PERSEGUICAO.avisosTentaculo.splice(i, 1);
+        }
+    }
+
+    const ph = playerHitboxMundo();
+    for (let i = PERSEGUICAO.orbs.length - 1; i >= 0; i--) {
+        const o = PERSEGUICAO.orbs[i];
+        if (o.delay && o.delay > 0) { o.delay--; continue; }
+        o.x += o.vx;
+        if (o.viva &&
+            o.x + o.r > ph.x && o.x - o.r < ph.x + ph.w &&
+            o.y + o.r > ph.y && o.y - o.r < ph.y + ph.h) {
+            o.viva = false;
+            iniciarCaptura();
+        }
+        if (PERSEGUICAO.capturado) return;
+        if (!o.viva || o.x > player.x + 600 || o.x < camera.x - 50) PERSEGUICAO.orbs.splice(i, 1);
+    }
+
+    for (let i = PERSEGUICAO.tentaculos.length - 1; i >= 0; i--) {
+        const tnt = PERSEGUICAO.tentaculos[i];
+        if (tnt.fase === "subindo") {
+            tnt.h += 6;
+            if (tnt.h >= tnt.hMax) { tnt.h = tnt.hMax; tnt.fase = "segurando"; tnt.timer = 120; }
+        } else if (tnt.fase === "segurando") {
+            tnt.timer--;
+            if (tnt.timer <= 0) tnt.fase = "descendo";
+        } else if (tnt.fase === "descendo") {
+            tnt.h -= 5;
+            if (tnt.h <= 0) { PERSEGUICAO.tentaculos.splice(i, 1); continue; }
+        }
+        if (tnt.h > 20) {
+            const tx2 = tnt.x - tnt.w / 2;
+            const mundoY = chaoY - tnt.h;
+            if (ph.x + ph.w > tx2 && ph.x < tx2 + tnt.w &&
+                ph.y + ph.h > mundoY && ph.y + ph.h <= chaoY + 5) {
+                iniciarCaptura();
+            }
+        }
+        if (PERSEGUICAO.capturado) return;
+    }
+
+    for (let i = PERSEGUICAO.pedras.length - 1; i >= 0; i--) {
+        const p = PERSEGUICAO.pedras[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.25; p.vida--;
+        if (p.vida <= 0 || p.y > chaoY + 20) PERSEGUICAO.pedras.splice(i, 1);
+    }
+
+    for (let i = PERSEGUICAO.ondas.length - 1; i >= 0; i--) {
+        const o = PERSEGUICAO.ondas[i];
+        o.raio += 4; o.alpha -= 0.012;
+        if (o.alpha <= 0 || o.raio > o.max) PERSEGUICAO.ondas.splice(i, 1);
+    }
+
+    if (misterioso.sombraForte > 0) misterioso.sombraForte = Math.max(0, misterioso.sombraForte - 0.006);
+    if (PERSEGUICAO.timerAviso > 0) PERSEGUICAO.timerAviso--;
+    if (PERSEGUICAO.screenShake > 0) PERSEGUICAO.screenShake--;
+
+    atualizarOrbsRugido();
+
+    // O npc alcanca o player
+    if (misterioso.x + 24 >= player.x + player.offsetX) {
+        iniciarCaptura();
+    }
+}
+
+function desenharOrbsRugido() {
+    if (!misterioso.orbsRugido || misterioso.orbsRugido.length === 0) return;
+    if (misterioso.sombraForte <= 0.02) return;
+    const mx = misterioso.x - camera.x + 14;
+    const my = misterioso.y - camera.y + player.alturaVisual * 0.4;
+    for (let i = 0; i < misterioso.orbsRugido.length; i++) {
+        const o = misterioso.orbsRugido[i];
+        const ox = mx + Math.cos(o.ang) * o.raio;
+        const oy = my + Math.sin(o.ang) * o.raio * 0.5;
+        ctx.fillStyle = `rgba(60,10,90,${misterioso.sombraForte.toFixed(2)})`;
+        ctx.beginPath(); ctx.arc(ox, oy, o.r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(170,100,230,${(misterioso.sombraForte * 0.5).toFixed(2)})`;
+        ctx.beginPath(); ctx.arc(ox - 1, oy - 1, o.r * 0.4, 0, Math.PI * 2); ctx.fill();
+    }
+}
+
+function desenharPerseguicaoFX() {
+    const mx = misterioso.x - camera.x + 14;
+    const my = misterioso.y - camera.y + player.alturaVisual * 0.4;
+
+    desenharOrbsRugido();
+
+    for (let i = 0; i < PERSEGUICAO.ondas.length; i++) {
+        const o = PERSEGUICAO.ondas[i];
+        ctx.strokeStyle = `rgba(120,60,255,${Math.max(0, o.alpha).toFixed(3)})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(mx, my, o.raio, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = `rgba(200,150,255,${Math.max(0, o.alpha * 0.5).toFixed(3)})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(mx, my, o.raio * 0.85, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    if (misterioso.sombraForte > 0.05) {
+        const a = misterioso.sombraForte;
+        ctx.fillStyle = `rgba(20,0,40,${(a * 0.55).toFixed(3)})`;
+        ctx.beginPath();
+        ctx.ellipse(mx, my + 20, 50 * a + 20, 70 * a + 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+        for (let i = 0; i < misterioso.tentaculosAura.length; i++) {
+            const tnt = misterioso.tentaculosAura[i];
+            const len = tnt.len * a * (0.7 + 0.3 * Math.sin(Date.now() * 0.01 + tnt.fase));
+            const x2 = mx + Math.cos(tnt.ang + Date.now() * 0.002) * len;
+            const y2 = my + Math.sin(tnt.ang + Date.now() * 0.002) * len;
+            ctx.strokeStyle = `rgba(80,20,120,${(a * 0.8).toFixed(3)})`;
+            ctx.lineWidth = tnt.w;
+            ctx.beginPath();
+            ctx.moveTo(mx, my);
+            ctx.quadraticCurveTo(mx + (x2 - mx) * 0.5 + 10, my + (y2 - my) * 0.3, x2, y2);
+            ctx.stroke();
+        }
+    }
+
+    for (let i = 0; i < PERSEGUICAO.avisosTentaculo.length; i++) {
+        const a = PERSEGUICAO.avisosTentaculo[i];
+        const ax = a.x - camera.x - a.w / 2;
+        const ay = chaoY - camera.y - 4;
+        const pulso = 0.4 + 0.4 * Math.abs(Math.sin(Date.now() * 0.01));
+        ctx.fillStyle = `rgba(255,30,30,${pulso.toFixed(2)})`;
+        ctx.fillRect(ax, ay, a.w, 6);
+        ctx.strokeStyle = "rgba(255,80,80,0.9)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(ax - 2, ay - 2, a.w + 4, 10);
+        const pct = a.timer / a.maxTimer;
+        ctx.fillStyle = "rgba(255,200,50,0.8)";
+        ctx.fillRect(ax, ay - 8, a.w * pct, 3);
+    }
+
+    for (let i = 0; i < PERSEGUICAO.tentaculos.length; i++) {
+        const tnt = PERSEGUICAO.tentaculos[i];
+        const tx2 = tnt.x - camera.x - tnt.w / 2;
+        const base = chaoY - camera.y;
+        ctx.fillStyle = "#2a0840";
+        ctx.beginPath();
+        ctx.moveTo(tx2, base);
+        ctx.lineTo(tx2 - 4, base - tnt.h * 0.6);
+        ctx.lineTo(tx2 + tnt.w * 0.3, base - tnt.h);
+        ctx.lineTo(tx2 + tnt.w * 0.7, base - tnt.h);
+        ctx.lineTo(tx2 + tnt.w + 4, base - tnt.h * 0.6);
+        ctx.lineTo(tx2 + tnt.w, base);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "rgba(150,80,255,0.35)";
+        ctx.fillRect(tx2 + tnt.w * 0.35, base - tnt.h, 4, tnt.h);
+        ctx.fillStyle = "rgba(0,0,0,0.4)";
+        ctx.beginPath();
+        ctx.ellipse(tnt.x - camera.x, base, tnt.w, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    for (let i = 0; i < PERSEGUICAO.pedras.length; i++) {
+        const p = PERSEGUICAO.pedras[i];
+        ctx.fillStyle = "#3a2a20";
+        ctx.fillRect(Math.floor(p.x - camera.x), Math.floor(p.y - camera.y), p.s, p.s);
+    }
+
+    for (let i = 0; i < PERSEGUICAO.orbs.length; i++) {
+        const o = PERSEGUICAO.orbs[i];
+        if (!o.viva || (o.delay && o.delay > 0)) continue;
+        const ox = o.x - camera.x;
+        const oy = o.y - camera.y;
+        ctx.fillStyle = "rgba(120,40,255,0.35)";
+        ctx.beginPath(); ctx.arc(ox, oy, o.r + 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#a050ff";
+        ctx.beginPath(); ctx.arc(ox, oy, o.r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#e0c0ff";
+        ctx.beginPath(); ctx.arc(ox - 2, oy - 2, o.r * 0.4, 0, Math.PI * 2); ctx.fill();
+    }
+
+    if (PERSEGUICAO.timerAviso > 0) {
+        const tx = t();
+        const alpha = Math.min(1, PERSEGUICAO.timerAviso / 30);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = "#ff2244";
+        ctx.font = "bold 64px 'Courier New', monospace";
+        ctx.textAlign = "center";
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 6;
+        const titulo = tx.corraTitulo || "CORRA";
+        ctx.strokeText(titulo, canvas.width / 2, canvas.height * 0.35);
+        ctx.fillText(titulo, canvas.width / 2, canvas.height * 0.35);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "18px 'Courier New', monospace";
+        ctx.fillText(tx.corraDica || "aperte SHIFT para correr", canvas.width / 2, canvas.height * 0.35 + 40);
+        ctx.restore();
+    }
+}
+
+function posSonhoAlphaPredios() {
+    if (!cidadePosSonho) return 1;
+    if (player.x < POS_SONHO_MARCOS.chuva) return 1;
+    if (player.x >= POS_SONHO_MARCOS.campo) return 0;
+    // some de 1→0 entre chuva e campo
+    return 1 - (player.x - POS_SONHO_MARCOS.chuva) / (POS_SONHO_MARCOS.campo - POS_SONHO_MARCOS.chuva);
+}
 
 function quartoDialogoFechar() {
     const eraCama = quartoDialogo.objeto === "cama";
@@ -1487,6 +2124,39 @@ window.addEventListener("keydown", (e) => {
         return;
     }
 
+    // Dialogo pos-sonho na cidade
+    if (estadoAtual === "DIALOGO_POS_SONHO" && (e.code === "Space" || e.code === "Enter")) {
+        if (!typewriterCompleto()) { typewriterPular(); return; }
+        posSonho.dialogoAtivo = false;
+        // Depois da fala 4 → misterioso comeca a se aproximar
+        if (posSonho.encontroEtapa === "pos_fala4") {
+            misterioso.ativo = true;
+            misterioso.x = player.x - 220; // bem atras
+            misterioso.y = player.y;
+            misterioso.alvoX = player.x - 40; // para perto, atras
+            misterioso.frame = 0;
+            misterioso.timerFrame = 0;
+            posSonho.encontroEtapa = "aproximando";
+            estadoAtual = "MISTERIOSO_APROXIMA";
+        } else {
+            estadoAtual = "JOGANDO";
+        }
+        return;
+    }
+
+    // Dialogo do encontro (Você??? / Eu já te vi)
+    if (estadoAtual === "DIALOGO_ENCONTRO" && (e.code === "Space" || e.code === "Enter")) {
+        if (!typewriterCompleto()) { typewriterPular(); return; }
+        posSonho.encontroIndice++;
+        if (posSonho.encontroIndice >= posSonho.encontroLinhas.length) {
+            posSonho.encontroEtapa = "rugido";
+            iniciarRugidoMisterioso();
+        } else {
+            typewriterIniciar(posSonho.encontroLinhas[posSonho.encontroIndice], "ps_enc_" + posSonho.encontroIndice);
+        }
+        return;
+    }
+
     // Dialogo do espirito
     if (estadoAtual === "CENA_ESPIRITO" && cenaEspirito.dialogoAtivo && (e.code === "Space" || e.code === "Enter")) {
         if (!typewriterCompleto()) { typewriterPular(); return; }
@@ -1528,6 +2198,45 @@ window.addEventListener("keydown", (e) => {
             estadoAtual = "JOGANDO";
         } else {
             typewriterIniciar(linhas[cenaEspirito.indiceDialogo], "esp_" + cenaEspirito.indiceDialogo);
+        }
+        return;
+    }
+
+    // Dialogo do espirito apos captura na perseguicao
+    if (estadoAtual === "CENA_ESPIRITO_CAPTURA") {
+        if (cenaEspiritoCaptura.dialogoAtivo && (e.code === "Space" || e.code === "Enter")) {
+            if (!typewriterCompleto()) { typewriterPular(); return; }
+            const linhas = t().dialogoEspiritoCaptura || [];
+            cenaEspiritoCaptura.indiceDialogo++;
+            if (cenaEspiritoCaptura.indiceDialogo >= linhas.length) {
+                cenaEspiritoCaptura.dialogoAtivo = false;
+                cenaEspiritoCaptura.escolhaAtiva = true;
+                cenaEspiritoCaptura.escolhaSelecionada = 0;
+            } else {
+                typewriterIniciar(linhas[cenaEspiritoCaptura.indiceDialogo], "espc_" + cenaEspiritoCaptura.indiceDialogo);
+            }
+            return;
+        }
+        if (cenaEspiritoCaptura.escolhaAtiva) {
+            if (e.code === "ArrowUp" || e.code === "ArrowLeft" || e.code === "KeyW" || e.code === "KeyA") {
+                cenaEspiritoCaptura.escolhaSelecionada = 0;
+                return;
+            }
+            if (e.code === "ArrowDown" || e.code === "ArrowRight" || e.code === "KeyS" || e.code === "KeyD") {
+                cenaEspiritoCaptura.escolhaSelecionada = 1;
+                return;
+            }
+            if (e.code === "Enter" || e.code === "Space") {
+                cenaEspiritoCaptura.escolhaAtiva = false;
+                if (cenaEspiritoCaptura.escolhaSelecionada === 0) {
+                    // Tentar novamente: volta pro ponto onde apareceu CORRA
+                    reiniciarPerseguicaoAposCaptura();
+                } else {
+                    // Acordar: aparece do lado da cama
+                    acordarDoPesadelo();
+                }
+                return;
+            }
         }
         return;
     }
@@ -1645,16 +2354,18 @@ function desenharCenario() {
     for(let y=luaY-30;y<=luaY+90;y+=2){for(let x=luaX-30;x<=luaX+110;x+=2){let dx=x-(luaX+50),dy=y-(luaY+50);let dist=Math.sqrt(dx*dx+dy*dy);if(dist<80&&dist>42){let a=(1-(dist-42)/38)*(cidadePosSonho?0.035:0.055);if(a>0.005){ctx.fillStyle=`rgba(160,200,255,${a.toFixed(3)})`;ctx.fillRect(x,y,2,2);}}}}
     ctx.drawImage(luaCanvas,luaX,luaY,100,100);
 
-    // Nuvens rapidas so no ceu (nao cobrem a cidade)
+    // Nuvens rapidas so no ceu (mais nuvens depois do marco da chuva)
     if (cidadePosSonho) {
         const tNuv = Date.now() * 0.001;
-        for (let n = 0; n < 10; n++) {
+        const qtdNuv = posSonho.chuvaBoost ? 16 : 10;
+        const velBase = posSonho.chuvaBoost ? 140 : 100;
+        for (let n = 0; n < qtdNuv; n++) {
             const span = canvas.width + 320;
-            let nx = (n * 200 - tNuv * (100 + n * 22)) % span;
+            let nx = (n * 180 - tNuv * (velBase + n * 22)) % span;
             if (nx < 0) nx += span;
             nx -= 80;
-            const ny = 12 + (n % 5) * 18;
-            ctx.fillStyle = `rgba(18,12,35,${0.4 + (n % 3) * 0.1})`;
+            const ny = 10 + (n % 5) * 16;
+            ctx.fillStyle = `rgba(18,12,35,${0.4 + (n % 3) * 0.12})`;
             ctx.beginPath();
             ctx.ellipse(nx, ny, 75 + n * 4, 14 + (n % 3) * 5, 0, 0, Math.PI * 2);
             ctx.fill();
@@ -1670,26 +2381,73 @@ function desenharCenario() {
     const chaoTela=chaoY-camera.y;
     for(let y=chaoTela-80;y<chaoTela;y+=2){let p=(y-(chaoTela-80))/80;let a=p*p*0.18;ctx.fillStyle=`rgba(100,0,160,${a.toFixed(3)})`;ctx.fillRect(0,Math.floor(y),canvas.width,2);}
 
-    // Predios traseiros
-    {const vel=0.02,altBase=200,larg=112,espaco=140;let scrollX=(camera.x*vel)%espaco;for(let i=-1;i<(canvas.width/espaco)+2;i++){let xPos=Math.floor((i*espaco)-scrollX);let id=Math.floor((camera.x*vel)/espaco)+i;let hBase=altBase+Math.floor(Math.abs(Math.sin(id*1.3))*64/8)*8;let topoY=Math.floor(chaoY-hBase-camera.y);ctx.fillStyle="#07000f";ctx.fillRect(xPos,topoY,larg,hBase+1);ctx.fillStyle="#09001a";ctx.fillRect(xPos-1,topoY,larg+2,2);for(let wy=0;wy<Math.floor(hBase/20)-1;wy++){for(let wx=0;wx<Math.floor(larg/18)-1;wx++){let s=Math.abs(Math.sin(id*5+wy*11+wx*7));if(s>0.72){ctx.fillStyle="rgba(80,60,120,0.35)";ctx.fillRect(xPos+10+wx*18,topoY+16+wy*20,2,3);}}}}}
+    const alphaPredios = posSonhoAlphaPredios();
+    const noCampo = cidadePosSonho && player.x >= POS_SONHO_MARCOS.campo;
 
-    // Predios do meio
-    {const vel=0.06,altBase=140,larg=86,espaco=110;let scrollX=(camera.x*vel)%espaco;for(let i=-1;i<(canvas.width/espaco)+2;i++){let xPos=Math.floor((i*espaco)-scrollX);let id=Math.floor((camera.x*vel)/espaco)+i;let hBase=altBase+Math.floor(Math.abs(Math.sin(id*1.7+1))*64/8)*8;let topoY=Math.floor(chaoY-hBase-camera.y);ctx.fillStyle="#0f001e";ctx.fillRect(xPos,topoY,larg,hBase+1);ctx.fillStyle="#1a0030";ctx.fillRect(xPos-1,topoY-2,larg+2,3);ctx.fillStyle="#140026";ctx.fillRect(xPos,topoY-4,larg,2);if(Math.abs(Math.sin(id*5.1+2))>0.76){let antX=Math.floor(xPos+larg/2);for(let ay=topoY-18;ay<topoY-2;ay+=2){ctx.fillStyle="rgba(150,140,170,0.45)";ctx.fillRect(antX,ay,1,1);}let pisca=Math.sin(tempoAgora*2.2+id)>0.15;if(pisca){ctx.fillStyle="#ff4040";ctx.fillRect(antX,topoY-19,1,1);}}for(let wy=0;wy<Math.floor(hBase/20)-1;wy++){for(let wx=0;wx<Math.floor(larg/16)-1;wx++){let s=Math.abs(Math.sin(id*7+wy*13+wx*31));if(s>0.40){if(s>0.80)ctx.fillStyle="#ffd84a";else if(s>0.62)ctx.fillStyle="rgba(120,190,255,0.6)";else ctx.fillStyle="rgba(0,0,0,0.55)";ctx.fillRect(xPos+8+wx*16,topoY+16+wy*20,2,3);}}}let intensidade=0.5+0.5*Math.abs(Math.sin(id*3.3));if(intensidade>0.55){for(let ly=chaoTela-48;ly<chaoTela;ly+=2){let progresso=(ly-(chaoTela-48))/48;let alpha=progresso*progresso*(0.10+intensidade*0.07);ctx.fillStyle=`rgba(220,55,170,${alpha.toFixed(3)})`;ctx.fillRect(xPos-4,Math.floor(ly),larg+8,2);}ctx.fillStyle=`rgba(230,70,180,${(0.06+intensidade*0.05).toFixed(3)})`;ctx.fillRect(xPos,Math.floor(chaoTela)-6,larg,3);}}}
+    // Campo + arvores (aparecem conforme predios somem)
+    if (noCampo || alphaPredios < 1) {
+        const campoAlpha = noCampo ? 1 : (1 - alphaPredios);
+        ctx.globalAlpha = campoAlpha;
+        ctx.fillStyle = "#0a1810";
+        ctx.beginPath();
+        ctx.moveTo(0, chaoTela - 40);
+        for (let hx = 0; hx <= canvas.width; hx += 40) {
+            const h = 28 + Math.sin((hx + camera.x * 0.02) * 0.02) * 12;
+            ctx.lineTo(hx, chaoTela - h);
+        }
+        ctx.lineTo(canvas.width, chaoTela);
+        ctx.lineTo(0, chaoTela);
+        ctx.fill();
+        ctx.fillStyle = "#0c2214";
+        ctx.fillRect(0, chaoTela - 8, canvas.width, 8);
+        for (let t = 0; t < 12; t++) {
+            let treeX = ((t * 130 - camera.x * 0.25) % (canvas.width + 160));
+            if (treeX < 0) treeX += canvas.width + 160;
+            const th = 55 + (t % 4) * 12;
+            ctx.fillStyle = "#0a1008";
+            ctx.fillRect(treeX + 10, chaoTela - th * 0.45, 8, th * 0.45);
+            ctx.fillStyle = "#081a0c";
+            ctx.beginPath();
+            ctx.ellipse(treeX + 14, chaoTela - th * 0.55, 22 + (t % 3) * 4, 28 + (t % 3) * 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(treeX + 4, chaoTela - th * 0.4, 16, 18, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(treeX + 24, chaoTela - th * 0.42, 15, 17, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
 
-    // Predios da frente
-    {const vel=0.15,altBase=90,larg=66,espaco=96;let scrollX=(camera.x*vel)%espaco;for(let i=-1;i<(canvas.width/espaco)+2;i++){let xPos=Math.floor((i*espaco)-scrollX);let id=Math.floor((camera.x*vel)/espaco)+i;let hBase=altBase+Math.floor(Math.abs(Math.sin(id*2.1+0.5))*56/8)*8;let topoY=Math.floor(chaoY-hBase-camera.y);ctx.fillStyle="#160030";ctx.fillRect(xPos,topoY,larg,hBase+1);ctx.fillStyle="rgba(255,255,255,0.03)";ctx.fillRect(xPos,topoY,1,hBase);ctx.fillStyle="rgba(0,0,0,0.2)";ctx.fillRect(xPos+larg-1,topoY,1,hBase);ctx.fillStyle="#220040";ctx.fillRect(xPos-1,topoY-1,larg+2,1);ctx.fillStyle="#1c0036";ctx.fillRect(xPos,topoY-2,larg,1);for(let wy=0;wy<Math.floor(hBase/18)-1;wy++){for(let wx=0;wx<Math.floor(larg/14)-1;wx++){let s=Math.abs(Math.sin(id*11+wy*17+wx*23));if(s>0.50){ctx.fillStyle=s>0.78?"rgba(255,205,60,0.7)":"rgba(0,0,0,0.5)";ctx.fillRect(xPos+7+wx*14,topoY+12+wy*18,2,3);}}}}}
+    if (alphaPredios > 0.02) {
+        ctx.globalAlpha = alphaPredios;
+        // Predios traseiros
+        {const vel=0.02,altBase=200,larg=112,espaco=140;let scrollX=(camera.x*vel)%espaco;for(let i=-1;i<(canvas.width/espaco)+2;i++){let xPos=Math.floor((i*espaco)-scrollX);let id=Math.floor((camera.x*vel)/espaco)+i;let hBase=altBase+Math.floor(Math.abs(Math.sin(id*1.3))*64/8)*8;let topoY=Math.floor(chaoY-hBase-camera.y);ctx.fillStyle="#07000f";ctx.fillRect(xPos,topoY,larg,hBase+1);ctx.fillStyle="#09001a";ctx.fillRect(xPos-1,topoY,larg+2,2);for(let wy=0;wy<Math.floor(hBase/20)-1;wy++){for(let wx=0;wx<Math.floor(larg/18)-1;wx++){let s=Math.abs(Math.sin(id*5+wy*11+wx*7));if(s>0.72){ctx.fillStyle="rgba(80,60,120,0.35)";ctx.fillRect(xPos+10+wx*18,topoY+16+wy*20,2,3);}}}}}
+        // Predios do meio
+        {const vel=0.06,altBase=140,larg=86,espaco=110;let scrollX=(camera.x*vel)%espaco;for(let i=-1;i<(canvas.width/espaco)+2;i++){let xPos=Math.floor((i*espaco)-scrollX);let id=Math.floor((camera.x*vel)/espaco)+i;let hBase=altBase+Math.floor(Math.abs(Math.sin(id*1.7+1))*64/8)*8;let topoY=Math.floor(chaoY-hBase-camera.y);ctx.fillStyle="#0f001e";ctx.fillRect(xPos,topoY,larg,hBase+1);ctx.fillStyle="#1a0030";ctx.fillRect(xPos-1,topoY-2,larg+2,3);ctx.fillStyle="#140026";ctx.fillRect(xPos,topoY-4,larg,2);if(Math.abs(Math.sin(id*5.1+2))>0.76){let antX=Math.floor(xPos+larg/2);for(let ay=topoY-18;ay<topoY-2;ay+=2){ctx.fillStyle="rgba(150,140,170,0.45)";ctx.fillRect(antX,ay,1,1);}let pisca=Math.sin(tempoAgora*2.2+id)>0.15;if(pisca){ctx.fillStyle="#ff4040";ctx.fillRect(antX,topoY-19,1,1);}}for(let wy=0;wy<Math.floor(hBase/20)-1;wy++){for(let wx=0;wx<Math.floor(larg/16)-1;wx++){let s=Math.abs(Math.sin(id*7+wy*13+wx*31));if(s>0.40){if(s>0.80)ctx.fillStyle="#ffd84a";else if(s>0.62)ctx.fillStyle="rgba(120,190,255,0.6)";else ctx.fillStyle="rgba(0,0,0,0.55)";ctx.fillRect(xPos+8+wx*16,topoY+16+wy*20,2,3);}}}let intensidade=0.5+0.5*Math.abs(Math.sin(id*3.3));if(intensidade>0.55){for(let ly=chaoTela-48;ly<chaoTela;ly+=2){let progresso=(ly-(chaoTela-48))/48;let alpha=progresso*progresso*(0.10+intensidade*0.07);ctx.fillStyle=`rgba(220,55,170,${alpha.toFixed(3)})`;ctx.fillRect(xPos-4,Math.floor(ly),larg+8,2);}ctx.fillStyle=`rgba(230,70,180,${(0.06+intensidade*0.05).toFixed(3)})`;ctx.fillRect(xPos,Math.floor(chaoTela)-6,larg,3);}}}
+        // Predios da frente
+        {const vel=0.15,altBase=90,larg=66,espaco=96;let scrollX=(camera.x*vel)%espaco;for(let i=-1;i<(canvas.width/espaco)+2;i++){let xPos=Math.floor((i*espaco)-scrollX);let id=Math.floor((camera.x*vel)/espaco)+i;let hBase=altBase+Math.floor(Math.abs(Math.sin(id*2.1+0.5))*56/8)*8;let topoY=Math.floor(chaoY-hBase-camera.y);ctx.fillStyle="#160030";ctx.fillRect(xPos,topoY,larg,hBase+1);ctx.fillStyle="rgba(255,255,255,0.03)";ctx.fillRect(xPos,topoY,1,hBase);ctx.fillStyle="rgba(0,0,0,0.2)";ctx.fillRect(xPos+larg-1,topoY,1,hBase);ctx.fillStyle="#220040";ctx.fillRect(xPos-1,topoY-1,larg+2,1);ctx.fillStyle="#1c0036";ctx.fillRect(xPos,topoY-2,larg,1);for(let wy=0;wy<Math.floor(hBase/18)-1;wy++){for(let wx=0;wx<Math.floor(larg/14)-1;wx++){let s=Math.abs(Math.sin(id*11+wy*17+wx*23));if(s>0.50){ctx.fillStyle=s>0.78?"rgba(255,205,60,0.7)":"rgba(0,0,0,0.5)";ctx.fillRect(xPos+7+wx*14,topoY+12+wy*18,2,3);}}}}}
+        ctx.globalAlpha = 1;
+    }
 
-    // Chao pixelado
+    // Chao
     const chaoPixY=Math.floor(chaoY-camera.y);
-    ctx.fillStyle="#ff00ff";ctx.fillRect(0,chaoPixY,canvas.width,2);
-    const coresCalcada=["#0d0020","#0a001a","#0c001e","#08001a"];
-    for(let i=0;i<8;i++){ctx.fillStyle=coresCalcada[i%coresCalcada.length];ctx.fillRect(0,chaoPixY+2+i*4,canvas.width,4);}
-    const pocas=[{x:80,largura:40},{x:200,largura:25},{x:350,largura:55},{x:500,largura:30},{x:650,largura:45},{x:750,largura:20}];
-    pocas.forEach(p=>{let px2=(p.x-camera.x*0.15)%canvas.width;if(px2<0)px2+=canvas.width;ctx.fillStyle="rgba(20,0,40,0.8)";ctx.fillRect(Math.floor(px2),chaoPixY+4,p.largura,2);ctx.fillStyle="rgba(200,60,160,0.25)";ctx.fillRect(Math.floor(px2)+2,chaoPixY+4,p.largura-4,1);ctx.fillStyle="rgba(200,200,255,0.15)";ctx.fillRect(Math.floor(px2),chaoPixY+3,p.largura,1);});
+    if (noCampo) {
+        ctx.fillStyle="#0a1a10";ctx.fillRect(0,chaoPixY,canvas.width,canvas.height-chaoPixY+20);
+        for(let i=0;i<10;i++){ctx.fillStyle=i%2===0?"#0c2014":"#0a1c12";ctx.fillRect(0,chaoPixY+i*4,canvas.width,4);}
+        for(let p=0;p<8;p++){let px2=((p*110+40)-camera.x*0.2)%canvas.width;if(px2<0)px2+=canvas.width;ctx.fillStyle="rgba(30,50,70,0.55)";ctx.fillRect(Math.floor(px2),chaoPixY+6+(p%3)*3,20+p*3,2);}
+    } else {
+        ctx.fillStyle="#ff00ff";ctx.fillRect(0,chaoPixY,canvas.width,2);
+        const coresCalcada=["#0d0020","#0a001a","#0c001e","#08001a"];
+        for(let i=0;i<8;i++){ctx.fillStyle=coresCalcada[i%coresCalcada.length];ctx.fillRect(0,chaoPixY+2+i*4,canvas.width,4);}
+        const pocas=[{x:80,largura:40},{x:200,largura:25},{x:350,largura:55},{x:500,largura:30},{x:650,largura:45},{x:750,largura:20}];
+        pocas.forEach(p=>{let px2=(p.x-camera.x*0.15)%canvas.width;if(px2<0)px2+=canvas.width;ctx.fillStyle="rgba(20,0,40,0.8)";ctx.fillRect(Math.floor(px2),chaoPixY+4,p.largura,2);ctx.fillStyle="rgba(200,60,160,0.25)";ctx.fillRect(Math.floor(px2)+2,chaoPixY+4,p.largura-4,1);ctx.fillStyle="rgba(200,200,255,0.15)";ctx.fillRect(Math.floor(px2),chaoPixY+3,p.largura,1);});
+    }
 
-    // Escurece a cena INTEIRA no final (cidade completa, so mais escura)
     if (cidadePosSonho) {
-        ctx.fillStyle = "rgba(0,0,12,0.38)";
+        const extra = posSonho.campo ? 0.12 : 0;
+        ctx.fillStyle = `rgba(0,0,12,${0.38 + extra})`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 }
@@ -1781,7 +2539,7 @@ function atualizar() {
     garantirMusicaTocando();
 
     // Typewriter: avanca letras nos estados de dialogo
-    if (estadoAtual==="DIALOGO_INICIAL"||estadoAtual==="DIALOGO_NPC"||estadoAtual==="DESPEDIDA_NARRACAO"||estadoAtual==="DESPEDIDA_FALA_PLAYER"||estadoAtual==="QUARTO_DIALOGO"||estadoAtual==="CENA_ESPIRITO"||(estadoAtual==="CENA_450"&&cena450.timerEspera>=cena450.tempoParaDialogo)) {
+    if (estadoAtual==="DIALOGO_INICIAL"||estadoAtual==="DIALOGO_NPC"||estadoAtual==="DESPEDIDA_NARRACAO"||estadoAtual==="DESPEDIDA_FALA_PLAYER"||estadoAtual==="QUARTO_DIALOGO"||estadoAtual==="CENA_ESPIRITO"||estadoAtual==="CENA_ESPIRITO_CAPTURA"||(estadoAtual==="CENA_450"&&cena450.timerEspera>=cena450.tempoParaDialogo)) {
         typewriterAtualizar();
     }
 
@@ -1843,10 +2601,53 @@ function atualizar() {
         }
     }
 
+    // --- TELA PRETA (captura na perseguicao) → CENA ESPIRITO CAPTURA ---
+    if (estadoAtual === "TELA_PRETA_CAPTURA") {
+        PERSEGUICAO.timerPretoCaptura = (PERSEGUICAO.timerPretoCaptura || 0) + 1;
+        if (PERSEGUICAO.timerPretoCaptura >= 90) {
+            estadoAtual = "CENA_ESPIRITO_CAPTURA";
+            cenaEspiritoCaptura.alpha = 0;
+            cenaEspiritoCaptura.frame = 0;
+            cenaEspiritoCaptura.timerFrame = 0;
+            cenaEspiritoCaptura.tempoFlutuar = 0;
+            cenaEspiritoCaptura.dialogoAtivo = false;
+            cenaEspiritoCaptura.dialogoJaIniciado = false;
+            cenaEspiritoCaptura.indiceDialogo = 0;
+            cenaEspiritoCaptura.escolhaAtiva = false;
+            cenaEspiritoCaptura.escolhaSelecionada = 0;
+            cenaEspiritoCaptura.x = canvas.width / 2;
+            cenaEspiritoCaptura.y = canvas.height / 2 - 20;
+        }
+    }
+
+    if (estadoAtual === "CENA_ESPIRITO_CAPTURA") {
+        if (cenaEspiritoCaptura.alpha < 1) {
+            cenaEspiritoCaptura.alpha = Math.min(1, cenaEspiritoCaptura.alpha + 0.008);
+        } else if (!cenaEspiritoCaptura.dialogoJaIniciado) {
+            cenaEspiritoCaptura.dialogoJaIniciado = true;
+            cenaEspiritoCaptura.dialogoAtivo = true;
+            cenaEspiritoCaptura.indiceDialogo = 0;
+            const linhas = t().dialogoEspiritoCaptura || [];
+            if (linhas.length > 0) typewriterIniciar(linhas[0], "espc_0");
+        }
+
+        cenaEspiritoCaptura.timerFrame++;
+        if (cenaEspiritoCaptura.timerFrame >= 4) {
+            cenaEspiritoCaptura.timerFrame = 0;
+            cenaEspiritoCaptura.frame = (cenaEspiritoCaptura.frame + 1) % imgEspiritoFrames.length;
+        }
+
+        cenaEspiritoCaptura.tempoFlutuar += 0.02;
+        const baseX = canvas.width / 2;
+        const baseY = canvas.height / 2 - 30;
+        cenaEspiritoCaptura.x = baseX + Math.sin(cenaEspiritoCaptura.tempoFlutuar) * 90;
+        cenaEspiritoCaptura.y = baseY + Math.cos(cenaEspiritoCaptura.tempoFlutuar * 0.7) * 40;
+    }
+
     if (estadoAtual==="JOGANDO") { tempoJogoTimer++; if(tempoJogoTimer>=60){tempoJogo++;tempoJogoTimer=0;} }
     if (estadoAtual==="JOGANDO"||estadoAtual==="DIALOGO_NPC") npc.tempoFlutuar+=0.05;
 
-    if (estadoAtual!=="TELA_INICIAL"&&estadoAtual!=="TELA_MENU"&&estadoAtual!=="PLAYER_CHORANDO_CAINDO"&&estadoAtual!=="FECHANDO_OLHO"&&estadoAtual!=="DESPEDIDA_NARRACAO"&&estadoAtual!=="FIM_DEMO"&&estadoAtual!=="POSDEM_PISCANDO"&&estadoAtual!=="TELA_VERMELHA"&&estadoAtual!=="QUARTO") {
+    if (estadoAtual!=="TELA_INICIAL"&&estadoAtual!=="TELA_MENU"&&estadoAtual!=="PLAYER_CHORANDO_CAINDO"&&estadoAtual!=="FECHANDO_OLHO"&&estadoAtual!=="DESPEDIDA_NARRACAO"&&estadoAtual!=="FIM_DEMO"&&estadoAtual!=="POSDEM_PISCANDO"&&estadoAtual!=="TELA_VERMELHA"&&estadoAtual!=="QUARTO"&&estadoAtual!=="TELA_PRETA_CAPTURA"&&estadoAtual!=="CENA_ESPIRITO_CAPTURA"&&estadoAtual!=="PERSEGUICAO") {
         player.velY+=player.gravidade; player.y+=player.velY;
         let baseHitboxY=player.y+player.offsetY+player.alturaHitbox;
         if(baseHitboxY>=chaoY){player.y=chaoY-player.alturaHitbox-player.offsetY;player.velY=0;player.noChao=true;}
@@ -1964,6 +2765,176 @@ function atualizar() {
         if(!npc.jaConversou&&npc.x!==-9999){let distancia=Math.abs(centroPlayerX-npc.x);if(distancia<npc.distanciaInteracao){estadoAtual="DIALOGO_NPC";npc.indiceAtual=0;teclas["KeyA"]=false;teclas["KeyD"]=false;player.estaAndando=false;typewriterIniciar(npc.dialogo[0],"npc_0");}}
         camera.x=player.x-150; if(camera.x<0)camera.x=0;
         if((teclas["KeyW"]||teclas["Space"])&&player.noChao){player.velY=player.pulo;player.noChao=false;}
+
+        // Progressao pos-sonho (coords de tela = x/10)
+        if (cidadePosSonho && !posSonho.dialogoAtivo) {
+            const tx = t();
+            if (!posSonho.fala1 && player.x >= POS_SONHO_MARCOS.fala1) {
+                posSonho.fala1 = true;
+                posSonho.dialogoAtivo = true;
+                posSonho.dialogoTexto = tx.posSonhoFala1 || "não estou gostando disso...";
+                typewriterIniciar(posSonho.dialogoTexto, "ps_1");
+                estadoAtual = "DIALOGO_POS_SONHO";
+            } else if (!posSonho.chuvaBoost && player.x >= POS_SONHO_MARCOS.chuva) {
+                posSonho.chuvaBoost = true;
+                // chuva ainda mais forte + mais nuvens
+                for (let i = 0; i < chuva.length; i++) {
+                    chuva[i].velocidade = 16 + Math.random() * 16;
+                    chuva[i].opacidade = 0.45 + Math.random() * 0.5;
+                    chuva[i].tamanho = 5 + Math.random() * 12;
+                }
+                while (chuva.length < 320) {
+                    let p = Math.random();
+                    chuva.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        velocidade: 16 + p * 16,
+                        tamanho: 5 + p * 12,
+                        fatorParallax: 0.1 + p * 0.9,
+                        opacidade: 0.45 + p * 0.5
+                    });
+                }
+            } else if (!posSonho.fala2 && player.x >= POS_SONHO_MARCOS.fala2) {
+                posSonho.fala2 = true;
+                posSonho.dialogoAtivo = true;
+                posSonho.dialogoTexto = tx.posSonhoFala2 || "quero acordar logo...";
+                typewriterIniciar(posSonho.dialogoTexto, "ps_2");
+                estadoAtual = "DIALOGO_POS_SONHO";
+            } else if (!posSonho.fala3 && player.x >= POS_SONHO_MARCOS.fala3) {
+                posSonho.fala3 = true;
+                posSonho.dialogoAtivo = true;
+                posSonho.dialogoTexto = tx.posSonhoFala3 || "antes que.";
+                typewriterIniciar(posSonho.dialogoTexto, "ps_3");
+                estadoAtual = "DIALOGO_POS_SONHO";
+            } else if (!posSonho.campo && player.x >= POS_SONHO_MARCOS.campo) {
+                posSonho.campo = true;
+                // chuva maxima no campo
+                for (let i = 0; i < chuva.length; i++) {
+                    chuva[i].velocidade = 20 + Math.random() * 18;
+                    chuva[i].opacidade = 0.55 + Math.random() * 0.45;
+                }
+            } else if (!posSonho.fala4 && player.x >= POS_SONHO_MARCOS.fala4) {
+                posSonho.fala4 = true;
+                posSonho.dialogoAtivo = true;
+                posSonho.dialogoTexto = tx.posSonhoFala4 || "Ok, eu quero sair daqui AGORA!";
+                typewriterIniciar(posSonho.dialogoTexto, "ps_4");
+                estadoAtual = "DIALOGO_POS_SONHO";
+                // prepara o encontro logo apos essa fala
+                posSonho.encontroEtapa = "pos_fala4";
+            }
+        }
+    }
+
+    if (estadoAtual === "DIALOGO_POS_SONHO") {
+        typewriterAtualizar();
+        player.estaAndando = false;
+        camera.x = player.x - 150; if (camera.x < 0) camera.x = 0;
+    }
+
+    // Misterioso se aproximando por tras
+    if (estadoAtual === "MISTERIOSO_APROXIMA") {
+        player.estaAndando = false;
+        camera.x = player.x - 150; if (camera.x < 0) camera.x = 0;
+        misterioso.modo = "andando";
+        misterioso.timerFrame++;
+        if (misterioso.timerFrame >= misterioso.tempoPorFrame) {
+            misterioso.timerFrame = 0;
+            misterioso.frame = (misterioso.frame + 1) % Math.max(1, imgMisteriosoAndando.length);
+        }
+        // anda lentamente em direcao ao player (por tras = x menor)
+        if (misterioso.x < misterioso.alvoX) {
+            misterioso.x += misterioso.velocidade;
+        } else {
+            // chegou atras do player → player olha para tras e fala
+            misterioso.x = misterioso.alvoX;
+            misterioso.modo = "parado";
+            misterioso.frame = 0;
+            player.direcao = "esquerda";
+            const tx = t();
+            posSonho.encontroEtapa = "dialogo";
+            posSonho.encontroLinhas = (tx.posSonhoFala5 || ["Você???", "Eu já te vi"]).slice();
+            posSonho.encontroIndice = 0;
+            typewriterIniciar(posSonho.encontroLinhas[0], "ps_enc_0");
+            estadoAtual = "DIALOGO_ENCONTRO";
+        }
+    }
+
+    if (estadoAtual === "DIALOGO_ENCONTRO") {
+        typewriterAtualizar();
+        player.estaAndando = false;
+        player.direcao = "esquerda";
+        camera.x = player.x - 150; if (camera.x < 0) camera.x = 0;
+    }
+
+    // Rugido do misterioso → depois inicia perseguição
+    if (estadoAtual === "RUGIDO_MISTERIOSO") {
+        player.estaAndando = false;
+        camera.x = player.x - 150; if (camera.x < 0) camera.x = 0;
+        PERSEGUICAO.timerRugido = (PERSEGUICAO.timerRugido || 0) + 1;
+        // anima ondas / sombra / orbs
+        for (let i = PERSEGUICAO.ondas.length - 1; i >= 0; i--) {
+            const o = PERSEGUICAO.ondas[i];
+            o.raio += 4; o.alpha -= 0.012;
+            if (o.alpha <= 0 || o.raio > o.max) PERSEGUICAO.ondas.splice(i, 1);
+        }
+        if (misterioso.sombraForte > 0) misterioso.sombraForte = Math.max(0, misterioso.sombraForte - 0.006);
+        if (PERSEGUICAO.screenShake > 0) PERSEGUICAO.screenShake--;
+        atualizarOrbsRugido();
+        // apos ~2s de rugido → CORRA + perseguição
+        if (PERSEGUICAO.timerRugido >= 120) {
+            iniciarPerseguicao();
+        }
+    }
+
+    // Perseguição — player corre com SHIFT
+    if (estadoAtual === "PERSEGUICAO") {
+        player.estaAndando = false;
+        const correndo = teclas["ShiftLeft"] || teclas["ShiftRight"];
+        player.correndoChase = correndo;
+        let vel = correndo ? player.velocidade * 1.85 : player.velocidade;
+        if (PERSEGUICAO.timerLentidao > 0) {
+            vel *= 0.45;
+            PERSEGUICAO.timerLentidao--;
+        }
+        if (teclas["KeyA"] || teclas["ArrowLeft"]) {
+            player.x -= vel; player.direcao = "esquerda"; player.estaAndando = true;
+            if (player.x < 0) player.x = 0;
+        }
+        if (teclas["KeyD"] || teclas["ArrowRight"]) {
+            player.x += vel; player.direcao = "direita"; player.estaAndando = true;
+        }
+        if ((teclas["KeyW"] || teclas["Space"] || teclas["ArrowUp"]) && player.noChao) {
+            player.velY = player.pulo; player.noChao = false;
+        }
+        // gravidade
+        player.velY += player.gravidade;
+        player.y += player.velY;
+        const chaoPlayer = chaoY - player.offsetY - player.alturaHitbox;
+        if (player.y >= chaoPlayer) {
+            player.y = chaoPlayer; player.velY = 0; player.noChao = true;
+            if (PERSEGUICAO.playerCaindo) PERSEGUICAO.playerCaindo = false;
+        }
+        if (player.estaAndando && player.noChao) {
+            player.tempoAnimacao++;
+            if (player.tempoAnimacao >= (correndo ? 5 : 10)) {
+                if (correndo) {
+                    player.frameAtual = (player.frameAtual + 1) % 3;
+                } else {
+                    player.frameAtual = player.frameAtual === 0 ? 1 : 0;
+                }
+                player.tempoAnimacao = 0;
+            }
+        } else { player.frameAtual = 0; }
+        camera.x = player.x - 150; if (camera.x < 0) camera.x = 0;
+        atualizarPerseguicao();
+    }
+
+    // Tela preta pos-perseguicao (escapou) → quarto
+    if (estadoAtual === "TELA_PRETA_CHASE") {
+        PERSEGUICAO.timerPreto = (PERSEGUICAO.timerPreto || 0) + 1;
+        if (PERSEGUICAO.timerPreto >= 90) { // ~1.5s
+            acordarDoPesadelo();
+        }
     }
 
     // Depois do sonho (cidadePosSonho) nao mantem barras pretas cortando a cidade
@@ -2126,7 +3097,7 @@ function desenhar() {
         ctx.fillStyle=cenaPosDemo.telaEmBranco?"#ffffff":"#000000";
         ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    } else if (estadoAtual === "TELA_PRETA") {
+    } else if (estadoAtual === "TELA_PRETA" || estadoAtual === "TELA_PRETA_CHASE" || estadoAtual === "TELA_PRETA_CAPTURA") {
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -2182,6 +3153,55 @@ function desenhar() {
                 ctx.font = "12px 'Courier New', monospace";
                 ctx.fillStyle = "rgba(126,200,255,0.8)";
                 ctx.fillText(t().continuar || "[Espaço / Enter]", bx + 20 + ox, by + bh - 16 + oy);
+            }
+        }
+
+    } else if (estadoAtual === "CENA_ESPIRITO_CAPTURA") {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.imageSmoothingEnabled = true;
+
+        const fr = imgEspiritoFrames[cenaEspiritoCaptura.frame];
+        if (fr && fr.complete && fr.width > 0) {
+            const tam = 280;
+            ctx.globalAlpha = cenaEspiritoCaptura.alpha;
+            ctx.drawImage(fr, cenaEspiritoCaptura.x - tam / 2, cenaEspiritoCaptura.y - tam / 2, tam, tam);
+            ctx.globalAlpha = 1;
+        }
+
+        if (cenaEspiritoCaptura.dialogoAtivo || cenaEspiritoCaptura.escolhaAtiva) {
+            const bx = caixaDialogo.x;
+            const by = caixaDialogo.y;
+            const bw = caixaDialogo.largura;
+            const bh = caixaDialogo.altura;
+            ctx.fillStyle = "rgba(40,90,140,0.92)";
+            ctx.fillRect(bx, by, bw, bh);
+            ctx.strokeStyle = "#7ec8ff";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(bx, by, bw, bh);
+            const font = "20px 'Courier New', monospace";
+            ctx.fillStyle = "#e8f6ff";
+            ctx.textAlign = "left";
+            const maxW = bw - 40;
+            const tx = t();
+            if (cenaEspiritoCaptura.dialogoAtivo) {
+                desenharTextoQuebrado(typewriterTexto(), bx + 20, by + 40, maxW, 24, font, "left");
+                if (typewriterCompleto()) {
+                    ctx.font = "12px 'Courier New', monospace";
+                    ctx.fillStyle = "rgba(126,200,255,0.8)";
+                    ctx.fillText(tx.continuar || "", bx + 20, by + bh - 16);
+                }
+            } else if (cenaEspiritoCaptura.escolhaAtiva) {
+                const linhas = tx.dialogoEspiritoCaptura || [];
+                ctx.font = font;
+                ctx.fillText(linhas[linhas.length - 1] || "", bx + 20, by + 34);
+                const opcoes = [tx.capturaTentar || "TENTAR NOVAMENTE", tx.capturaAcordar || "ACORDAR"];
+                opcoes.forEach((op, i) => {
+                    const sel = i === cenaEspiritoCaptura.escolhaSelecionada;
+                    ctx.fillStyle = sel ? "#ff00ff" : "rgba(255,255,255,0.7)";
+                    ctx.font = sel ? "bold 16px 'Courier New', monospace" : "14px 'Courier New', monospace";
+                    ctx.fillText((sel ? "> " : "  ") + op, bx + 30, by + 70 + i * 26);
+                });
             }
         }
 
@@ -2441,6 +3461,15 @@ function desenhar() {
 
     } else {
         // JOGO
+        // screen shake da perseguição / rugido
+        let shakeX = 0, shakeY = 0;
+        if (PERSEGUICAO.screenShake > 0) {
+            shakeX = (Math.random() - 0.5) * PERSEGUICAO.screenShake;
+            shakeY = (Math.random() - 0.5) * PERSEGUICAO.screenShake * 0.6;
+        }
+        ctx.save();
+        ctx.translate(shakeX, shakeY);
+
         desenharCenario();
         ctx.fillStyle="#0a0712";ctx.fillRect(0,chaoY-camera.y,canvas.width,canvas.height);
 
@@ -2460,6 +3489,45 @@ function desenhar() {
         if(npcRelativoX>-100&&npcRelativoX<canvas.width+100){
             let flutuarY=npc.y+Math.sin(npc.tempoFlutuar)*8-camera.y;
             if(imgNpcEspirito.complete&&imgNpcEspirito.width>0)ctx.drawImage(imgNpcEspirito,npcRelativoX,flutuarY,npc.largura,npc.altura);
+        }
+
+        // Misterioso (aproximacao + perseguição + rugido)
+        if (misterioso.ativo && (
+            estadoAtual === "MISTERIOSO_APROXIMA" ||
+            estadoAtual === "DIALOGO_ENCONTRO" ||
+            estadoAtual === "RUGIDO_MISTERIOSO" ||
+            estadoAtual === "PERSEGUICAO" ||
+            posSonho.encontroEtapa === "fim" ||
+            posSonho.encontroEtapa === "rugido"
+        )) {
+            const mx = misterioso.x - camera.x;
+            const my = misterioso.y - camera.y;
+            ctx.imageSmoothingEnabled = false;
+            let fr = null;
+            if (misterioso.modo === "parado") {
+                fr = imgMisteriosoParado;
+            } else if (misterioso.modo === "correndo") {
+                fr = imgMisteriosoCorrendo[misterioso.frame % Math.max(1, imgMisteriosoCorrendo.length)];
+            } else {
+                fr = imgMisteriosoAndando[misterioso.frame % Math.max(1, imgMisteriosoAndando.length)];
+            }
+            if (fr && fr.complete && fr.width > 0) {
+                // mesma altura visual do player, crop do personagem no PNG
+                const ph = player.alturaVisual;
+                const scale = ph / misterioso.cropH;
+                const pw = Math.round(misterioso.cropW * scale);
+                const drawX = mx + player.larguraVisual / 2 - pw / 2;
+                const drawY = my + player.alturaVisual - ph;
+                ctx.drawImage(
+                    fr,
+                    misterioso.cropX, misterioso.cropY, misterioso.cropW, misterioso.cropH,
+                    Math.floor(drawX), Math.floor(drawY), pw, ph
+                );
+            } else {
+                // placeholder
+                ctx.fillStyle = "#6a3080";
+                ctx.fillRect(mx, my, misterioso.largura, misterioso.altura);
+            }
         }
 
         // Raposa
@@ -2496,7 +3564,24 @@ function desenhar() {
                 ctx.save();
                 if(player.direcao==="esquerda"){ctx.translate(playerDesenhoX+player.larguraVisual/2,playerDesenhoY+player.alturaVisual/2);ctx.scale(-1,1);ctx.translate(-(playerDesenhoX+player.larguraVisual/2),-(playerDesenhoY+player.alturaVisual/2));}
                 if(imgPlayerParado.complete&&imgPlayerParado.width>0){
-                    if(player.estaAndando){let fc=imgPlayerCorrendoFrames[player.frameAtual];if(fc&&fc.complete&&fc.width>0){ctx.drawImage(fc,RECORTE_PLAYER.x,RECORTE_PLAYER.y,RECORTE_PLAYER.largura,RECORTE_PLAYER.altura,playerDesenhoX,playerDesenhoY,player.larguraVisual,player.alturaVisual);}else{ctx.drawImage(imgPlayerParado,RECORTE_PLAYER.x,RECORTE_PLAYER.y,RECORTE_PLAYER.largura,RECORTE_PLAYER.altura,playerDesenhoX,playerDesenhoY,player.larguraVisual,player.alturaVisual);}}
+                    // Na perseguicao com SHIFT: sprites novos de corrida
+                    if (estadoAtual === "PERSEGUICAO" && player.correndoChase && player.estaAndando) {
+                        const fi = player.frameAtual % imgPlayerCorrendoChase.length;
+                        const fc = imgPlayerCorrendoChase[fi];
+                        if (fc && fc.complete && fc.width > 0) {
+                            const ph = player.alturaVisual;
+                            const scale = ph / RECORTE_PLAYER_CORRENDO.altura;
+                            const pw = Math.round(RECORTE_PLAYER_CORRENDO.largura * scale);
+                            const dx = centroHitboxX - pw / 2;
+                            const dy = baseHitboxRealY - ph;
+                            ctx.drawImage(fc,
+                                RECORTE_PLAYER_CORRENDO.x, RECORTE_PLAYER_CORRENDO.y,
+                                RECORTE_PLAYER_CORRENDO.largura, RECORTE_PLAYER_CORRENDO.altura,
+                                dx, dy, pw, ph);
+                        } else {
+                            ctx.drawImage(imgPlayerParado,RECORTE_PLAYER.x,RECORTE_PLAYER.y,RECORTE_PLAYER.largura,RECORTE_PLAYER.altura,playerDesenhoX,playerDesenhoY,player.larguraVisual,player.alturaVisual);
+                        }
+                    } else if(player.estaAndando){let fc=imgPlayerCorrendoFrames[player.frameAtual%imgPlayerCorrendoFrames.length];if(fc&&fc.complete&&fc.width>0){ctx.drawImage(fc,RECORTE_PLAYER.x,RECORTE_PLAYER.y,RECORTE_PLAYER.largura,RECORTE_PLAYER.altura,playerDesenhoX,playerDesenhoY,player.larguraVisual,player.alturaVisual);}else{ctx.drawImage(imgPlayerParado,RECORTE_PLAYER.x,RECORTE_PLAYER.y,RECORTE_PLAYER.largura,RECORTE_PLAYER.altura,playerDesenhoX,playerDesenhoY,player.larguraVisual,player.alturaVisual);}}
                     else{ctx.drawImage(imgPlayerParado,RECORTE_PLAYER.x,RECORTE_PLAYER.y,RECORTE_PLAYER.largura,RECORTE_PLAYER.altura,playerDesenhoX,playerDesenhoY,player.larguraVisual,player.alturaVisual);}
                 } else {ctx.fillStyle="#00aaff";ctx.fillRect(playerDesenhoX,playerDesenhoY,player.larguraVisual,player.alturaVisual);}
                 ctx.restore();
@@ -2510,6 +3595,8 @@ function desenhar() {
         // Dialogos (por cima do player)
         if(estadoAtual==="DIALOGO_INICIAL")desenharCaixaTexto(dialogoInicial.texto[dialogoInicial.indiceAtual]);
         if(estadoAtual==="DIALOGO_NPC")desenharCaixaTexto(npc.dialogo[npc.indiceAtual]);
+        if(estadoAtual==="DIALOGO_POS_SONHO")desenharCaixaPensamento(posSonho.dialogoTexto);
+        if(estadoAtual==="DIALOGO_ENCONTRO")desenharCaixaPensamento(typewriterTexto());
 
         desenharBarrasCinematicas();
 
@@ -2518,7 +3605,15 @@ function desenhar() {
 
         if(estadoAtual==="FECHANDO_OLHO")desenharFechamentoOlho(cenaDespedida.fechamentoOlho);
 
+        // FX da perseguicao / rugido (orbs, tentaculos, CORRA, ondas)
+        if (estadoAtual === "RUGIDO_MISTERIOSO" || estadoAtual === "PERSEGUICAO" || PERSEGUICAO.ativa) {
+            desenharPerseguicaoFX();
+        }
+
         if(estadoAtual==="JOGANDO"){ctx.fillStyle="rgba(255,255,255,0.2)";ctx.font="11px 'Courier New', monospace";ctx.textAlign="left";ctx.fillText("[ESC] menu / save",10,canvas.height-8);}
+        if(estadoAtual==="PERSEGUICAO"){ctx.fillStyle="rgba(255,255,255,0.35)";ctx.font="11px 'Courier New', monospace";ctx.textAlign="left";ctx.fillText("[SHIFT] correr   [W/ESPAÇO] pular",10,canvas.height-8);}
+
+        ctx.restore(); // fim do screen shake
     }
 }
 
